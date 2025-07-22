@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { User, LogOut, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 interface HeaderProps {
-  user: any
+  user: SupabaseUser | null
 }
 
 export function Header({ user }: HeaderProps) {
@@ -34,7 +35,7 @@ export function Header({ user }: HeaderProps) {
           onClick={() => setShowDropdown(!showDropdown)}
         >
           <User className="h-5 w-5" />
-          <span>{user.email}</span>
+          <span>{user?.email}</span>
           <ChevronDown className="h-4 w-4" />
         </Button>
         {showDropdown && (

@@ -1,10 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { FileText, Users, TrendingUp, Clock } from 'lucide-react'
 
 export default async function DashboardPage() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // const supabase = createClient()
+  // const { data: { user } } = await supabase.auth.getUser()
 
   return (
     <div>
