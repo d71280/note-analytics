@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 // import { createClient } from '@/lib/supabase/server' // 将来のデータ取得用に保留
 import EngagementOptimizer from '@/components/boost/engagement-optimizer'
+import RealAnalytics from '@/components/boost/real-analytics'
 import { 
   TrendingUp, 
   Users, 
@@ -331,6 +332,20 @@ export default async function BoostPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* リアルタイムAPI分析 */}
+      <div className="mt-12">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <TrendingUp className="h-6 w-6 text-green-500" />
+            リアルタイムAPI分析
+          </h2>
+          <p className="text-gray-600">
+            実際のNote APIを使用して、リアルタイムでクリエイターのデータを分析します。
+          </p>
+        </div>
+        <RealAnalytics />
       </div>
 
       {/* エンゲージメント最適化ツール */}

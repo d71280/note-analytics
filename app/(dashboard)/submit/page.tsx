@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase/server'
-import { FileText, Users, Upload, ExternalLink } from 'lucide-react'
+import AutoFetch from '@/components/submit/auto-fetch'
+import { FileText, Users, Upload, ExternalLink, Zap } from 'lucide-react'
 
 export default async function SubmitPage() {
   const supabase = createClient()
@@ -25,6 +26,25 @@ export default async function SubmitPage() {
           あなたのNote記事やクリエイター情報をデータベースに追加できます。
           投稿されたデータは分析に使用され、より良いインサイトの提供に役立ちます。
         </p>
+      </div>
+
+      {/* API自動取得機能 */}
+      <div className="mb-8">
+        <div className="mb-4">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Zap className="h-6 w-6 text-yellow-500" />
+            NEW! API自動取得機能
+          </h2>
+          <p className="text-gray-600">
+            Note.comのURLを入力するだけで、記事やユーザー情報を自動で取得・追加できます。
+          </p>
+        </div>
+        <AutoFetch 
+          onDataFetched={(data) => {
+            console.log('Data fetched:', data)
+            // TODO: Supabaseに保存する処理を追加
+          }} 
+        />
       </div>
       
       <div className="grid gap-6 lg:grid-cols-2">
