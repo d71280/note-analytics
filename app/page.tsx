@@ -1,14 +1,6 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 
-export default async function Home() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (user) {
-    redirect('/dashboard')
-  }
-
+export default function Home() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 px-4">
       <div className="w-full max-w-4xl text-center">
@@ -38,19 +30,13 @@ export default async function Home() {
             </p>
           </div>
         </div>
-        <div className="flex justify-center space-x-4">
-          <a
-            href="/login"
-            className="rounded-lg bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-700"
+        <div className="flex justify-center">
+          <Link
+            href="/dashboard"
+            className="rounded-lg bg-indigo-600 px-8 py-3 text-white hover:bg-indigo-700 transition-colors"
           >
-            ログイン
-          </a>
-          <a
-            href="/register"
-            className="rounded-lg border border-gray-300 bg-white px-6 py-3 text-gray-700 hover:bg-gray-50"
-          >
-            新規登録
-          </a>
+            使ってみる
+          </Link>
         </div>
       </div>
     </div>
