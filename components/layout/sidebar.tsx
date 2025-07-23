@@ -2,15 +2,16 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, FileText, Users, TrendingUp, Settings } from 'lucide-react'
+import { Home, FileText, Users, TrendingUp, Settings, Upload } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
-  { name: 'ダッシュボード', href: '/', icon: Home },
+  { name: 'ダッシュボード', href: '/dashboard', icon: Home },
   { name: '記事分析', href: '/analyze', icon: FileText },
   { name: 'クリエイター', href: '/creators', icon: Users },
   { name: 'トレンド', href: '/trends', icon: TrendingUp },
-  { name: '設定', href: '/settings', icon: Settings },
+  { name: 'データ投稿', href: '/submit', icon: Upload },
+  { name: 'データ管理', href: '/admin', icon: Settings },
 ]
 
 export function Sidebar() {
