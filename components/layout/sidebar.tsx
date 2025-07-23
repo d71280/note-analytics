@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, FileText, Users, TrendingUp, Settings, Upload } from 'lucide-react'
+import { Home, FileText, Users, TrendingUp, Settings, Upload, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -10,6 +10,7 @@ const navigation = [
   { name: '記事分析', href: '/analyze', icon: FileText },
   { name: 'クリエイター', href: '/creators', icon: Users },
   { name: 'トレンド', href: '/trends', icon: TrendingUp },
+  { name: 'Note Booster', href: '/boost', icon: Zap },
   { name: 'データ投稿', href: '/submit', icon: Upload },
   { name: 'データ管理', href: '/admin', icon: Settings },
 ]
