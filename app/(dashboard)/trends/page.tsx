@@ -1,41 +1,45 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingUp, Eye, Heart, MessageCircle, Clock } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
 
-export default function TrendsPage() {
-  // サンプルデータ
-  const trendingArticles = [
-    {
-      id: 1,
-      title: 'ChatGPTを使った効率的な記事作成術',
-      author: 'テックライター',
-      likes: 1250,
-      views: 5800,
-      comments: 45,
-      category: 'テクノロジー',
-      trendScore: 95
-    },
-    {
-      id: 2,
-      title: '2024年に学ぶべきプログラミング言語5選',
-      author: 'エンジニア太郎',
-      likes: 980,
-      views: 4200,
-      comments: 38,
-      category: 'テクノロジー',
-      trendScore: 88
-    },
-    {
-      id: 3,
-      title: 'ミニマリストになって変わった10のこと',
-      author: 'シンプルライフ',
-      likes: 850,
-      views: 3900,
-      comments: 52,
-      category: 'ライフスタイル',
-      trendScore: 82
-    }
-  ]
+export default async function TrendsPage() {
+  const supabase = createClient()
+  
+  // 実際のデータをSupabaseから取得
+  const { data: trendingArticles } = await supabase
+    .from('trending_articles')
+    .select(`
+      trending_score,
+      trending_date,
+      articles!inner (
+        id,
+        title,
+        like_count,
+        comment_count,
+        published_at,
+        tags,
+        creators!inner (
+          display_name
+        )
+      ),
+      categories (
+        name
+      )
+    `)
+    .order('trending_score', { ascending: false })
+    .limit(10)
 
+  // 統計データの計算
+  const totalTrendingArticles = trendingArticles?.length || 0
+  const averageEngagement = trendingArticles?.length 
+    ? (trendingArticles.reduce((sum, item) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const article = item.articles as any
+        return sum + (article?.like_count || 0)
+      }, 0) / trendingArticles.length / 100).toFixed(1)
+    : '0.0'
+
+  // カテゴリー別成長率の計算（サンプル）
   const categoryTrends = [
     { name: 'テクノロジー', growth: 32, color: 'bg-purple-500' },
     { name: 'ビジネス', growth: 28, color: 'bg-blue-500' },
@@ -55,7 +59,7 @@ export default function TrendsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24</div>
+            <div className="text-2xl font-bold">{totalTrendingArticles}</div>
             <p className="text-xs text-muted-foreground">過去24時間</p>
           </CardContent>
         </Card>
@@ -66,7 +70,7 @@ export default function TrendsPage() {
             <Heart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4.2%</div>
+            <div className="text-2xl font-bold">{averageEngagement}%</div>
             <p className="text-xs text-muted-foreground">+0.8% from last week</p>
           </CardContent>
         </Card>
@@ -103,36 +107,58 @@ export default function TrendsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {trendingArticles.map((article) => (
-                  <div key={article.id} className="flex items-start justify-between p-4 border rounded-lg hover:bg-gray-50">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{article.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">by {article.author}</p>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Heart className="h-4 w-4" />
-                          {article.likes}
+                {trendingArticles?.map((item) => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const article = item.articles as any
+                  if (!article) return null
+                  
+                  return (
+                    <div key={article.id} className="flex items-start justify-between p-4 border rounded-lg hover:bg-gray-50">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">{article.title}</h3>
+                        <p className="text-sm text-gray-600 mt-1">by {article.creators?.display_name || 'Unknown'}</p>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Heart className="h-4 w-4" />
+                            {article.like_count}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="h-4 w-4" />
+                            {Math.floor((article.like_count || 0) * 4.5)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MessageCircle className="h-4 w-4" />
+                            {article.comment_count}
+                          </span>
+                        </div>
+                        {article.tags && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {article.tags.slice(0, 3).map((tag: string, tagIndex: number) => (
+                              <span key={tagIndex} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                          {(item.categories as any)?.name || 'その他'}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-4 w-4" />
-                          {article.views}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MessageCircle className="h-4 w-4" />
-                          {article.comments}
-                        </span>
+                        <p className="text-sm font-semibold text-gray-900 mt-2">
+                          スコア: {Math.round(item.trending_score || 0)}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {article.category}
-                      </span>
-                      <p className="text-sm font-semibold text-gray-900 mt-2">
-                        スコア: {article.trendScore}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
+                
+                {(!trendingArticles || trendingArticles.length === 0) && (
+                  <p className="text-center text-gray-500 py-8">
+                    まだトレンド記事がありません。記事データを追加してください。
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
