@@ -6,14 +6,31 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { BarChart, CheckCircle, AlertCircle, TrendingUp, FileText } from 'lucide-react'
+import { BarChart, CheckCircle, AlertCircle } from 'lucide-react'
 
 export default function AnalyzePage() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [followerCount, setFollowerCount] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysisResult, setAnalysisResult] = useState<any>(null)
+  const [analysisResult, setAnalysisResult] = useState<{
+    overallScore: number
+    titleScore: number
+    contentScore: number
+    seoScore: number
+    readabilityScore: number
+    predictions: {
+      expectedLikes: number
+      engagementRate: number
+      viralPotential: string
+    }
+    suggestions: {
+      priority: string
+      category: string
+      issue: string
+      recommendation: string
+    }[]
+  } | null>(null)
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true)
@@ -224,7 +241,7 @@ export default function AnalyzePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {analysisResult.suggestions.map((suggestion: any, index: number) => (
+                    {analysisResult.suggestions.map((suggestion, index) => (
                       <div key={index} className="flex gap-3 p-3 bg-gray-50 rounded-lg">
                         {suggestion.priority === 'high' ? (
                           <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />

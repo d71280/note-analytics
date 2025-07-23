@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Search, Users, TrendingUp, Star } from 'lucide-react'
+import { Search, TrendingUp, Star } from 'lucide-react'
 
 export default function CreatorsPage() {
   return (
