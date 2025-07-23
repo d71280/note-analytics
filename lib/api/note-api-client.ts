@@ -1,440 +1,404 @@
-// Note API クライアント（2024年版非公式API一覧表に基づく）
-// 参考: https://note.com/ego_station/n/n1a0b26f944f4
+/**
+ * Note API Client
+ * 
+ * Note.comの非公式APIクライアント
+ * 参考: https://note.com/ego_station/n/n1a0b26f944f4
+ */
 
-interface NoteAPIConfig {
-  baseURL: string
-  timeout: number
-  retryAttempts: number
-  rateLimit: {
-    requests: number
-    window: number // ミリ秒
-  }
-}
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-interface SearchParams {
-  context: 'note' | 'user' | 'magazine'
-  q: string
-  size?: number
-  start?: number
-}
-
-interface NoteData {
-  id: string
-  title: string
-  content?: string
-  excerpt?: string
-  authorId: string
-  publishedAt: string
-  likeCount: number
-  commentCount: number
-  tags: string[]
-  url: string
-}
-
-interface UserData {
-  id: string
-  username: string
-  displayName: string
-  bio?: string
-  avatarUrl?: string
-  followerCount: number
-  followingCount: number
-  noteCount: number
-  url: string
-}
-
-interface CategoryData {
-  id: string
-  name: string
-  slug: string
-  description?: string
-}
-
-interface HashtagData {
-  name: string
-  count: number
-  trending: boolean
-}
-
-interface APIResponse<T> {
-  data: T
-  meta?: {
-    totalCount?: number
-    hasNext?: boolean
-    nextCursor?: string
-  }
-  error?: string
-}
-
+// レート制限管理クラス
 class RateLimiter {
-  private requests: Array<number> = []
-  private maxRequests: number
-  private windowMs: number
+  private requests: number[] = []
+  private readonly maxRequests: number
+  private readonly timeWindow: number
 
-  constructor(maxRequests: number, windowMs: number) {
+  constructor(maxRequests: number = 60, timeWindowMs: number = 60000) {
     this.maxRequests = maxRequests
-    this.windowMs = windowMs
+    this.timeWindow = timeWindowMs
   }
 
-  async checkLimit(): Promise<void> {
+  async waitIfNeeded(): Promise<void> {
     const now = Date.now()
-    
-    // 古いリクエストを削除
-    this.requests = this.requests.filter(time => now - time < this.windowMs)
-    
+    this.requests = this.requests.filter(timestamp => now - timestamp < this.timeWindow)
+
     if (this.requests.length >= this.maxRequests) {
       const oldestRequest = Math.min(...this.requests)
-      const waitTime = this.windowMs - (now - oldestRequest)
-      
+      const waitTime = this.timeWindow - (now - oldestRequest)
       if (waitTime > 0) {
-        console.log(`Rate limit reached. Waiting ${waitTime}ms...`)
         await new Promise(resolve => setTimeout(resolve, waitTime))
+        return this.waitIfNeeded()
       }
     }
-    
+
     this.requests.push(now)
   }
 }
 
-export class NoteAPIClient {
-  private config: NoteAPIConfig
-  private rateLimiter: RateLimiter
+// API応答の型定義
+interface RawNoteUser {
+  id: string
+  urlname: string
+  name: string
+  description?: string
+  followerCount?: number
+  followingCount?: number
+  noteCount?: number
+  userProfileImageUrl?: string
+  userHeaderImageUrl?: string
+}
 
-  constructor(config: Partial<NoteAPIConfig> = {}) {
-    this.config = {
-      baseURL: 'https://note.com/api',
-      timeout: 10000,
-      retryAttempts: 3,
-      rateLimit: {
-        requests: 60, // 1分間に60リクエスト（保守的な設定）
-        window: 60000
-      },
-      ...config
-    }
-    
-    this.rateLimiter = new RateLimiter(
-      this.config.rateLimit.requests,
-      this.config.rateLimit.window
-    )
-  }
+interface RawNoteArticle {
+  key: string
+  name: string
+  description?: string
+  body?: string
+  user?: { urlname: string }
+  publishAt?: string
+  createdAt?: string
+  likeCount?: number
+  commentCount?: number
+  hashtags?: Array<{ name: string }>
+  eyecatch?: string
+}
 
-  private async makeRequest<T>(
-    path: string,
-    options: RequestInit = {}
-  ): Promise<APIResponse<T>> {
-    await this.rateLimiter.checkLimit()
+interface RawNoteCategory {
+  id: number
+  name: string
+  urlname: string
+  icon?: string
+  color?: string
+}
 
-    const url = `${this.config.baseURL}${path}`
-    
+interface RawApiResponse {
+  data?: {
+    contents?: RawNoteArticle[]
+  } | RawNoteUser | RawNoteArticle | RawNoteCategory[]
+}
+
+export interface NoteUser {
+  id: string
+  username: string
+  displayName: string
+  bio?: string
+  followerCount: number
+  followingCount: number
+  noteCount: number
+  avatarUrl?: string
+  headerImageUrl?: string
+  url: string
+}
+
+export interface NoteArticle {
+  id: string
+  title: string
+  excerpt?: string
+  content?: string
+  authorId: string
+  publishedAt: string
+  likeCount: number
+  commentCount: number
+  tags?: string[]
+  thumbnailUrl?: string
+  url: string
+}
+
+export interface NoteCategory {
+  id: number
+  name: string
+  slug: string
+  icon?: string
+  color?: string
+}
+
+export interface SearchResult {
+  type: 'article' | 'user'
+  data: NoteArticle | NoteUser
+}
+
+export interface EngagementAnalytics {
+  user: NoteUser
+  articles: NoteArticle[]
+  avgEngagement: number
+  topTags: string[]
+}
+
+export interface ApiResponse<T> {
+  data: T | null
+  error: string | null
+  status: number
+}
+
+// Note APIクライアントクラス
+class NoteAPIClient {
+  private readonly baseUrl = 'https://note.com/api'
+  private readonly rateLimiter = new RateLimiter(60, 60000) // 60 requests per minute
+
+  private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+    await this.rateLimiter.waitIfNeeded()
+
     try {
-      const response = await fetch(url, {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
         headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'Note Analytics Platform',
+          'User-Agent': 'Note Analytics Platform (Compliant Bot)',
+          'Accept': 'application/json',
           ...options.headers,
         },
-        signal: AbortSignal.timeout(this.config.timeout)
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        return {
+          data: null,
+          error: `HTTP ${response.status}: ${response.statusText}`,
+          status: response.status
+        }
       }
 
       const data = await response.json()
-      return { data }
+      return {
+        data,
+        error: null,
+        status: response.status
+      }
     } catch (error) {
-      console.error('API Request failed:', error)
-      return { 
-        data: null as T, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        status: 0
       }
     }
   }
 
-  // 🔍 検索関連API
-  async searchArticles(params: SearchParams): Promise<APIResponse<NoteData[]>> {
-    const searchParams = new URLSearchParams({
-      context: 'note',
-      q: params.q,
-      size: (params.size || 20).toString(),
-      start: (params.start || 0).toString()
-    })
+  // ユーザー情報取得
+  async getUserDetail(username: string): Promise<ApiResponse<NoteUser>> {
+    const response = await this.makeRequest<RawApiResponse>(`/v2/creators/${username}`)
     
-    return this.makeRequest<NoteData[]>(`/v3/searches?${searchParams}`)
-  }
-
-  async searchUsers(params: SearchParams): Promise<APIResponse<UserData[]>> {
-    const searchParams = new URLSearchParams({
-      context: 'user',
-      q: params.q,
-      size: (params.size || 20).toString(),
-      start: (params.start || 0).toString()
-    })
-    
-    return this.makeRequest<UserData[]>(`/v3/searches?${searchParams}`)
-  }
-
-  async searchMagazines(params: SearchParams): Promise<APIResponse<Array<{
-    id: string
-    title: string
-    description?: string
-    url: string
-  }>>> {
-    const searchParams = new URLSearchParams({
-      context: 'magazine',
-      q: params.q,
-      size: (params.size || 20).toString(),
-      start: (params.start || 0).toString()
-    })
-    
-    return this.makeRequest<Array<{
-      id: string
-      title: string
-      description?: string
-      url: string
-    }>>(`/v3/searches?${searchParams}`)
-  }
-
-  // 📝 記事関連API
-  async getArticleDetail(noteId: string): Promise<APIResponse<NoteData>> {
-    return this.makeRequest<NoteData>(`/v3/notes/${noteId}`)
-  }
-
-  async getArticleLikes(noteId: string): Promise<APIResponse<Array<{
-    userId: string
-    username: string
-    displayName: string
-  }>>> {
-    return this.makeRequest<Array<{
-      userId: string
-      username: string
-      displayName: string
-    }>>(`/v3/notes/${noteId}/likes`)
-  }
-
-  async getArticleComments(noteId: string): Promise<APIResponse<Array<{
-    id: string
-    content: string
-    userId: string
-    username: string
-    createdAt: string
-  }>>> {
-    return this.makeRequest<Array<{
-      id: string
-      content: string
-      userId: string
-      username: string
-      createdAt: string
-    }>>(`/v1/note/${noteId}/comments`)
-  }
-
-  // 👤 ユーザー関連API
-  async getUserDetail(username: string): Promise<APIResponse<UserData>> {
-    return this.makeRequest<UserData>(`/v2/creators/${username}`)
-  }
-
-  async getUserArticles(username: string, page = 1): Promise<APIResponse<NoteData[]>> {
-    const params = new URLSearchParams({
-      kind: 'note',
-      page: page.toString()
-    })
-    
-    return this.makeRequest<NoteData[]>(`/v2/creators/${username}/contents?${params}`)
-  }
-
-  async getUserFollowers(username: string): Promise<APIResponse<UserData[]>> {
-    return this.makeRequest<UserData[]>(`/v1/followers/${username}/list`)
-  }
-
-  async getUserFollowing(username: string): Promise<APIResponse<UserData[]>> {
-    return this.makeRequest<UserData[]>(`/v1/followings/${username}/list`)
-  }
-
-  // 📂 カテゴリー関連API
-  async getCategories(): Promise<APIResponse<CategoryData[]>> {
-    return this.makeRequest<CategoryData[]>('/v2/categories')
-  }
-
-  async getCategoryArticles(categorySlug: string, page = 1): Promise<APIResponse<NoteData[]>> {
-    const params = new URLSearchParams({
-      note_intro_only: 'true',
-      sort: 'new',
-      page: page.toString()
-    })
-    
-    return this.makeRequest<NoteData[]>(`/v1/categories/${categorySlug}?${params}`)
-  }
-
-  // 🏷️ ハッシュタグ関連API
-  async getHashtags(): Promise<APIResponse<HashtagData[]>> {
-    return this.makeRequest<HashtagData[]>('/v2/hashtags')
-  }
-
-  async getHashtagDetail(hashtag: string): Promise<APIResponse<HashtagData>> {
-    return this.makeRequest<HashtagData>(`/v2/hashtags/${encodeURIComponent(hashtag)}`)
-  }
-
-  // 📊 統計関連API
-  async getStats(): Promise<APIResponse<{
-    totalViews: number
-    articles: Array<{
-      id: string
-      title: string
-      views: number
-      likes: number
-    }>
-  }>> {
-    const params = new URLSearchParams({
-      filter: 'all',
-      page: '1',
-      sort: 'pv'
-    })
-    
-    return this.makeRequest<{
-      totalViews: number
-      articles: Array<{
-        id: string
-        title: string
-        views: number
-        likes: number
-      }>
-    }>(`/v1/stats/pv?${params}`)
-  }
-
-  // 📊 トレンド分析のためのデータ取得
-  async getTrendingArticles(category?: string): Promise<APIResponse<NoteData[]>> {
-    if (category) {
-      return this.getCategoryArticles(category, 1)
+    if (response.error || !response.data) {
+      return response as ApiResponse<NoteUser>
     }
-    
-    // 人気記事を検索で取得
-    return this.searchArticles({
-      context: 'note',
-      q: '',
-      size: 50,
-      start: 0
-    })
+
+    const userData = (response.data.data as RawNoteUser) || (response.data as RawNoteUser)
+    const user: NoteUser = {
+      id: userData.id || username,
+      username: userData.urlname || username,
+      displayName: userData.name || username,
+      bio: userData.description,
+      followerCount: userData.followerCount || 0,
+      followingCount: userData.followingCount || 0,
+      noteCount: userData.noteCount || 0,
+      avatarUrl: userData.userProfileImageUrl,
+      headerImageUrl: userData.userHeaderImageUrl,
+      url: `https://note.com/${username}`
+    }
+
+    return {
+      data: user,
+      error: null,
+      status: response.status
+    }
   }
 
-  async getPopularHashtags(): Promise<APIResponse<HashtagData[]>> {
-    return this.getHashtags()
-  }
-
-  // 🔄 一括データ取得（効率的なデータ収集用）
-  async bulkFetchUserData(usernames: string[]): Promise<Map<string, UserData>> {
-    const results = new Map<string, UserData>()
+  // 記事詳細取得
+  async getArticleDetail(noteId: string): Promise<ApiResponse<NoteArticle>> {
+    const response = await this.makeRequest<RawApiResponse>(`/v3/notes/${noteId}`)
     
-    for (const username of usernames) {
-      try {
-        const { data, error } = await this.getUserDetail(username)
-        if (data && !error) {
-          results.set(username, data)
-        }
-        
-        // レート制限を考慮した小さな遅延
-        await new Promise(resolve => setTimeout(resolve, 100))
-      } catch (error) {
-        console.warn(`Failed to fetch user data for ${username}:`, error)
+    if (response.error || !response.data) {
+      return response as ApiResponse<NoteArticle>
+    }
+
+    const articleData = (response.data.data as RawNoteArticle) || (response.data as RawNoteArticle)
+          const article: NoteArticle = {
+        id: articleData.key || noteId,
+        title: articleData.name || 'Untitled',
+        excerpt: articleData.description,
+        content: articleData.body,
+        authorId: articleData.user?.urlname || '',
+        publishedAt: articleData.publishAt || articleData.createdAt || '',
+        likeCount: articleData.likeCount || 0,
+        commentCount: articleData.commentCount || 0,
+        tags: articleData.hashtags?.map(tag => tag.name) || [],
+        thumbnailUrl: articleData.eyecatch,
+        url: `https://note.com/${articleData.user?.urlname}/n/${noteId}`
       }
+
+    return {
+      data: article,
+      error: null,
+      status: response.status
     }
-    
-    return results
   }
 
-  async bulkFetchArticleData(noteIds: string[]): Promise<Map<string, NoteData>> {
-    const results = new Map<string, NoteData>()
+  // ユーザーの記事一覧取得
+  async getUserArticles(username: string, limit: number = 20): Promise<ApiResponse<NoteArticle[]>> {
+    const response = await this.makeRequest<RawApiResponse>(`/v2/creators/${username}/contents?kind=note&page=1&per=${limit}`)
     
-    for (const noteId of noteIds) {
-      try {
-        const { data, error } = await this.getArticleDetail(noteId)
-        if (data && !error) {
-          results.set(noteId, data)
-        }
-        
-        // レート制限を考慮した小さな遅延
-        await new Promise(resolve => setTimeout(resolve, 100))
-      } catch (error) {
-        console.warn(`Failed to fetch article data for ${noteId}:`, error)
-      }
+    if (response.error || !response.data) {
+      return response as ApiResponse<NoteArticle[]>
     }
-    
-    return results
+
+    const articlesData = (response.data.data as { contents: RawNoteArticle[] })?.contents || []
+    const articles: NoteArticle[] = articlesData.map((item: RawNoteArticle) => ({
+      id: item.key,
+      title: item.name,
+      excerpt: item.description,
+      authorId: username,
+      publishedAt: item.publishAt || item.createdAt || '',
+      likeCount: item.likeCount || 0,
+      commentCount: item.commentCount || 0,
+      tags: item.hashtags?.map(tag => tag.name) || [],
+      thumbnailUrl: item.eyecatch,
+      url: `https://note.com/${username}/n/${item.key}`
+    }))
+
+    return {
+      data: articles,
+      error: null,
+      status: response.status
+    }
   }
 
-  // 🎯 Note Booster用の分析データ取得
-  async getEngagementAnalytics(username: string): Promise<{
-    user: UserData | null
-    articles: NoteData[]
-    avgEngagement: number
-    topTags: string[]
-    bestTimes: string[]
-  }> {
-    try {
-      const [userResult, articlesResult] = await Promise.all([
-        this.getUserDetail(username),
-        this.getUserArticles(username, 1)
-      ])
+  // カテゴリー一覧取得
+  async getCategories(): Promise<ApiResponse<NoteCategory[]>> {
+    const response = await this.makeRequest<RawApiResponse>('/v2/categories')
+    
+    if (response.error || !response.data) {
+      return response as ApiResponse<NoteCategory[]>
+    }
 
-      const user = userResult.data
-      const articles = articlesResult.data || []
+    const categoriesData = (response.data.data as RawNoteCategory[]) || []
+    const categories: NoteCategory[] = categoriesData.map((item: RawNoteCategory) => ({
+      id: item.id,
+      name: item.name,
+      slug: item.urlname,
+      icon: item.icon,
+      color: item.color
+    }))
 
-      // エンゲージメント分析
-      const avgEngagement = articles.length > 0 
-        ? articles.reduce((sum, article) => sum + (article.likeCount || 0), 0) / articles.length
-        : 0
+    return {
+      data: categories,
+      error: null,
+      status: response.status
+    }
+  }
 
-      // タグ分析
-      const tagCount = new Map<string, number>()
-      articles.forEach(article => {
-        article.tags?.forEach(tag => {
-          tagCount.set(tag, (tagCount.get(tag) || 0) + 1)
-        })
+  // 記事検索
+  async searchArticles(query: string, page: number = 1): Promise<ApiResponse<NoteArticle[]>> {
+    const response = await this.makeRequest<RawApiResponse>(`/v2/searches/notes?q=${encodeURIComponent(query)}&page=${page}`)
+    
+    if (response.error || !response.data) {
+      return response as ApiResponse<NoteArticle[]>
+    }
+
+    const articlesData = (response.data.data as { contents: RawNoteArticle[] })?.contents || []
+    const articles: NoteArticle[] = articlesData.map((item: RawNoteArticle) => ({
+      id: item.key,
+      title: item.name,
+      excerpt: item.description,
+      authorId: item.user?.urlname || '',
+      publishedAt: item.publishAt || item.createdAt || '',
+      likeCount: item.likeCount || 0,
+      commentCount: item.commentCount || 0,
+      tags: item.hashtags?.map(tag => tag.name) || [],
+      thumbnailUrl: item.eyecatch,
+      url: `https://note.com/${item.user?.urlname}/n/${item.key}`
+    }))
+
+    return {
+      data: articles,
+      error: null,
+      status: response.status
+    }
+  }
+
+  // ユーザー検索
+  async searchUsers(query: string, page: number = 1): Promise<ApiResponse<NoteUser[]>> {
+    const response = await this.makeRequest<RawApiResponse>(`/v2/searches/creators?q=${encodeURIComponent(query)}&page=${page}`)
+    
+    if (response.error || !response.data) {
+      return response as ApiResponse<NoteUser[]>
+    }
+
+    const usersData = (response.data as any)?.data?.contents || []
+    const users: NoteUser[] = usersData.map((item: any) => ({
+      id: item.id,
+      username: item.urlname,
+      displayName: item.name,
+      bio: item.description,
+      followerCount: item.followerCount || 0,
+      followingCount: item.followingCount || 0,
+      noteCount: item.noteCount || 0,
+      avatarUrl: item.userProfileImageUrl,
+      headerImageUrl: item.userHeaderImageUrl,
+      url: `https://note.com/${item.urlname}`
+    }))
+
+    return {
+      data: users,
+      error: null,
+      status: response.status
+    }
+  }
+
+  // エンゲージメント分析（ユーザーと記事データを組み合わせ）
+  async getEngagementAnalytics(username: string): Promise<EngagementAnalytics> {
+    const [userResponse, articlesResponse] = await Promise.all([
+      this.getUserDetail(username),
+      this.getUserArticles(username, 20)
+    ])
+
+    if (userResponse.error || !userResponse.data) {
+      throw new Error(`ユーザー情報の取得に失敗: ${userResponse.error}`)
+    }
+
+    if (articlesResponse.error || !articlesResponse.data) {
+      throw new Error(`記事情報の取得に失敗: ${articlesResponse.error}`)
+    }
+
+    const user = userResponse.data
+    const articles = articlesResponse.data
+
+    // エンゲージメント率の計算
+    const totalEngagement = articles.reduce((sum, article) => 
+      sum + (article.likeCount || 0) + (article.commentCount || 0), 0
+    )
+    const avgEngagement = user.followerCount > 0 
+      ? totalEngagement / (user.followerCount * articles.length) 
+      : 0
+
+    // トップタグの抽出
+    const tagCounts: Record<string, number> = {}
+    articles.forEach(article => {
+      article.tags?.forEach(tag => {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1
       })
-      
-      const topTags = Array.from(tagCount.entries())
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 5)
-        .map(([tag]) => tag)
+    })
+    const topTags = Object.entries(tagCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+      .map(([tag]) => tag)
 
-      return {
-        user,
-        articles,
-        avgEngagement,
-        topTags,
-        bestTimes: ['19:00-21:00', '20:00-22:00'] // デフォルト値（実際は時間別分析が必要）
-      }
-    } catch (error) {
-      console.error('Failed to get engagement analytics:', error)
-      return {
-        user: null,
-        articles: [],
-        avgEngagement: 0,
-        topTags: [],
-        bestTimes: []
-      }
+    return {
+      user,
+      articles,
+      avgEngagement,
+      topTags
     }
   }
+}
+
+// ユーティリティ関数
+export function extractNoteIdFromUrl(url: string): string | null {
+  const match = url.match(/\/n\/([a-zA-Z0-9]+)/)
+  return match ? match[1] : null
+}
+
+export function extractUsernameFromUrl(url: string): string | null {
+  const match = url.match(/note\.com\/([^\/]+)/)
+  return match ? match[1] : null
 }
 
 // シングルトンインスタンス
 export const noteAPI = new NoteAPIClient()
 
-// ヘルパー関数
-export const extractNoteIdFromUrl = (url: string): string | null => {
-  const match = url.match(/\/n\/([a-zA-Z0-9]+)/)
-  return match ? match[1] : null
-}
-
-export const extractUsernameFromUrl = (url: string): string | null => {
-  const match = url.match(/note\.com\/([^\/]+)/)
-  return match ? match[1] : null
-}
-
-export const formatNoteUrl = (noteId: string): string => {
-  return `https://note.com/n/${noteId}`
-}
-
-export const formatUserUrl = (username: string): string => {
-  return `https://note.com/${username}`
-} 
+export default noteAPI 

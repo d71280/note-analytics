@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check-env": "node scripts/check-env.js",
+    "test-setup": "node scripts/post-setup-test.js",
+    "setup": "node scripts/check-env.js && echo '\n🚀 環境設定完了！npm run dev で開発を開始できます。'"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

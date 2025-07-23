@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-// import { Badge } from '@/components/ui/badge' // Badge componentは後で追加
 import { noteAPI } from '@/lib/api/note-api-client'
 import { 
   Loader2, 
