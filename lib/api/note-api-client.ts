@@ -131,20 +131,24 @@ export interface ApiResponse<T> {
 
 // Note APIクライアントクラス
 class NoteAPIClient {
-  private readonly baseUrl = 'https://note.com/api'
-  private readonly rateLimiter = new RateLimiter(60, 60000) // 60 requests per minute
+  private readonly baseUrl = '/api/note-proxy' // プロキシを使用
+  private readonly rateLimiter = new RateLimiter(30, 60000) // 30 requests per minute (控えめに設定)
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     await this.rateLimiter.waitIfNeeded()
 
     try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      // プロキシ経由でNote APIにアクセス
+      const proxyUrl = `${this.baseUrl}?endpoint=${encodeURIComponent(endpoint)}`
+      console.log('🔍 Note API Request via Proxy:', proxyUrl)
+      
+      const response = await fetch(proxyUrl, {
         ...options,
-        mode: 'cors',
+        method: 'GET',
+        cache: 'no-cache',
         headers: {
-          'User-Agent': 'Note Analytics Platform (Compliant Bot)',
           'Accept': 'application/json',
-          'Origin': typeof window !== 'undefined' ? window.location.origin : 'https://note.com',
+          'Content-Type': 'application/json',
           ...options.headers,
         },
       })
@@ -166,11 +170,11 @@ class NoteAPIClient {
         status: response.status
       }
     } catch (error) {
-      // ネットワークエラーやCORSエラーの詳細ログ
+      // ネットワークエラーやプロキシエラーの詳細ログ
       console.error('Note API Request Failed:', {
         endpoint,
+        proxyUrl: `${this.baseUrl}?endpoint=${encodeURIComponent(endpoint)}`,
         error: error instanceof Error ? error.message : error,
-        url: `${this.baseUrl}${endpoint}`
       })
       
       return {
@@ -185,7 +189,7 @@ class NoteAPIClient {
 
   // ユーザー情報取得
   async getUserDetail(username: string): Promise<ApiResponse<NoteUser>> {
-    const response = await this.makeRequest<RawApiResponse>(`/v2/creators/${username}`)
+    const response = await this.makeRequest<RawApiResponse>(`/api/v2/creators/${username}`)
     
     if (response.error || !response.data) {
       return response as ApiResponse<NoteUser>
@@ -214,7 +218,7 @@ class NoteAPIClient {
 
   // 記事詳細取得
   async getArticleDetail(noteId: string): Promise<ApiResponse<NoteArticle>> {
-    const response = await this.makeRequest<RawApiResponse>(`/v3/notes/${noteId}`)
+    const response = await this.makeRequest<RawApiResponse>(`/api/v3/notes/${noteId}`)
     
     if (response.error || !response.data) {
       return response as ApiResponse<NoteArticle>
@@ -244,7 +248,7 @@ class NoteAPIClient {
 
   // ユーザーの記事一覧取得
   async getUserArticles(username: string, limit: number = 20): Promise<ApiResponse<NoteArticle[]>> {
-    const response = await this.makeRequest<RawApiResponse>(`/v2/creators/${username}/contents?kind=note&page=1&per=${limit}`)
+    const response = await this.makeRequest<RawApiResponse>(`/api/v2/creators/${username}/contents?kind=note&page=1&per=${limit}`)
     
     if (response.error || !response.data) {
       return response as ApiResponse<NoteArticle[]>
@@ -273,7 +277,7 @@ class NoteAPIClient {
 
   // カテゴリー一覧取得
   async getCategories(): Promise<ApiResponse<NoteCategory[]>> {
-    const response = await this.makeRequest<RawApiResponse>('/v2/categories')
+    const response = await this.makeRequest<RawApiResponse>('/api/v2/categories')
     
     if (response.error || !response.data) {
       return response as ApiResponse<NoteCategory[]>
@@ -297,7 +301,7 @@ class NoteAPIClient {
 
   // 記事検索
   async searchArticles(query: string, page: number = 1): Promise<ApiResponse<NoteArticle[]>> {
-    const response = await this.makeRequest<RawApiResponse>(`/v2/searches/notes?q=${encodeURIComponent(query)}&page=${page}`)
+    const response = await this.makeRequest<RawApiResponse>(`/api/v2/searches/notes?q=${encodeURIComponent(query)}&page=${page}`)
     
     if (response.error || !response.data) {
       return response as ApiResponse<NoteArticle[]>
@@ -326,7 +330,7 @@ class NoteAPIClient {
 
   // ユーザー検索
   async searchUsers(query: string, page: number = 1): Promise<ApiResponse<NoteUser[]>> {
-    const response = await this.makeRequest<RawApiResponse>(`/v2/searches/creators?q=${encodeURIComponent(query)}&page=${page}`)
+    const response = await this.makeRequest<RawApiResponse>(`/api/v2/searches/creators?q=${encodeURIComponent(query)}&page=${page}`)
     
     if (response.error || !response.data) {
       return response as ApiResponse<NoteUser[]>
@@ -411,107 +415,9 @@ export function extractUsernameFromUrl(url: string): string | null {
   return match ? match[1] : null
 }
 
-// モックデータ
-const MOCK_USER: NoteUser = {
-  id: 'demo_user',
-  username: 'demo_user',
-  displayName: 'デモユーザー',
-  bio: 'Note Analytics Platform のデモ用アカウントです',
-  followerCount: 1250,
-  followingCount: 180,
-  noteCount: 45,
-  url: 'https://note.com/demo_user'
-}
 
-const MOCK_ARTICLES: NoteArticle[] = [
-  {
-    id: 'demo_article_1',
-    title: 'Note Analytics Platform の使い方',
-    excerpt: 'データ分析を使ってNote記事のパフォーマンスを向上させる方法について解説します',
-    authorId: 'demo_user',
-    publishedAt: '2024-01-15T10:00:00Z',
-    likeCount: 89,
-    commentCount: 12,
-    tags: ['分析', 'Note', 'データ'],
-    url: 'https://note.com/demo_user/n/demo_article_1'
-  },
-  {
-    id: 'demo_article_2',
-    title: 'エンゲージメント向上のコツ',
-    excerpt: '読者の心を掴む記事タイトルの付け方と、効果的なハッシュタグの使い方',
-    authorId: 'demo_user',
-    publishedAt: '2024-01-10T14:30:00Z',
-    likeCount: 67,
-    commentCount: 8,
-    tags: ['エンゲージメント', 'ライティング'],
-    url: 'https://note.com/demo_user/n/demo_article_2'
-  },
-  {
-    id: 'demo_article_3',
-    title: 'SNS運用戦略の基本',
-    excerpt: 'フォロワー数を増やすための戦略的なアプローチと継続のコツ',
-    authorId: 'demo_user',
-    publishedAt: '2024-01-05T09:15:00Z',
-    likeCount: 134,
-    commentCount: 23,
-    tags: ['SNS', '戦略', 'マーケティング'],
-    url: 'https://note.com/demo_user/n/demo_article_3'
-  }
-]
 
-// デモ用のエンゲージメント分析クラス
-class DemoNoteAPIClient extends NoteAPIClient {
-  // リアルAPIでエラーが発生した場合のフォールバック
-  async getEngagementAnalytics(username: string): Promise<EngagementAnalytics> {
-    try {
-      // まず実際のAPIを試す
-      return await super.getEngagementAnalytics(username)
-    } catch (error) {
-      console.warn('Real API failed, using demo data:', error)
-      
-      // デモデータを返す
-      const demoUser = { ...MOCK_USER, username, displayName: `${username} (デモ)` }
-      return {
-        user: demoUser,
-        articles: MOCK_ARTICLES,
-        avgEngagement: 0.045, // 4.5%
-        topTags: ['分析', 'Note', 'エンゲージメント', 'データ', 'SNS']
-      }
-    }
-  }
-
-  async getUserDetail(username: string): Promise<ApiResponse<NoteUser>> {
-    const response = await super.getUserDetail(username)
-    
-    if (response.error) {
-      console.warn('Real API failed, using demo data for user:', username)
-      return {
-        data: { ...MOCK_USER, username, displayName: `${username} (デモ)` },
-        error: null,
-        status: 200
-      }
-    }
-    
-    return response
-  }
-
-  async getUserArticles(username: string, limit: number = 20): Promise<ApiResponse<NoteArticle[]>> {
-    const response = await super.getUserArticles(username, limit)
-    
-    if (response.error) {
-      console.warn('Real API failed, using demo data for articles:', username)
-      return {
-        data: MOCK_ARTICLES.slice(0, limit),
-        error: null,
-        status: 200
-      }
-    }
-    
-    return response
-  }
-}
-
-// シングルトンインスタンス（デモ機能付き）
-export const noteAPI = new DemoNoteAPIClient()
+// シングルトンインスタンス（実際のAPIのみ使用）
+export const noteAPI = new NoteAPIClient()
 
 export default noteAPI 

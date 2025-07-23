@@ -127,11 +127,7 @@ export default function RealAnalytics({ defaultUsername = '' }: RealAnalyticsPro
             リアルタイム分析
           </CardTitle>
           <CardDescription>
-            NoteユーザーのIDを入力して、実際のデータを基に分析を行います
-            <br />
-            <span className="text-blue-600 text-sm">
-              💡 <code className="bg-blue-50 px-1 rounded">demo</code> と入力するとサンプルデータで機能をお試しいただけます
-            </span>
+            NoteユーザーのIDを入力して、実際のNote APIからリアルタイムデータを取得・分析します
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -175,8 +171,9 @@ export default function RealAnalytics({ defaultUsername = '' }: RealAnalyticsPro
                     </p>
                     <ul className="text-sm text-gray-600 space-y-1">
                       <li>• ネットワーク接続を確認してください</li>
+                      <li>• 正しいNoteユーザー名であることを確認してください</li>
                       <li>• しばらく時間をおいてから再試行してください</li>
-                      <li>• <code className="bg-gray-100 px-1 rounded">demo</code> と入力するとデモデータで機能を確認できます</li>
+                      <li>• 有名なNoteユーザー（例: ego_station）で試してみてください</li>
                     </ul>
                   </div>
                 </div>
