@@ -128,6 +128,10 @@ export default function RealAnalytics({ defaultUsername = '' }: RealAnalyticsPro
           </CardTitle>
           <CardDescription>
             NoteユーザーのIDを入力して、実際のデータを基に分析を行います
+            <br />
+            <span className="text-blue-600 text-sm">
+              💡 <code className="bg-blue-50 px-1 rounded">demo</code> と入力するとサンプルデータで機能をお試しいただけます
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -157,8 +161,26 @@ export default function RealAnalytics({ defaultUsername = '' }: RealAnalyticsPro
           </form>
 
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <div className="text-red-600">⚠️</div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-800 mb-2">
+                    Note APIへの接続に問題があります
+                  </p>
+                  <p className="text-sm text-red-700 mb-3">{error}</p>
+                  <div className="bg-white p-3 rounded border border-red-200">
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>💡 解決方法:</strong>
+                    </p>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• ネットワーク接続を確認してください</li>
+                      <li>• しばらく時間をおいてから再試行してください</li>
+                      <li>• <code className="bg-gray-100 px-1 rounded">demo</code> と入力するとデモデータで機能を確認できます</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
