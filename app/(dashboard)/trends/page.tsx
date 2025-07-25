@@ -36,9 +36,9 @@ export default function TrendsPage() {
       const currentSort = customSort || sortBy
       const currentDateFilter = customDateFilter || dateFilter
       
-      // 並列でデータを取得
+      // 並列でデータを取得（記事数を大幅増加）
       const [articlesRes, keywordsRes, categoryRes] = await Promise.all([
-        noteAPI.getTrendingArticles(10, currentSort, currentDateFilter),
+        noteAPI.getTrendingArticles(50, currentSort, currentDateFilter),
         noteAPI.getTrendingKeywords(),
         noteAPI.getCategoryStats()
       ])

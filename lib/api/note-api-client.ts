@@ -373,7 +373,7 @@ class NoteAPIClient {
 
   // トレンド記事の取得（人気記事ランキング）- 日付・ソート対応
   async getTrendingArticles(
-    limit: number = 20, 
+    limit: number = 50, 
     sortBy: 'like' | 'comment' | 'recent' = 'like',
     dateFilter?: 'today' | 'yesterday' | 'this_week'
   ): Promise<ApiResponse<NoteArticle[]>> {
