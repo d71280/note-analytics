@@ -401,10 +401,208 @@ function getRandomTimeYesterday(): string {
   return yesterday.toISOString()
 }
 
-// 人気記事の取得 - 日付・スキ数フィルタ対応（大幅拡張版）
+// 実際のNote.comから記事データを取得する関数
+async function scrapeNoteHomepage(): Promise<NoteArticleData[]> {
+  try {
+    console.log('🔍 Scraping Note.com homepage for trending articles...')
+    
+    const response = await fetch('https://note.com/', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch Note.com: ${response.status}`)
+    }
+
+    const html = await response.text()
+    const articles: NoteArticleData[] = []
+
+    // Note.comのトップページから記事情報を抽出
+    // 記事リンクのパターン: /username/n/note_id
+    const articleRegex = /<a[^>]*href="\/([^"\/]+)\/n\/([^"]+)"[^>]*>/g
+    let match
+    
+    while ((match = articleRegex.exec(html)) !== null) {
+      const username = match[1]
+      const noteId = match[2]
+      
+      if (username && noteId && !username.includes('?') && !noteId.includes('?')) {
+        // 記事の詳細情報を取得
+        const articleDetail = await scrapeNoteArticle(username, noteId)
+        if (articleDetail) {
+          articles.push(articleDetail)
+          if (articles.length >= 500) break // 最大500件まで
+        }
+        
+        // レート制限のため遅延
+        await new Promise(resolve => setTimeout(resolve, 200))
+      }
+    }
+
+    console.log(`✅ Successfully scraped ${articles.length} articles from Note.com`)
+    return articles
+    
+  } catch (error) {
+    console.error('❌ Failed to scrape Note.com:', error)
+    return []
+  }
+}
+
+// 個別記事の詳細情報を取得
+async function scrapeNoteArticle(username: string, noteId: string): Promise<NoteArticleData | null> {
+  try {
+    const url = `https://note.com/${username}/n/${noteId}`
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
+      },
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const html = await response.text()
+    
+    // タイトルの抽出
+    let title = 'Untitled'
+    const titleMatches = [
+      /<title>([^|]+)\s*\|/,
+      /<h1[^>]*>([^<]+)<\/h1>/,
+      /<meta property="og:title" content="([^"]+)"/
+    ]
+    
+    for (const pattern of titleMatches) {
+      const match = html.match(pattern)
+      if (match && match[1].trim()) {
+        title = match[1].trim()
+        break
+      }
+    }
+
+    // 説明文の抽出
+    let excerpt = ''
+    const excerptPatterns = [
+      /<meta name="description" content="([^"]+)"/,
+      /<meta property="og:description" content="([^"]+)"/,
+      /<p[^>]*>([^<]+)<\/p>/
+    ]
+    
+    for (const pattern of excerptPatterns) {
+      const match = html.match(pattern)
+      if (match && match[1].trim()) {
+        excerpt = match[1].trim().substring(0, 200)
+        break
+      }
+    }
+
+    // いいね数の抽出
+    let likeCount = 0
+    const likePatterns = [
+      /class="[^"]*like[^"]*"[^>]*>.*?(\d+)/gi,
+      /(\d+)\s*いいね/g,
+      /(\d+)\s*likes?/gi,
+      /"likeCount":(\d+)/g
+    ]
+    
+    for (const pattern of likePatterns) {
+      let match
+      while ((match = pattern.exec(html)) !== null) {
+        const count = parseInt(match[1], 10)
+        if (!isNaN(count) && count > likeCount) {
+          likeCount = count
+        }
+      }
+    }
+
+    // コメント数の抽出
+    let commentCount = 0
+    const commentPatterns = [
+      /(\d+)\s*コメント/g,
+      /(\d+)\s*comments?/gi,
+      /"commentCount":(\d+)/g
+    ]
+    
+    for (const pattern of commentPatterns) {
+      let match
+      while ((match = pattern.exec(html)) !== null) {
+        const count = parseInt(match[1], 10)
+        if (!isNaN(count)) {
+          commentCount = count
+          break
+        }
+      }
+    }
+
+    // タグの抽出
+    const tags: string[] = []
+    const tagRegex = /#([a-zA-Z0-9ぁ-んァ-ヶー一-龯]+)/g
+    let tagMatch
+    while ((tagMatch = tagRegex.exec(html)) !== null) {
+      if (tagMatch[1] && !tags.includes(tagMatch[1])) {
+        tags.push(tagMatch[1])
+        if (tags.length >= 5) break
+      }
+    }
+
+    // 投稿日時の抽出
+    let publishedAt = new Date().toISOString()
+    const datePatterns = [
+      /<time[^>]*datetime="([^"]+)"/,
+      /"publishedAt":"([^"]+)"/,
+      /(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/
+    ]
+    
+    for (const pattern of datePatterns) {
+      const match = html.match(pattern)
+      if (match && match[1]) {
+        try {
+          publishedAt = new Date(match[1]).toISOString()
+          break
+        } catch {
+          // 日付パースに失敗した場合は現在時刻を使用
+        }
+      }
+    }
+
+    return {
+      id: noteId,
+      title: title,
+      excerpt: excerpt || `${username}さんの記事`,
+      authorId: username,
+      publishedAt: publishedAt,
+      likeCount: likeCount,
+      commentCount: commentCount,
+      tags: tags.length > 0 ? tags : ['Note'],
+      url: url
+    }
+
+  } catch (error) {
+    console.error(`❌ Failed to scrape article ${username}/${noteId}:`, error)
+    return null
+  }
+}
+
+// 人気記事の取得 - 実際のNote.comデータ使用
 async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', dateFilter?: string): Promise<NoteArticleData[]> {
-  // 大規模記事データベース（70+記事）
-  const popularArticles: NoteArticleData[] = [
+  console.log(`🔍 Getting trending articles from Note.com (limit: ${limit}, sort: ${sortBy}, filter: ${dateFilter})`)
+  
+  // 実際のNote.comから記事を取得
+  let articles = await scrapeNoteHomepage()
+  
+  // フォールバック用の基本記事データ（スクレイピング失敗時）
+  const fallbackArticles: NoteArticleData[] = [
     // 今日の投稿（20記事）
     {
       id: 'n1a0b26f944f4',
@@ -962,7 +1160,13 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
     }
   ]
 
-  let filteredArticles = [...popularArticles]
+  // スクレイピングが失敗した場合はフォールバックデータを使用
+  if (articles.length === 0) {
+    console.log('⚠️ Using fallback data as scraping failed')
+    articles = fallbackArticles
+  }
+
+  let filteredArticles = [...articles]
 
   // 日付フィルタリング
   if (dateFilter) {
@@ -1008,9 +1212,82 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
   return filteredArticles.slice(0, limit)
 }
 
-// 記事検索機能 - 日付・ソート対応（大規模対応）
+// Note.comで直接検索を実行
+async function searchNoteComDirectly(query: string, limit: number = 20): Promise<NoteArticleData[]> {
+  try {
+    console.log(`🔍 Searching Note.com directly for: "${query}"`)
+    
+    // Note.comの検索URLを構築
+    const searchUrl = `https://note.com/search?q=${encodeURIComponent(query)}&context=note&mode=search`
+    
+    const response = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
+      },
+    })
+
+    if (!response.ok) {
+      console.log(`❌ Search failed: ${response.status}`)
+      return []
+    }
+
+    const html = await response.text()
+    const articles: NoteArticleData[] = []
+
+    // 検索結果から記事リンクを抽出
+    const articleRegex = /<a[^>]*href="\/([^"\/]+)\/n\/([^"]+)"[^>]*>/g
+    let match
+    const foundArticles = new Set<string>()
+
+    while ((match = articleRegex.exec(html)) !== null && articles.length < limit) {
+      const username = match[1]
+      const noteId = match[2]
+      const articleKey = `${username}/${noteId}`
+      
+      if (username && noteId && !foundArticles.has(articleKey) && 
+          !username.includes('?') && !noteId.includes('?')) {
+        foundArticles.add(articleKey)
+        
+        // 記事の詳細情報を取得
+        const articleDetail = await scrapeNoteArticle(username, noteId)
+        if (articleDetail) {
+          articles.push(articleDetail)
+          console.log(`✅ Found article: ${articleDetail.title}`)
+        }
+        
+        // レート制限のため遅延
+        await new Promise(resolve => setTimeout(resolve, 300))
+      }
+    }
+
+    console.log(`✅ Search completed: ${articles.length} articles found`)
+    return articles
+    
+  } catch (error) {
+    console.error('❌ Search failed:', error)
+    return []
+  }
+}
+
+// 記事検索機能 - 実際のNote.comデータ対応
 async function searchArticles(query: string, limit: number = 50, sortBy: string = 'like', dateFilter?: string): Promise<NoteArticleData[]> {
-  const allArticles = await getTrendingArticles(100, sortBy, dateFilter) // より多くの記事から検索
+  console.log(`🔍 Searching Note.com articles for: "${query}"`)
+  
+  // クエリがある場合は実際のNote.comで検索を試行
+  let searchResults: NoteArticleData[] = []
+  if (query && query.trim()) {
+    searchResults = await searchNoteComDirectly(query, limit)
+  }
+  
+  // 検索結果が少ない場合はトレンド記事も取得
+  if (searchResults.length < limit) {
+    const trendingArticles = await getTrendingArticles(limit - searchResults.length, sortBy, dateFilter)
+    searchResults = [...searchResults, ...trendingArticles]
+  }
+  
+  const allArticles = searchResults
   
   // 検索クエリがある場合のフィルタリング
   if (query && query.trim()) {
