@@ -189,24 +189,22 @@ class NoteAPIClient {
 
   // ユーザー情報取得
   async getUserDetail(username: string): Promise<ApiResponse<NoteUser>> {
-    const response = await this.makeRequest<RawApiResponse>(`/api/v2/creators/${username}`)
+    const response = await this.makeRequest<any>(`/api/v2/creators/${username}`)
     
     if (response.error || !response.data) {
       return response as ApiResponse<NoteUser>
     }
 
-    const userData = (response.data.data as RawNoteUser) || (response.data as RawNoteUser)
+    const userData = response.data.data || response.data
     const user: NoteUser = {
       id: userData.id || username,
-      username: userData.urlname || username,
-      displayName: userData.name || username,
-      bio: userData.description,
-      followerCount: userData.followerCount || 0,
-      followingCount: userData.followingCount || 0,
-      noteCount: userData.noteCount || 0,
-      avatarUrl: userData.userProfileImageUrl,
-      headerImageUrl: userData.userHeaderImageUrl,
-      url: `https://note.com/${username}`
+      username: userData.username || username,
+      displayName: userData.display_name || userData.name || username,
+      bio: userData.bio || userData.description || '',
+      followerCount: userData.follower_count || userData.followerCount || 0,
+      followingCount: userData.following_count || userData.followingCount || 0,
+      noteCount: userData.note_count || userData.noteCount || 0,
+      url: userData.url || `https://note.com/${username}`
     }
 
     return {
@@ -330,24 +328,22 @@ class NoteAPIClient {
 
   // ユーザー検索
   async searchUsers(query: string, page: number = 1): Promise<ApiResponse<NoteUser[]>> {
-    const response = await this.makeRequest<RawApiResponse>(`/api/v2/searches/creators?q=${encodeURIComponent(query)}&page=${page}`)
+    const response = await this.makeRequest<any>(`/api/v2/searches/creators?q=${encodeURIComponent(query)}&page=${page}`)
     
     if (response.error || !response.data) {
       return response as ApiResponse<NoteUser[]>
     }
 
-    const usersData = (response.data as any)?.data?.contents || []
+    const usersData = response.data?.data?.contents || []
     const users: NoteUser[] = usersData.map((item: any) => ({
-      id: item.id,
-      username: item.urlname,
-      displayName: item.name,
-      bio: item.description,
-      followerCount: item.followerCount || 0,
-      followingCount: item.followingCount || 0,
-      noteCount: item.noteCount || 0,
-      avatarUrl: item.userProfileImageUrl,
-      headerImageUrl: item.userHeaderImageUrl,
-      url: `https://note.com/${item.urlname}`
+      id: item.id || item.username,
+      username: item.username || item.urlname,
+      displayName: item.display_name || item.name,
+      bio: item.bio || item.description || '',
+      followerCount: item.follower_count || item.followerCount || 0,
+      followingCount: item.following_count || item.followingCount || 0,
+      noteCount: item.note_count || item.noteCount || 0,
+      url: item.url || `https://note.com/${item.username || item.urlname}`
     }))
 
     return {
@@ -384,27 +380,18 @@ class NoteAPIClient {
 
   // 人気クリエイターの検索
   async getPopularCreators(limit: number = 20): Promise<ApiResponse<NoteUser[]>> {
-    // 人気のカテゴリーでユーザー検索
-    const categories = ['ビジネス', 'テクノロジー', 'ライフスタイル', 'AI', 'プログラミング']
-    const allUsers: NoteUser[] = []
+    // 空のクエリで人気クリエイターを直接取得
+    const response = await this.searchUsers('', 1)
     
-    for (const category of categories) {
-      const response = await this.searchUsers(category, 1)
-      if (response.data) {
-        allUsers.push(...response.data.slice(0, 4)) // 各カテゴリから4人
-      }
+    if (response.error || !response.data) {
+      return response
     }
     
-    // フォロワー数でソートして人気クリエイターを決定
-    const sortedUsers = allUsers
-      .filter((user, index, self) => 
-        index === self.findIndex(u => u.username === user.username) // 重複除去
-      )
-      .sort((a, b) => (b.followerCount || 0) - (a.followerCount || 0))
-      .slice(0, limit)
+    // リミットに応じて結果を制限
+    const limitedUsers = response.data.slice(0, limit)
     
     return {
-      data: sortedUsers,
+      data: limitedUsers,
       error: null,
       status: 200
     }
