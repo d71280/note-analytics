@@ -299,24 +299,23 @@ class NoteAPIClient {
 
   // 記事検索
   async searchArticles(query: string, page: number = 1): Promise<ApiResponse<NoteArticle[]>> {
-    const response = await this.makeRequest<RawApiResponse>(`/api/v2/searches/notes?q=${encodeURIComponent(query)}&page=${page}`)
+    const response = await this.makeRequest<any>(`/api/v2/searches/notes?q=${encodeURIComponent(query)}&page=${page}`)
     
     if (response.error || !response.data) {
       return response as ApiResponse<NoteArticle[]>
     }
 
-    const articlesData = (response.data.data as { contents: RawNoteArticle[] })?.contents || []
-    const articles: NoteArticle[] = articlesData.map((item: RawNoteArticle) => ({
-      id: item.key,
-      title: item.name,
-      excerpt: item.description,
-      authorId: item.user?.urlname || '',
-      publishedAt: item.publishAt || item.createdAt || '',
+    const articlesData = response.data?.data?.contents || []
+    const articles: NoteArticle[] = articlesData.map((item: any) => ({
+      id: item.key || item.id,
+      title: item.name || item.title,
+      excerpt: item.description || item.excerpt || '',
+      authorId: item.user?.urlname || item.authorId || '',
+      publishedAt: item.publishAt || item.createdAt || item.publishedAt || '',
       likeCount: item.likeCount || 0,
       commentCount: item.commentCount || 0,
-      tags: item.hashtags?.map(tag => tag.name) || [],
-      thumbnailUrl: item.eyecatch,
-      url: `https://note.com/${item.user?.urlname}/n/${item.key}`
+      tags: item.hashtags?.map((tag: any) => tag.name) || item.tags || [],
+      url: item.url || `https://note.com/${item.user?.urlname || item.authorId}/n/${item.key || item.id}`
     }))
 
     return {
@@ -355,24 +354,31 @@ class NoteAPIClient {
 
   // トレンド記事の取得（人気記事ランキング）
   async getTrendingArticles(limit: number = 20): Promise<ApiResponse<NoteArticle[]>> {
-    // 複数のキーワードで検索してトレンド記事を収集
-    const trendKeywords = ['ChatGPT', 'AI', '副業', '投資', 'プログラミング', 'ビジネス']
-    const allArticles: NoteArticle[] = []
+    // 空のクエリでトレンド記事を直接取得
+    const response = await this.makeRequest<any>(`/api/v2/searches/notes?q=&page=1`)
     
-    for (const keyword of trendKeywords) {
-      const response = await this.searchArticles(keyword, 1)
-      if (response.data) {
-        allArticles.push(...response.data.slice(0, 5)) // 各キーワードから5件
-      }
+    if (response.error || !response.data) {
+      return response as ApiResponse<NoteArticle[]>
     }
     
-    // いいね数でソートしてトレンド記事を決定
-    const sortedArticles = allArticles
-      .sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
-      .slice(0, limit)
+    const articlesData = response.data?.data?.contents || []
+    const articles: NoteArticle[] = articlesData.map((item: any) => ({
+      id: item.key || item.id,
+      title: item.name || item.title,
+      excerpt: item.description || item.excerpt || '',
+      authorId: item.user?.urlname || item.authorId || '',
+      publishedAt: item.publishAt || item.createdAt || item.publishedAt || '',
+      likeCount: item.likeCount || 0,
+      commentCount: item.commentCount || 0,
+      tags: item.hashtags?.map((tag: any) => tag.name) || item.tags || [],
+      url: item.url || `https://note.com/${item.user?.urlname || item.authorId}/n/${item.key || item.id}`
+    }))
+    
+    // リミットに応じて結果を制限
+    const limitedArticles = articles.slice(0, limit)
     
     return {
-      data: sortedArticles,
+      data: limitedArticles,
       error: null,
       status: 200
     }
