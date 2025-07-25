@@ -297,9 +297,19 @@ class NoteAPIClient {
     }
   }
 
-  // 記事検索
-  async searchArticles(query: string, page: number = 1): Promise<ApiResponse<NoteArticle[]>> {
-    const response = await this.makeRequest<any>(`/api/v2/searches/notes?q=${encodeURIComponent(query)}&page=${page}`)
+  // 記事検索 - 日付・ソート機能強化
+  async searchArticles(
+    query: string, 
+    page: number = 1, 
+    sortBy: 'like' | 'comment' | 'recent' = 'like',
+    dateFilter?: 'today' | 'yesterday' | 'this_week'
+  ): Promise<ApiResponse<NoteArticle[]>> {
+    let url = `/api/v2/searches/notes?q=${encodeURIComponent(query)}&page=${page}&sort=${sortBy}`
+    if (dateFilter) {
+      url += `&date=${dateFilter}`
+    }
+    
+    const response = await this.makeRequest<any>(url)
     
     if (response.error || !response.data) {
       return response as ApiResponse<NoteArticle[]>
@@ -323,6 +333,15 @@ class NoteAPIClient {
       error: null,
       status: response.status
     }
+  }
+
+  // 今日のスキ順検索（専用メソッド）
+  async getTodayTopLiked(limit: number = 10): Promise<ApiResponse<NoteArticle[]>> {
+    const response = await this.searchArticles('', 1, 'like', 'today')
+    if (response.data) {
+      response.data = response.data.slice(0, limit)
+    }
+    return response
   }
 
   // ユーザー検索
@@ -352,10 +371,19 @@ class NoteAPIClient {
     }
   }
 
-  // トレンド記事の取得（人気記事ランキング）
-  async getTrendingArticles(limit: number = 20): Promise<ApiResponse<NoteArticle[]>> {
+  // トレンド記事の取得（人気記事ランキング）- 日付・ソート対応
+  async getTrendingArticles(
+    limit: number = 20, 
+    sortBy: 'like' | 'comment' | 'recent' = 'like',
+    dateFilter?: 'today' | 'yesterday' | 'this_week'
+  ): Promise<ApiResponse<NoteArticle[]>> {
     // 空のクエリでトレンド記事を直接取得
-    const response = await this.makeRequest<any>(`/api/v2/searches/notes?q=&page=1`)
+    let url = `/api/v2/searches/notes?q=&page=1&sort=${sortBy}`
+    if (dateFilter) {
+      url += `&date=${dateFilter}`
+    }
+    
+    const response = await this.makeRequest<any>(url)
     
     if (response.error || !response.data) {
       return response as ApiResponse<NoteArticle[]>

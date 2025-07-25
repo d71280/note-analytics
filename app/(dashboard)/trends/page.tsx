@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { TrendingUp, Eye, Heart, MessageCircle, Clock, Loader2, ExternalLink } from 'lucide-react'
+import { TrendingUp, Eye, Heart, MessageCircle, Clock, Loader2, ExternalLink, Filter, SortDesc } from 'lucide-react'
 import { noteAPI, NoteArticle } from '@/lib/api/note-api-client'
 import { Button } from '@/components/ui/button'
 
@@ -14,6 +14,9 @@ interface TrendingData {
   error: string | null
 }
 
+type SortType = 'like' | 'comment' | 'recent'
+type DateFilter = 'today' | 'yesterday' | 'this_week' | undefined
+
 export default function TrendsPage() {
   const [trendData, setTrendData] = useState<TrendingData>({
     articles: [],
@@ -23,13 +26,19 @@ export default function TrendsPage() {
     error: null
   })
 
-  const fetchTrendData = async () => {
+  const [sortBy, setSortBy] = useState<SortType>('like')
+  const [dateFilter, setDateFilter] = useState<DateFilter>(undefined)
+
+  const fetchTrendData = async (customSort?: SortType, customDateFilter?: DateFilter) => {
     setTrendData(prev => ({ ...prev, loading: true, error: null }))
     
     try {
+      const currentSort = customSort || sortBy
+      const currentDateFilter = customDateFilter || dateFilter
+      
       // 並列でデータを取得
       const [articlesRes, keywordsRes, categoryRes] = await Promise.all([
-        noteAPI.getTrendingArticles(10),
+        noteAPI.getTrendingArticles(10, currentSort, currentDateFilter),
         noteAPI.getTrendingKeywords(),
         noteAPI.getCategoryStats()
       ])
@@ -56,7 +65,7 @@ export default function TrendsPage() {
 
   useEffect(() => {
     fetchTrendData()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 統計データの計算
   const totalTrendingArticles = trendData.articles.length
@@ -75,6 +84,27 @@ export default function TrendsPage() {
     )
   }
 
+  // ハンドラー関数
+  const handleRefresh = () => {
+    fetchTrendData()
+  }
+
+  const handleSortChange = (newSort: SortType) => {
+    setSortBy(newSort)
+    fetchTrendData(newSort, dateFilter)
+  }
+
+  const handleDateFilterChange = (newDateFilter: DateFilter) => {
+    setDateFilter(newDateFilter)
+    fetchTrendData(sortBy, newDateFilter)
+  }
+
+  const handleTodayTopLiked = () => {
+    setSortBy('like')
+    setDateFilter('today')
+    fetchTrendData('like', 'today')
+  }
+
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
@@ -82,19 +112,100 @@ export default function TrendsPage() {
           <h1 className="text-3xl font-bold text-gray-900">トレンド分析</h1>
           <p className="text-gray-600">実際のNote APIから取得したリアルタイムトレンドデータ</p>
         </div>
-        <Button onClick={fetchTrendData} disabled={trendData.loading}>
-          {trendData.loading ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              更新中
-            </>
-          ) : (
-            <>
-              <TrendingUp className="h-4 w-4 mr-2" />
-              データ更新
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleTodayTopLiked}
+            variant="outline"
+            disabled={trendData.loading}
+          >
+            <TrendingUp className="h-4 w-4 mr-2" />
+            今日のスキ順
+          </Button>
+          <Button onClick={handleRefresh} disabled={trendData.loading}>
+            {trendData.loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                更新中
+              </>
+            ) : (
+              <>
+                <TrendingUp className="h-4 w-4 mr-2" />
+                データ更新
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* フィルタ・ソートコントロール */}
+      <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">期間:</span>
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant={dateFilter === undefined ? "default" : "outline"}
+                onClick={() => handleDateFilterChange(undefined)}
+              >
+                全期間
+              </Button>
+              <Button
+                size="sm"
+                variant={dateFilter === 'today' ? "default" : "outline"}
+                onClick={() => handleDateFilterChange('today')}
+              >
+                今日
+              </Button>
+              <Button
+                size="sm"
+                variant={dateFilter === 'yesterday' ? "default" : "outline"}
+                onClick={() => handleDateFilterChange('yesterday')}
+              >
+                昨日
+              </Button>
+              <Button
+                size="sm"
+                variant={dateFilter === 'this_week' ? "default" : "outline"}
+                onClick={() => handleDateFilterChange('this_week')}
+              >
+                今週
+              </Button>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <SortDesc className="h-4 w-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">並び順:</span>
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant={sortBy === 'like' ? "default" : "outline"}
+                onClick={() => handleSortChange('like')}
+              >
+                <Heart className="h-3 w-3 mr-1" />
+                スキ順
+              </Button>
+              <Button
+                size="sm"
+                variant={sortBy === 'comment' ? "default" : "outline"}
+                onClick={() => handleSortChange('comment')}
+              >
+                <MessageCircle className="h-3 w-3 mr-1" />
+                コメント順
+              </Button>
+              <Button
+                size="sm"
+                variant={sortBy === 'recent' ? "default" : "outline"}
+                onClick={() => handleSortChange('recent')}
+              >
+                <Clock className="h-3 w-3 mr-1" />
+                新着順
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {trendData.error && (
@@ -107,7 +218,7 @@ export default function TrendsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={fetchTrendData}
+                onClick={handleRefresh}
                 className="mt-2"
               >
                 再試行
