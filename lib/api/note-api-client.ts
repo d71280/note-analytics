@@ -413,21 +413,62 @@ class NoteAPIClient {
   }
 
   // 人気クリエイターの検索
-  async getPopularCreators(limit: number = 20): Promise<ApiResponse<NoteUser[]>> {
-    // 空のクエリで人気クリエイターを直接取得
-    const response = await this.searchUsers('', 1)
-    
-    if (response.error || !response.data) {
-      return response
-    }
-    
-    // リミットに応じて結果を制限
-    const limitedUsers = response.data.slice(0, limit)
-    
-    return {
-      data: limitedUsers,
-      error: null,
-      status: 200
+  async getPopularCreators(limit: number = 100): Promise<ApiResponse<NoteUser[]>> {
+    try {
+      // 人気クリエイター専用エンドポイントを使用
+      await this.rateLimiter.waitIfNeeded()
+      const response = await this.makeRequest(`/creators/popular?limit=${limit}`)
+      
+      if (response && Array.isArray(response)) {
+        const users = response.map((item: any) => ({
+          id: item.id || item.urlname || '',
+          username: item.urlname || item.username || '',
+          displayName: item.name || item.displayName || '',
+          bio: item.description || item.bio || '',
+          followerCount: item.followerCount || 0,
+          followingCount: item.followingCount || 0,
+          noteCount: item.noteCount || 0,
+          avatarUrl: item.userProfileImageUrl || item.avatarUrl || '',
+          headerImageUrl: item.userHeaderImageUrl || item.headerImageUrl || '',
+          url: `https://note.com/${item.urlname || item.username}`
+        }))
+        
+        return {
+          data: users,
+          error: null,
+          status: 200
+        }
+      }
+      
+      // フォールバック: 検索機能を使用（複数ページ取得）
+      const pages = Math.ceil(limit / 20)
+      let allUsers: NoteUser[] = []
+      
+      for (let page = 1; page <= pages && allUsers.length < limit; page++) {
+        const fallbackResponse = await this.searchUsers('', page)
+        
+        if (fallbackResponse.error || !fallbackResponse.data) {
+          if (allUsers.length > 0) break // 既にデータがあれば継続
+          return fallbackResponse
+        }
+        
+        allUsers = [...allUsers, ...fallbackResponse.data]
+      }
+      
+      // リミットに応じて結果を制限
+      const limitedUsers = allUsers.slice(0, limit)
+      
+      return {
+        data: limitedUsers,
+        error: null,
+        status: 200
+      }
+    } catch (error) {
+      return {
+        data: [],
+        error: error instanceof Error ? error.message : '人気クリエイターの取得に失敗しました',
+        status: 500
+      }
     }
   }
 

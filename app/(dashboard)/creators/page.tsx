@@ -31,7 +31,7 @@ export default function CreatorsPage() {
     setCreatorData(prev => ({ ...prev, loading: true, error: null }))
     
     try {
-      const response = await noteAPI.getPopularCreators(12)
+      const response = await noteAPI.getPopularCreators(100)
       
       if (response.error) {
         throw new Error(response.error)
@@ -62,7 +62,7 @@ export default function CreatorsPage() {
     setCreatorData(prev => ({ ...prev, loading: true, error: null }))
     
     try {
-      const response = await noteAPI.searchUsers(query.trim(), 1)
+      const response = await noteAPI.searchUsers(query.trim(), 10)
       
       if (response.error) {
         throw new Error(response.error)
