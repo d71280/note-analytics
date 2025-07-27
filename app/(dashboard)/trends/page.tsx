@@ -46,6 +46,7 @@ export default function TrendsPage() {
   const [dateFilter, setDateFilter] = useState<DateFilter>(undefined)
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
   const [categorySearch, setCategorySearch] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const fetchTrendData = async (customSort?: SortType, customDateFilter?: DateFilter, customCategory?: CategoryFilter) => {
     setTrendData(prev => ({ ...prev, loading: true, error: null }))
@@ -230,6 +231,47 @@ export default function TrendsPage() {
     fetchTrendData(sortBy, dateFilter, newCategory)
   }
 
+  const handleSearch = () => {
+    if (!categorySearch.trim()) return
+    
+    // カテゴリー検索の実行
+    setSearchQuery(categorySearch)
+    
+    // 検索キーワードに基づいて記事をフィルタリング
+    console.log(`🔍 Searching for: "${categorySearch}"`)
+    
+    // 既存の記事から検索キーワードでフィルタリング
+    const filteredArticles = trendData.articles.filter(article => {
+      const searchTerm = categorySearch.toLowerCase()
+      return (
+        article.title.toLowerCase().includes(searchTerm) ||
+        article.authorId.toLowerCase().includes(searchTerm) ||
+        (article.tags && article.tags.some(tag => tag.toLowerCase().includes(searchTerm))) ||
+        ((article as EnhancedNoteArticle).category && 
+         (article as EnhancedNoteArticle).category!.toLowerCase().includes(searchTerm))
+      )
+    })
+    
+    // 検索結果で表示を更新
+    setTrendData(prev => ({
+      ...prev,
+      articles: filteredArticles
+    }))
+  }
+
+  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  }
+
+  const handleClearSearch = () => {
+    setCategorySearch('')
+    setSearchQuery('')
+    // 元のデータを再取得
+    fetchTrendData(sortBy, dateFilter, categoryFilter)
+  }
+
 
 
 
@@ -265,7 +307,7 @@ export default function TrendsPage() {
       <div className="mb-8">
         <AITrendAnalyzer 
           articles={trendData.articles}
-          currentCategory={categoryFilter}
+          currentCategory={searchQuery ? `検索: ${searchQuery}` : categoryFilter}
           currentPeriod={dateFilter || 'all'}
         />
       </div>
@@ -277,13 +319,39 @@ export default function TrendsPage() {
           {/* カテゴリー検索 */}
           <div className="flex items-center gap-2">
             <Search className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">カテゴリー検索:</span>
-            <Input
-              placeholder="カテゴリーを検索..."
-              value={categorySearch}
-              onChange={(e) => setCategorySearch(e.target.value)}
-              className="w-48"
-            />
+            <span className="text-sm font-medium text-gray-700">検索:</span>
+            <div className="flex gap-1">
+              <Input
+                placeholder="記事・カテゴリー・著者・タグを検索..."
+                value={categorySearch}
+                onChange={(e) => setCategorySearch(e.target.value)}
+                onKeyPress={handleSearchKeyPress}
+                className="w-64"
+              />
+              <Button
+                size="sm"
+                onClick={handleSearch}
+                disabled={!categorySearch.trim()}
+                variant="default"
+              >
+                <Search className="h-4 w-4 mr-1" />
+                検索
+              </Button>
+              {searchQuery && (
+                <Button
+                  size="sm"
+                  onClick={handleClearSearch}
+                  variant="outline"
+                >
+                  クリア
+                </Button>
+              )}
+            </div>
+            {searchQuery && (
+              <span className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                「{searchQuery}」で検索中
+              </span>
+            )}
           </div>
 
           {/* 期間フィルター */}
@@ -493,13 +561,16 @@ export default function TrendsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                急上昇記事ランキング
+                {searchQuery ? `「${searchQuery}」の検索結果` : '急上昇記事ランキング'}
                 <span className="text-sm font-normal text-gray-500">
                   {trendData.articles.length}件表示中
                 </span>
               </CardTitle>
               <CardDescription>
-                実際のNote.comから取得した人気記事データ
+                {searchQuery 
+                  ? `「${searchQuery}」に関連する記事を表示中`
+                  : '実際のNote.comから取得した人気記事データ'
+                }
                 {trendData.error && (
                   <div className="mt-2 text-red-600 text-sm">
                     ⚠️ データ取得に問題があります: {trendData.error}
@@ -594,16 +665,33 @@ export default function TrendsPage() {
                 
                 {trendData.articles.length === 0 && !trendData.loading && (
                   <div className="text-center py-12">
-                    <div className="text-gray-400 mb-2">📄</div>
-                    <p className="text-gray-500">トレンド記事が見つかりませんでした</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRefresh}
-                      className="mt-4"
-                    >
-                      再読み込み
-                    </Button>
+                    <div className="text-gray-400 mb-2">
+                      {searchQuery ? '🔍' : '📄'}
+                    </div>
+                    <p className="text-gray-500">
+                      {searchQuery 
+                        ? `「${searchQuery}」に関連する記事が見つかりませんでした`
+                        : 'トレンド記事が見つかりませんでした'
+                      }
+                    </p>
+                    <div className="flex gap-2 justify-center mt-4">
+                      {searchQuery && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleClearSearch}
+                        >
+                          検索をクリア
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRefresh}
+                      >
+                        データを再読み込み
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
