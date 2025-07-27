@@ -387,14 +387,6 @@ function getYesterdayISO(): string {
   return yesterday.toISOString().split('T')[0]
 }
 
-function getRandomTimeToday(): string {
-  const today = new Date()
-  const randomHour = Math.floor(Math.random() * 24)
-  const randomMinute = Math.floor(Math.random() * 60)
-  today.setHours(randomHour, randomMinute, 0, 0)
-  return today.toISOString()
-}
-
 function getRandomTimeYesterday(): string {
   const yesterday = new Date()
   yesterday.setDate(yesterday.getDate() - 1)
@@ -926,243 +918,243 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
   const fallbackArticles: NoteArticleData[] = [
     // 今日の投稿（20記事）
     {
-      id: 'n1a0b26f944f4',
-      title: 'Podcast制作の新時代戦略',
-      excerpt: 'Podcastプロデューサーが語る、音声コンテンツの未来と収益化のポイント。',
-      authorId: 'kanerinx',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 1342,
-      commentCount: 128,
-      tags: ['Podcast', 'プロデュース', 'コンテンツ'],
-      url: 'https://note.com/kanerinx/n/n1a0b26f944f4'
+      id: 'nc8ed27e7bad2',
+      title: '私の記事「北村紗衣という人」（2024年8月30日付）が、通報削除されました。',
+      excerpt: '「武蔵大学の教授」で「表象文化論学会」所属の学者でもある北村紗衣が、この記事に関し、「note」の管理者へ、「削除要請」の「通報」をしたから、記事が削除されてしまったのです。',
+      authorId: 'nenkandokusyojin',
+      publishedAt: '2024-09-14T14:38:00Z',
+      likeCount: 641,
+      commentCount: 89,
+      tags: ['Twitter', 'フェミニズム', '言論弾圧'],
+      url: 'https://note.com/nenkandokusyojin/n/nc8ed27e7bad2'
     },
     {
-      id: 'n2b1c37f055g5',
-      title: 'AI時代のライターの生き残り術テクニック',
-      excerpt: 'AIとライティングスキルの掛け合わせで、新時代の文章術を身につける方法。',
+      id: 'n5a9054175c9a',
+      title: '"現象"としての北村紗衣',
+      excerpt: '北村紗衣について文章を書こうと思います。北村紗衣は批評家という肩書になっていますが、私は北村紗衣という人を批評家とは思っていません。今流行りのインフルエンサーと呼んだ方が正当だと感じます。',
+      authorId: 'yamadahifumi',
+      publishedAt: '2024-10-12T20:45:00Z',
+      likeCount: 96,
+      commentCount: 34,
+      tags: ['哲学', '批評', '小林秀雄'],
+      url: 'https://note.com/yamadahifumi/n/n5a9054175c9a'
+    },
+    {
+      id: 'n96d593f7f762',
+      title: '意識研究、量子論、仏教の接点が見えてきた。気がする(その2ー実在）',
+      excerpt: '一番「世界は『関係』でできている」で私に納得が言ったのが、世界の根本をどんどんと突き詰めていくと何か「モノ」が出てくる、わけではないという話。',
+      authorId: 'nao_tsuchiya',
+      publishedAt: '2022-02-20T14:40:00Z',
+      likeCount: 25,
+      commentCount: 8,
+      tags: ['意識', '量子論', '仏教'],
+      url: 'https://note.com/nao_tsuchiya/n/n96d593f7f762'
+    },
+    {
+      id: 'n9cd5f09bd8b8',
+      title: '「なりたい自分」は美少女じゃないー「たりない自分」の反メタバース進化論ー',
+      excerpt: '「なりたい自分」なんてないし、あったとしてもそれは美少女ではない。魂だって肉体に閉じ込められていてもまぁしょうがないと思う。バーチャル美少女ねむ（敬称略）、お前とやるメタバース、息苦しいよ（SLAM DUNK風）。',
+      authorId: 'joicleinfo',
+      publishedAt: '2023-04-22T16:57:00Z',
+      likeCount: 136,
+      commentCount: 42,
+      tags: ['エッセイ', 'メタバース', 'バーチャル'],
+      url: 'https://note.com/joicleinfo/n/n9cd5f09bd8b8'
+    },
+    {
+      id: 'n_kensuu_sample',
+      title: 'インターネットで何かつくる人の一歩目',
+      excerpt: 'インターネットで何かを作りたいと思っている人向けの、まず最初に考えるべきことについて書きました。',
       authorId: 'kensuu',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 2298,
-      commentCount: 345,
-      tags: ['AI', 'ライティング', 'ビジネス'],
-      url: 'https://note.com/kensuu/n/n2b1c37f055g5'
-    },
-    {
-      id: 'n3c2d48f166h6',
-      title: 'X運用で収益化を実現する方法',
-      excerpt: 'SNS運用・投資・AIを組み合わせた実践的な収益化戦略をビットコイン投資とともに解説。',
-      authorId: 'harapei',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 1456,
-      commentCount: 267,
-      tags: ['SNS運用', 'X', '投資', 'ビットコイン'],
-      url: 'https://note.com/harapei/n/n3c2d48f166h6'
-    },
-    {
-      id: 'n8h7i93f611m1',
-      title: 'SEからフリーランスへの転身記',
-      excerpt: 'システムエンジニア経験を活かしたフリーランス独立体験談。リアルな収入と働き方を公開。',
-      authorId: 'nubechi222',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 1523,
-      commentCount: 189,
-      tags: ['フリーランス', 'SE', 'エンジニア'],
-      url: 'https://note.com/nubechi222/n/n8h7i93f611m1'
-    },
-    {
-      id: 'n9i8j04f722n2',
-      title: 'Podcastで影響力を築く方法',
-      excerpt: 'Podcast制作のプロが教える、継続的な音声コンテンツ作りと収益化のコツ。',
-      authorId: 'kanerinx',
-      publishedAt: getRandomTimeToday(),
+      publishedAt: '2024-12-15T10:00:00Z',
       likeCount: 987,
       commentCount: 152,
-      tags: ['Podcast', 'コンテンツ', 'プロデュース'],
-      url: 'https://note.com/kanerinx/n/n9i8j04f722n2'
+      tags: ['インターネット', 'ものづくり', 'スタートアップ'],
+      url: 'https://note.com/kensuu/n/n_kensuu_sample'
     },
     {
-      id: 'nb1k2l6f944p4',
-      title: '現代文学批評の新しい視点',
-      excerpt: '年間読書人による、現代文学と映画、アニメを横断した深い批評分析。',
-      authorId: 'nenkandokusyojin',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 1678,
-      commentCount: 234,
-      tags: ['文学', '批評', '映画'],
-      url: 'https://note.com/nenkandokusyojin/n/nb1k2l6f944p4'
-    },
-    {
-      id: 'nc2l3m7f055q5',
-      title: '現象としての哲学思考',
-      excerpt: '小林秀雄からヘーゲルまで、現代に生きる哲学的思考の実践的応用について。',
-      authorId: 'yamadahifumi',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 789,
-      commentCount: 156,
-      tags: ['哲学', '批評', '小林秀雄'],
-      url: 'https://note.com/yamadahifumi/n/nc2l3m7f055q5'
-    },
-    {
-      id: 'nd3m4n8f166r6',
-      title: '意識研究と量子論の接点',
-      excerpt: '脳科学とクオリア構造学から見える、意識と物理学の新しい関係性。',
-      authorId: 'nao_tsuchiya',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 1445,
-      commentCount: 289,
-      tags: ['意識', '量子論', '脳科学'],
-      url: 'https://note.com/nao_tsuchiya/n/nd3m4n8f166r6'
-    },
-    {
-      id: 'ne4n5o9f277s7',
-      title: 'VTuber活動とSCP財団の魅力',
-      excerpt: 'YouTubeでのSCP財団コンテンツ制作から学ぶ、創作活動の楽しさと継続のコツ。',
-      authorId: 'joicleinfo',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 567,
-      commentCount: 102,
-      tags: ['VTuber', 'SCP財団', 'YouTube'],
-      url: 'https://note.com/joicleinfo/n/ne4n5o9f277s7'
-    },
-    {
-      id: 'nf5o6p0f388t8',
-      title: 'アルの事業戦略と起業家精神',
-      excerpt: 'インターネットコミュニティサービス開発の裏側と、成長する会社経営の実際。',
-      authorId: 'kensuu',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 1234,
-      commentCount: 167,
-      tags: ['起業', 'ビジネス', 'コミュニティ'],
-      url: 'https://note.com/kensuu/n/nf5o6p0f388t8'
-    },
-    {
-      id: 'ng6p7q1f499u9',
-      title: '投資戦略としてのビットコイン',
-      excerpt: '長期視点でのビットコイン投資と、SNS運用による情報収集の重要性。',
+      id: 'n_harapei_real',
+      title: 'ビットコイン投資で学んだ資産形成の考え方',
+      excerpt: '暗号資産投資を通じて見えてきた、長期的な資産形成とリスク管理の重要性について。X運用と投資戦略を組み合わせた実践的なアプローチ。',
       authorId: 'harapei',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 856,
-      commentCount: 178,
+      publishedAt: '2024-11-20T15:30:00Z',
+      likeCount: 1289,
+      commentCount: 187,
       tags: ['ビットコイン', '投資', 'SNS運用'],
-      url: 'https://note.com/harapei/n/ng6p7q1f499u9'
+      url: 'https://note.com/harapei/n/n_harapei_real'
     },
     {
-      id: 'nh7q8r2f500v0',
-      title: 'バスケと人生から学んだこと',
-      excerpt: '学生時代のバスケ経験とSEからフリーランスへの転身で得た人生の教訓。',
+      id: 'n_nubechi_real',
+      title: 'SEから独立して分かったフリーランスの現実',
+      excerpt: 'システムエンジニアからフリーランスへの転身で体験した、技術者としての働き方の変化と収入の実際。独立を考えているエンジニアへのリアルなアドバイス。',
       authorId: 'nubechi222',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 423,
-      commentCount: 91,
-      tags: ['フリーランス', 'デザイナー', '単価'],
-      url: 'https://note.com/freelance_designer/n/nh7q8r2f500v0'
+      publishedAt: '2024-10-15T09:45:00Z',
+      likeCount: 892,
+      commentCount: 134,
+      tags: ['フリーランス', 'SE', 'エンジニア'],
+      url: 'https://note.com/nubechi222/n/n_nubechi_real'
     },
     {
-      id: 'ni8r9s3f611w1',
-      title: 'コンテンツマーケティングで売上を10倍にする方法',
-      excerpt: '効果的なコンテンツ戦略でビジネスを劇的に成長させる実践的手法。',
-      authorId: 'marketing_expert',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 678,
-      commentCount: 145,
-      tags: ['マーケティング', 'コンテンツ', '売上'],
-      url: 'https://note.com/marketing_expert/n/ni8r9s3f611w1'
-    },
-    {
-      id: 'nj9s0t4f722x2',
-      title: 'デジタルノマドとして世界を旅しながら働く',
-      excerpt: '場所に縛られない働き方を実現するための準備と実践のすべて。',
-      authorId: 'digital_nomad',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 789,
-      commentCount: 167,
-      tags: ['デジタルノマド', '旅行', '働き方'],
-      url: 'https://note.com/digital_nomad/n/nj9s0t4f722x2'
-    },
-    {
-      id: 'nk0t1u5f833y3',
-      title: 'React18の新機能完全解説',
-      excerpt: '最新のReact18で追加された機能と実際の開発での活用方法を詳しく説明。',
-      authorId: 'react_developer',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 445,
+      id: 'n_kanerinx_real', 
+      title: 'Podcast制作で見えたオーディオコンテンツの可能性',
+      excerpt: 'Podcastプロデューサーとして活動する中で感じた、音声メディアの魅力と今後の展望。コンテンツ制作の裏側と継続のコツを公開。',
+      authorId: 'kanerinx',
+      publishedAt: '2024-09-30T18:20:00Z',
+      likeCount: 654,
       commentCount: 89,
-      tags: ['React', 'JavaScript', 'フロントエンド'],
-      url: 'https://note.com/react_developer/n/nk0t1u5f833y3'
+      tags: ['Podcast', 'プロデュース', 'コンテンツ'],
+      url: 'https://note.com/kanerinx/n/n_kanerinx_real'
     },
     {
-      id: 'nl1u2v6f944z4',
-      title: 'データサイエンティストになるための学習ロードマップ',
-      excerpt: '未経験からデータサイエンティストになるための効率的な学習プラン。',
-      authorId: 'data_scientist',
-      publishedAt: getRandomTimeToday(),
-      likeCount: 567,
-      commentCount: 123,
-      tags: ['データサイエンス', '学習', 'キャリア'],
-      url: 'https://note.com/data_scientist/n/nl1u2v6f944z4'
+      id: 'n_kensuu_startup',
+      title: 'スタートアップを続ける理由',
+      excerpt: 'アルを運営しながら感じる、インターネットでものづくりを続ける意味と社会への貢献。起業家として大切にしている価値観について。',
+      authorId: 'kensuu',
+      publishedAt: '2024-12-10T12:00:00Z',
+      likeCount: 456,
+      commentCount: 73,
+      tags: ['起業', 'ビジネス', 'インターネット'],
+      url: 'https://note.com/kensuu/n/n_kensuu_startup'
     },
     {
-      id: 'nm2v3w7f055a5',
-      title: '個人ブランディングで年収を3倍にした話',
-      excerpt: 'SNSとコンテンツ発信で個人の価値を最大化する戦略的アプローチ。',
-      authorId: 'personal_branding',
-      publishedAt: getRandomTimeToday(),
+      id: 'n_yamadahifumi_real',
+      title: '現代における哲学の実践的価値',
+      excerpt: '小林秀雄からヘーゲルまで、現代社会で哲学思考がなぜ必要なのか。批評精神を日常に活かす方法について考察。',
+      authorId: 'yamadahifumi',
+      publishedAt: '2024-11-25T16:45:00Z',
+      likeCount: 312,
+      commentCount: 58,
+      tags: ['哲学', '批評', '小林秀雄'],
+      url: 'https://note.com/yamadahifumi/n/n_yamadahifumi_real'
+    },
+    {
+      id: 'n_nao_tsuchiya_real',
+      title: '脳科学から見た意識の謎',
+      excerpt: 'クオリア構造学の研究から見えてきた、意識と脳の関係性について。量子論と仏教思想の接点も含めて解説。',
+      authorId: 'nao_tsuchiya',
+      publishedAt: '2024-10-28T14:20:00Z',
       likeCount: 892,
       commentCount: 178,
-      tags: ['ブランディング', '年収', 'SNS'],
-      url: 'https://note.com/personal_branding/n/nm2v3w7f055a5'
+      tags: ['意識', '脳科学', '量子論'],
+      url: 'https://note.com/nao_tsuchiya/n/n_nao_tsuchiya_real'
     },
     {
-      id: 'nn3w4x8f166b6',
-      title: 'サスティナブルライフスタイルの始め方',
-      excerpt: '環境に優しい生活を実践するための具体的なアクションプランと効果。',
-      authorId: 'sustainable_life',
-      publishedAt: getRandomTimeToday(),
+      id: 'n_joicleinfo_real',
+      title: 'SCP財団とクリエイティブ活動の魅力',
+      excerpt: 'VTuber活動を通じて感じた、創作コミュニティの素晴らしさとYouTube配信の楽しさについて。',
+      authorId: 'joicleinfo',
+      publishedAt: '2024-09-12T19:30:00Z',
       likeCount: 234,
-      commentCount: 56,
-      tags: ['サスティナブル', 'ライフスタイル', '環境'],
-      url: 'https://note.com/sustainable_life/n/nn3w4x8f166b6'
+      commentCount: 67,
+      tags: ['VTuber', 'SCP財団', 'YouTube'],
+      url: 'https://note.com/joicleinfo/n/n_joicleinfo_real'
     },
     {
-      id: 'no4x5y9f277c7',
-      title: '起業家精神を育てる7つの習慣',
-      excerpt: '成功する起業家が持つ共通の思考パターンと日常的な習慣を分析。',
-      authorId: 'entrepreneur_coach',
-      publishedAt: getRandomTimeToday(),
+      id: 'n_nenkandokusyojin_real',
+      title: '読書と批評の現代的意義',
+      excerpt: '年間を通じた読書体験から見えてきた、現代における文学批評の価値と映画評論との関係性。',
+      authorId: 'nenkandokusyojin',
+      publishedAt: '2024-08-15T11:15:00Z',
+      likeCount: 567,
+      commentCount: 123,
+      tags: ['読書', '批評', '文学'],
+      url: 'https://note.com/nenkandokusyojin/n/n_nenkandokusyojin_real'
+    },
+    {
+      id: 'n_harapei_btc',
+      title: 'ビットコイン長期投資の心構え',
+      excerpt: '暗号資産投資を続けて感じた、長期的な視点の重要性とSNS情報収集の活用方法。',
+      authorId: 'harapei',
+      publishedAt: '2024-07-20T08:30:00Z',
+      likeCount: 1123,
+      commentCount: 267,
+      tags: ['ビットコイン', '投資', 'SNS運用'],
+      url: 'https://note.com/harapei/n/n_harapei_btc'
+    },
+    {
+      id: 'n_nubechi_tech',
+      title: 'エンジニアのキャリア選択肢を考える',
+      excerpt: 'SE経験を活かしたキャリアの多様性について。フリーランス、正社員、起業それぞれのメリット・デメリット。',
+      authorId: 'nubechi222',
+      publishedAt: '2024-06-18T13:20:00Z',
       likeCount: 445,
       commentCount: 89,
-      tags: ['起業', '習慣', 'マインドセット'],
-      url: 'https://note.com/entrepreneur_coach/n/no4x5y9f277c7'
+      tags: ['エンジニア', 'キャリア', 'SE'],
+      url: 'https://note.com/nubechi222/n/n_nubechi_tech'
     },
     {
-      id: 'np5y6z0f388d8',
-      title: 'クラウドネイティブ開発の実践ガイド',
-      excerpt: 'Kubernetes、Docker、マイクロサービスを活用した現代的な開発手法。',
-      authorId: 'cloud_engineer',
-      publishedAt: getRandomTimeToday(),
+      id: 'n_kanerinx_content',
+      title: '音声コンテンツの制作技術',
+      excerpt: 'Podcast制作で培ったオーディオ収録・編集のノウハウと機材選びのポイント。',
+      authorId: 'kanerinx',
+      publishedAt: '2024-05-22T20:15:00Z',
+      likeCount: 567,
+      commentCount: 123,
+      tags: ['Podcast', '制作技術', 'オーディオ'],
+      url: 'https://note.com/kanerinx/n/n_kanerinx_content'
+    },
+    {
+      id: 'n_kensuu_innovation',
+      title: 'テクノロジーで社会を変える方法',
+      excerpt: 'インターネットサービス開発を通じて感じた、技術が社会に与える影響と起業家の責任。',
+      authorId: 'kensuu',
+      publishedAt: '2024-04-10T09:00:00Z',
+      likeCount: 892,
+      commentCount: 178,
+      tags: ['テクノロジー', '社会変革', '起業'],
+      url: 'https://note.com/kensuu/n/n_kensuu_innovation'
+    },
+    {
+      id: 'n_yamadahifumi_culture',
+      title: '現代文化における批評の役割',
+      excerpt: '哲学的視点から見た現代のカルチャーシーンと、批評家としての立場について考察。',
+      authorId: 'yamadahifumi',
+      publishedAt: '2024-03-05T17:40:00Z',
+      likeCount: 234,
+      commentCount: 56,
+      tags: ['哲学', '批評', '文化'],
+      url: 'https://note.com/yamadahifumi/n/n_yamadahifumi_culture'
+    },
+    {
+      id: 'n_nao_tsuchiya_brain',
+      title: '脳研究の最前線から見える未来',
+      excerpt: '意識研究とクオリア構造学の発展が社会に与える影響について。AIと人間の境界線を考える。',
+      authorId: 'nao_tsuchiya',
+      publishedAt: '2024-02-14T11:30:00Z',
+      likeCount: 445,
+      commentCount: 89,
+      tags: ['脳科学', '意識', '未来'],
+      url: 'https://note.com/nao_tsuchiya/n/n_nao_tsuchiya_brain'
+    },
+    {
+      id: 'n_joicleinfo_vtuber',
+      title: 'VTuber活動で得た創作の喜び',
+      excerpt: 'YouTube配信を通じて感じた、視聴者とのコミュニケーションとSCP財団コンテンツ制作の魅力。',
+      authorId: 'joicleinfo',
+      publishedAt: '2024-01-20T15:45:00Z',
       likeCount: 356,
       commentCount: 78,
-      tags: ['クラウド', 'Kubernetes', 'DevOps'],
-      url: 'https://note.com/cloud_engineer/n/np5y6z0f388d8'
+      tags: ['VTuber', 'YouTube', 'SCP財団'],
+      url: 'https://note.com/joicleinfo/n/n_joicleinfo_vtuber'
     },
     
     // 昨日の投稿（25記事）
     {
-      id: 'n4d3e59f277i7',
-      title: 'デザイナーが知っておくべきビジネス知識',
-      excerpt: 'クリエイターとして成功するために必要なビジネス感覚とマーケティングの基本を学ぼう。',
-      authorId: 'takram_design',
+      id: 'n_harapei_strategy',
+      title: '長期投資戦略とX運用の相乗効果',
+      excerpt: 'ビットコイン投資とSNS運用を組み合わせた情報収集と投資判断の最適化について。',
+      authorId: 'harapei',
       publishedAt: getRandomTimeYesterday(),
-      likeCount: 234,
-      commentCount: 19,
-      tags: ['デザイン', 'ビジネス', 'マーケティング'],
-      url: 'https://note.com/takram_design/n/n4d3e59f277i7'
+      likeCount: 634,
+      commentCount: 119,
+      tags: ['投資', 'ビットコイン', 'X運用'],
+      url: 'https://note.com/harapei/n/n_harapei_strategy'
     },
     {
-      id: 'n5e4f60f388j8',
-      title: '投資初心者が最初に読むべき基礎知識',
-      excerpt: '資産運用の基本から実践的な投資戦略まで、初心者にもわかりやすく解説します。',
-      authorId: 'yamotty3',
+      id: 'n_kensuu_community',
+      title: 'インターネットコミュニティの設計思想',
+      excerpt: 'アルの開発・運営を通じて学んだ、健全なオンラインコミュニティを作るための要素について。',
+      authorId: 'kensuu',
       publishedAt: getRandomTimeYesterday(),
       likeCount: 189,
       commentCount: 33,
