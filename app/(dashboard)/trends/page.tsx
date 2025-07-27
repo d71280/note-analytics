@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { TrendingUp, Eye, Heart, MessageCircle, Clock, Loader2, ExternalLink, Filter, SortDesc } from 'lucide-react'
 import { noteAPI, NoteArticle } from '@/lib/api/note-api-client'
 import { Button } from '@/components/ui/button'
+import { AITrendAnalyzer } from '@/components/trends/ai-trend-analyzer'
 
 interface TrendingData {
   articles: NoteArticle[]
@@ -104,6 +105,8 @@ export default function TrendsPage() {
   
   // コンソールでカテゴリー統計を確認（開発用）
   console.log('📊 Category stats:', categoryStats)
+  console.log('📰 Current articles data:', trendData.articles)
+  console.log('🔍 Current filters:', { categoryFilter, dateFilter, sortBy })
 
   if (trendData.loading) {
     return (
@@ -142,12 +145,26 @@ export default function TrendsPage() {
     fetchTrendData('like', 'today', categoryFilter)
   }
 
+
+
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">トレンド分析</h1>
-          <p className="text-gray-600">実際のNote APIから取得したリアルタイムトレンドデータ</p>
+          <p className="text-gray-600">
+            実際のNote.comから取得したリアルタイムトレンドデータ
+            {trendData.articles.length > 0 && (
+              <span className="ml-2 text-green-600 font-medium">
+                ✅ {trendData.articles.length}件の記事を表示中
+              </span>
+            )}
+            {trendData.articles.length === 0 && !trendData.loading && (
+              <span className="ml-2 text-orange-600 font-medium">
+                ⚠️ 記事データが見つかりません
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button 
@@ -397,15 +414,25 @@ export default function TrendsPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+              <div className="grid gap-6 lg:grid-cols-4">
+          <div className="lg:col-span-2">
           <Card>
-            <CardHeader>
-              <CardTitle>急上昇記事</CardTitle>
-              <CardDescription>
-                実際のNote APIから取得した人気記事ランキング
-              </CardDescription>
-            </CardHeader>
+                    <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            急上昇記事
+            <span className="text-sm font-normal text-gray-500">
+              {trendData.articles.length}件表示中
+            </span>
+          </CardTitle>
+          <CardDescription>
+            実際のNote.comから取得した人気記事ランキング
+            {trendData.error && (
+              <div className="mt-2 text-red-600 text-sm">
+                ⚠️ データ取得に問題があります: {trendData.error}
+              </div>
+            )}
+          </CardDescription>
+        </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {trendData.articles.map((article, index) => (
@@ -539,6 +566,14 @@ export default function TrendsPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="lg:col-span-2">
+          <AITrendAnalyzer 
+            articles={trendData.articles}
+            currentCategory={categoryFilter}
+            currentPeriod={dateFilter || 'all'}
+          />
         </div>
       </div>
     </div>
