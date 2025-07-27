@@ -6,7 +6,83 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AITrendAnalyzer } from '@/components/trends/ai-trend-analyzer'
 import { Loader2, TrendingUp, Heart, Eye, MessageCircle, Clock, Filter, Search, ExternalLink, Users, SortDesc } from 'lucide-react'
-import noteAPI from '@/lib/api/note-api-client'
+import noteAPI, { EngagementMetrics, NoteArticle } from '@/lib/api/note-api-client' // noteAPIをデフォルトインポート
+
+// HTMLタグを除去してクリーンなテキストを取得（フロントエンド用）
+function cleanDisplayText(text: string): string {
+  if (!text) return ''
+  
+  return text
+    // HTMLタグを除去
+    .replace(/<[^>]*>/g, '')
+    // HTMLエンティティをデコード
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, '/')
+    .replace(/&nbsp;/g, ' ')
+    // メタタグ関連のノイズを除去
+    .replace(/data-n-head="[^"]*"/g, '')
+    .replace(/charset="[^"]*"/g, '')
+    .replace(/content="[^"]*"/g, '')
+    .replace(/property="[^"]*"/g, '')
+    .replace(/name="[^"]*"/g, '')
+    .replace(/http-equiv="[^"]*"/g, '')
+    .replace(/data-hid="[^"]*"/g, '')
+    // JavaScriptやCSSのノイズを除去
+    .replace(/\{[^}]*\}/g, '')
+    .replace(/\[[^\]]*\]/g, '')
+    // 連続する特殊文字や記号を整理
+    .replace(/[<>{}[\]]/g, '')
+    .replace(/[|｜]/g, ' ')
+    // 余分な空白・改行を除去
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// タイトル専用のクリーニング関数（フロントエンド用）
+function cleanDisplayTitle(rawTitle: string): string {
+  if (!rawTitle) return ''
+  
+  let title = rawTitle
+  
+  // </title>タグより前の部分のみを取得
+  const titleEndMatch = title.match(/^([^<]+)(?:<\/title>|<)/i)
+  if (titleEndMatch) {
+    title = titleEndMatch[1]
+  }
+  
+  // パイプ記号(|)より前の部分のみを取得（サイト名除去）
+  const pipeIndex = title.indexOf('|')
+  if (pipeIndex > 0) {
+    title = title.substring(0, pipeIndex)
+  }
+  
+  // 「｜」記号より前の部分のみを取得
+  const japaneseIndex = title.indexOf('｜')
+  if (japaneseIndex > 0) {
+    title = title.substring(0, japaneseIndex)
+  }
+  
+  // HTMLクリーニング適用
+  title = cleanDisplayText(title)
+  
+  // タイトルの妥当性最終チェック
+  if (!title || 
+      title.length < 1 || 
+      title.length > 150 ||
+      title.includes('meta') ||
+      title.includes('charset') ||
+      title.includes('viewport') ||
+      title.includes('script') ||
+      title.includes('style')) {
+    return '記事タイトル'
+  }
+  
+  return title.trim()
+}
 
 type SortType = 'engagement' | 'like' | 'comment' | 'recent' | 'trending_velocity' | 'like_ratio'
 
@@ -17,24 +93,7 @@ interface SearchFilters {
   sortBy: SortType
 }
 
-interface EngagementMetrics {
-  likeToViewRatio: number
-  commentToLikeRatio: number
-  viewToFollowerRatio: number
-  totalEngagementScore: number
-  trendingVelocity: number
-}
-
-interface EnhancedNoteArticle {
-  id: string
-  title: string
-  excerpt?: string
-  authorId: string
-  publishedAt: string
-  likeCount: number
-  commentCount: number
-  tags?: string[]
-  url: string
+interface EnhancedNoteArticle extends NoteArticle {
   engagement?: EngagementMetrics
   category?: string
   viewCount?: number
@@ -483,7 +542,7 @@ export default function TrendsPage() {
                             </div>
 
                             <h3 className="font-semibold text-gray-900 mb-3 line-clamp-2 leading-tight">
-                              {article.title}
+                              {cleanDisplayTitle(article.title)}
                             </h3>
 
                             {/* 統計データ */}

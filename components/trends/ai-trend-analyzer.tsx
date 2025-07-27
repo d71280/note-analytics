@@ -6,6 +6,40 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Bot, Send, Loader2, Sparkles } from 'lucide-react'
 
+// HTMLタグを除去してクリーンなテキストを取得（AI分析用）
+function cleanAnalysisText(text: string): string {
+  if (!text) return ''
+  
+  return text
+    // HTMLタグを除去
+    .replace(/<[^>]*>/g, '')
+    // HTMLエンティティをデコード
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, '/')
+    .replace(/&nbsp;/g, ' ')
+    // メタタグ関連のノイズを除去
+    .replace(/data-n-head="[^"]*"/g, '')
+    .replace(/charset="[^"]*"/g, '')
+    .replace(/content="[^"]*"/g, '')
+    .replace(/property="[^"]*"/g, '')
+    .replace(/name="[^"]*"/g, '')
+    .replace(/http-equiv="[^"]*"/g, '')
+    .replace(/data-hid="[^"]*"/g, '')
+    // JavaScriptやCSSのノイズを除去
+    .replace(/\{[^}]*\}/g, '')
+    .replace(/\[[^\]]*\]/g, '')
+    // 連続する特殊文字や記号を整理
+    .replace(/[<>{}[\]]/g, '')
+    .replace(/[|｜]/g, ' ')
+    // 余分な空白・改行を除去
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 // 記事データの型定義
 interface TrendArticle {
   id: string
@@ -72,7 +106,17 @@ export function AITrendAnalyzer({ articles, currentCategory = 'all', currentPeri
     try {
       console.log('🤖 Sending question to Gemini AI:', question)
       
-      // Gemini API に記事データと質問を送信
+      // 記事データをクリーニング
+      const cleanedArticles = articles.map(article => ({
+        ...article,
+        title: cleanAnalysisText(article.title),
+        excerpt: cleanAnalysisText(article.excerpt || ''),
+        authorId: cleanAnalysisText(article.authorId),
+        tags: article.tags?.map(tag => cleanAnalysisText(tag)) || [],
+        category: cleanAnalysisText(article.category || '')
+      }))
+      
+      // Gemini API にクリーンな記事データと質問を送信
       const response = await fetch('/api/gemini-analysis', {
         method: 'POST',
         headers: {
@@ -80,7 +124,7 @@ export function AITrendAnalyzer({ articles, currentCategory = 'all', currentPeri
         },
         body: JSON.stringify({
           question: question,
-          articles: articles,
+          articles: cleanedArticles,
           category: currentCategory,
           period: currentPeriod
         })
@@ -94,7 +138,8 @@ export function AITrendAnalyzer({ articles, currentCategory = 'all', currentPeri
       
       if (data.analysis) {
         console.log('✅ Received analysis from Gemini AI')
-        return data.analysis
+        // AI分析結果もクリーニング
+        return cleanAnalysisText(data.analysis)
       } else {
         throw new Error('No analysis received from API')
       }
@@ -223,7 +268,7 @@ export function AITrendAnalyzer({ articles, currentCategory = 'all', currentPeri
                     : 'bg-gray-100 text-gray-900'
                 }`}
               >
-                <div className="whitespace-pre-wrap text-sm">{message.content}</div>
+                <div className="whitespace-pre-wrap text-sm">{cleanAnalysisText(message.content)}</div>
                 <div className="text-xs opacity-70 mt-1">
                   {message.timestamp.toLocaleTimeString()}
                 </div>
