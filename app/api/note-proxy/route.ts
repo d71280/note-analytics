@@ -1053,51 +1053,6 @@ async function searchArticles(query: string, limit: number = 100, sortBy: string
   return uniqueResults.slice(0, limit)
 }
 
-// フォールバック用サンプル記事データ生成（動的生成対応）
-function getSampleArticlesForQuery(query: string, limit: number): NoteArticleData[] {
-  const sampleArticles: NoteArticleData[] = []
-  
-  // 基本的なタイトルテンプレート
-  const titleTemplates = [
-    `${query}について考えてみた`,
-    `初心者向け ${query} 入門ガイド`, 
-    `${query}の最新トレンドまとめ`,
-    `${query}で成功するための3つのポイント`,
-    `${query}の活用事例集`,
-    `${query}完全解説`,
-    `${query}のメリット・デメリット`,
-    `${query}を始める前に知っておきたいこと`,
-    `${query}の未来予測`,
-    `${query}実践ガイド`,
-    `${query}のよくある質問`,
-    `${query}比較検討`,
-    `${query}導入のポイント`,
-    `${query}の基礎知識`,
-    `${query}ベストプラクティス`
-  ]
-  
-  // 必要な数だけサンプル記事を生成
-  for (let i = 0; i < limit; i++) {
-    const templateIndex = i % titleTemplates.length
-    const title = titleTemplates[templateIndex] + (i >= titleTemplates.length ? ` #${Math.floor(i / titleTemplates.length) + 1}` : '')
-    
-    sampleArticles.push({
-      id: `sample_${i + 1}`,
-      title: title,
-      excerpt: `${query}に関する詳細な解説記事です。実践的な内容をお届けします。`,
-      authorId: `sample_author_${(i % 20) + 1}`,
-      publishedAt: new Date(Date.now() - (i * 60 * 60 * 1000)).toISOString(),
-             likeCount: Math.floor(Math.random() * 200) + Math.max(1, 50 - i * 2), // 順位に応じて減少
-       commentCount: Math.floor(Math.random() * 15) + 8,
-       tags: [query, 'トレンド', '分析'],
-       url: `https://note.com/sample_author_${(i % 20) + 1}/n/sample_${i + 1}`,
-       category: query
-     })
-   }
-   
-   return sampleArticles
-}
-
 // 高度なエンゲージメント計算アルゴリズム
 interface EngagementMetrics {
   likeToViewRatio: number       // 閲覧数におけるいいね数の割合
