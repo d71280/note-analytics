@@ -407,96 +407,13 @@ async function getRealNoteComTrendingData(): Promise<NoteArticleData[]> {
     return graphqlData
   }
   
-  console.log('⚠️ Real API access failed, using realistic simulation...')
+  console.log('⚠️ Real API access failed, returning empty array to use verified articles only')
   
-  // フォールバック: 実在確認済みNote.comユーザーデータ
-  const realNoteUsers = [
-    'kensuu', 'harapei', 'nubechi222', 'kanerinx', 'nenkandokusyojin',
-    'yamadahifumi', 'nao_tsuchiya', 'joicleinfo'
-  ]
-
-  // Note.comで実際にトレンドになりやすいテーマ・キーワード
-  const trendingTopics = [
-    // テクノロジー
-    'ChatGPTで効率化する仕事術', 'AI時代のスキルアップ戦略', 'プログラミング学習の最短ルート',
-    'Web3とクリエイターエコノミー', 'ノーコードツールで始めるスタートアップ', 'データサイエンス入門',
-    
-    // ビジネス・キャリア
-    '副業で月10万円達成の道のり', 'フリーランス1年目の現実', 'デザイナーのポートフォリオ戦略',
-    'リモートワークの生産性術', 'スタートアップ転職の体験談', '独立起業の失敗と学び',
-    
-    // ライフスタイル
-    'ミニマリストの断捨離術', 'マインドフルネス瞑想で変わった生活', '30代からの健康習慣',
-    '一人暮らしの節約レシピ', '読書習慣で人生が変わった話', '早起きを続けるコツ',
-    
-    // クリエイティブ
-    'イラスト上達のための練習法', '動画編集スキルアップ術', 'ブログで月1万PV達成',
-    '写真撮影テクニック向上記', 'UIデザインの最新トレンド', 'ライティングスキル向上法',
-    
-    // 投資・お金
-    '積立NISA運用実績公開', '暗号資産投資の現実', '家計改善で年100万円節約',
-    '不動産投資初心者の体験談', 'ポイ活で年間10万円得する方法', '老後資金の具体的な準備法'
-  ]
-
-  // 実際のNote.comのエンゲージメント傾向を反映
-  const articles: NoteArticleData[] = []
-  
-  for (let i = 0; i < 100; i++) {
-    const randomUser = realNoteUsers[Math.floor(Math.random() * realNoteUsers.length)]
-    const randomTopic = trendingTopics[Math.floor(Math.random() * trendingTopics.length)]
-    
-    // Note.comの実際のエンゲージメント分布を反映
-    const likeCount = Math.floor(Math.random() * 2000) + Math.floor(Math.random() * 500)
-    const commentCount = Math.floor(likeCount * (0.05 + Math.random() * 0.15)) // 5-20% of likes
-    const viewCount = Math.floor(likeCount * (8 + Math.random() * 12)) // 8-20x likes
-    
-    // 実際のNote IDパターンを反映
-    const noteId = `n${Math.random().toString(36).substring(2, 15)}`
-    
-    // 投稿日時の現実的な分布
-    const publishedAt = getRealisticPublishDate()
-    
-    // 実際のハッシュタグパターン
-    const tags = generateRealisticTags(randomTopic)
-    
-         articles.push({
-       id: noteId,
-       title: randomTopic,
-       excerpt: generateRealisticExcerpt(randomTopic),
-       authorId: randomUser,
-       publishedAt,
-       likeCount,
-       commentCount,
-       viewCount,
-       tags,
-       url: `https://note.com/${randomUser}/n/${noteId}`
-     })
-  }
-
-  // エンゲージメント順でソート（実際のNote.comトレンドを反映）
-  articles.sort((a, b) => {
-    const scoreA = a.likeCount * 2 + a.commentCount * 5 + (a.viewCount || 0) * 0.1
-    const scoreB = b.likeCount * 2 + b.commentCount * 5 + (b.viewCount || 0) * 0.1
-    return scoreB - scoreA
-  })
-
-  console.log(`✅ Generated ${articles.length} realistic trending articles`)
-  return articles
+  // 架空記事は一切生成せず、空の配列を返してフォールバック（実在記事7件）を使用
+  return []
 }
 
-// 現実的な投稿日時生成
-function getRealisticPublishDate(): string {
-  const now = new Date()
-  const randomDaysAgo = Math.floor(Math.random() * 30) // 30日以内
-  const randomHours = Math.floor(Math.random() * 24)
-  const randomMinutes = Math.floor(Math.random() * 60)
-  
-  const publishDate = new Date(now)
-  publishDate.setDate(publishDate.getDate() - randomDaysAgo)
-  publishDate.setHours(randomHours, randomMinutes, 0, 0)
-  
-  return publishDate.toISOString()
-}
+
 
 // Note.com内部APIを試行する関数
 async function tryNoteComInternalAPIs(): Promise<NoteArticleData[]> {
@@ -711,56 +628,9 @@ function convertGraphQLData(data: unknown): NoteArticleData[] {
   return articles
 }
 
-// 実際のNote.comハッシュタグパターン
-function generateRealisticTags(topic: string): string[] {
-  const baseTags = ['Note', 'ライフハック', '学び', '体験談', '初心者']
-  const techTags = ['プログラミング', 'AI', 'Web開発', 'エンジニア', 'IT']
-  const businessTags = ['副業', 'フリーランス', '起業', 'キャリア', 'ビジネス']
-  const lifestyleTags = ['ライフスタイル', '健康', '習慣', '自己啓発', '成長']
-  const creativeTags = ['デザイン', 'クリエイティブ', 'イラスト', '写真', 'アート']
-  
-  let relevantTags: string[] = []
-  
-  if (topic.includes('プログラミング') || topic.includes('AI') || topic.includes('Web')) {
-    relevantTags = techTags
-  } else if (topic.includes('副業') || topic.includes('起業') || topic.includes('キャリア')) {
-    relevantTags = businessTags
-  } else if (topic.includes('健康') || topic.includes('習慣') || topic.includes('ライフ')) {
-    relevantTags = lifestyleTags
-  } else if (topic.includes('デザイン') || topic.includes('イラスト') || topic.includes('写真')) {
-    relevantTags = creativeTags
-  } else {
-    relevantTags = baseTags
-  }
-  
-  // 2-4個のタグをランダム選択
-  const selectedTags: string[] = []
-  const tagCount = 2 + Math.floor(Math.random() * 3)
-  
-  for (let i = 0; i < tagCount && i < relevantTags.length; i++) {
-    const randomTag = relevantTags[Math.floor(Math.random() * relevantTags.length)]
-    if (!selectedTags.includes(randomTag)) {
-      selectedTags.push(randomTag)
-    }
-  }
-  
-  return selectedTags
-}
 
-// 現実的な記事説明文生成
-function generateRealisticExcerpt(topic: string): string {
-  const excerpts = [
-    `${topic}について、実際の体験をもとに詳しく解説します。`,
-    `初心者でも分かりやすく、${topic}のポイントをまとめました。`,
-    `実践して分かった${topic}のメリット・デメリットを率直にお伝えします。`,
-    `${topic}で失敗した経験から学んだことを共有します。`,
-    `${topic}を始める前に知っておきたいことをまとめました。`,
-    `実際に取り組んでみて感じた${topic}の効果をレポートします。`,
-    `${topic}について、多くの人が疑問に思うポイントを解説します。`
-  ]
-  
-  return excerpts[Math.floor(Math.random() * excerpts.length)]
-}
+
+
 
 // 個別記事の詳細情報を取得
 async function scrapeNoteArticle(username: string, noteId: string): Promise<NoteArticleData | null> {
