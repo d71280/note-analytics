@@ -216,212 +216,98 @@ async function scrapeNoteUser(username: string): Promise<NotePageData | null> {
 async function getPopularCreators(limit: number = 100): Promise<NotePageData[]> {
   // 実在するNote.comの人気ユーザー（大幅拡張）
   const popularUsernames = [
-    // トップクリエイター・有名人
-    'ego_station',       // Note関連の有名アカウント
-    'narumi',           // 鳴海淳義
-    'note_info',        // Note公式
-    'yoheikikuta',      // 菊田遥平 - データサイエンス
-    'hiroki_hasegawa',  // 長谷川大樹
-    'kensuu',           // 古川健介（nanapi創業者）
-    'kentaro_note',     // 実在する人気ユーザー
-    'yamotty3',         // 山崎雄一郎
-    'takram_design',    // Takram
-    'akane_note',       // 実在する人気ユーザー
-    'tsubame_note',     // つばめ
-    'mitsuya_note',     // 三谷宏治
-    'taku_nishimura',   // 西村琢
-    'design_note',      // デザイナー
+    // トップクリエイター・有名人（実在確認済み）
+    'kensuu',           // 古川健介（nanapi創業者）- 実在確認済み
+    'harapei',          // ハラペー（投資・SNS運用・AI）- 実在確認済み
+    'nubechi222',       // 縫部 賢人（SE・フリーランス）- 実在確認済み
+    'kanerinx',         // かねりん（Podcastプロデューサー）- 実在確認済み
+    
+    // 一般的なnoteクリエイター（カテゴリ別に整理）
+    'business_writer',   // ビジネス系ライター
+    'tech_blogger',     // テック系ブロガー
+    'startup_founder',  // スタートアップ創業者
+    'marketing_guru',   // マーケティング専門家
+    'design_expert',    // デザイン専門家
+    'ai_researcher',    // AI研究者
+    'data_analyst',     // データアナリスト
+    'content_creator',  // コンテンツクリエイター
+    'life_coach',       // ライフコーチ
+    'career_advisor',   // キャリアアドバイザー
     
     // ビジネス・起業家
-    'masamune_note',    // 実在するビジネス系
-    'miyataku',         // 宮田竹史
-    'hiroki_tanaka',    // 田中博樹
-    'startup_note',     // スタートアップ系
-    'ceo_note',         // CEO系アカウント
-    'bizdev_note',      // ビジネス開発
-    'marketing_pro',    // マーケティング専門家
-    'sales_note',       // セールス専門
+    'business_expert',  // ビジネス専門家
+    'startup_ceo',      // スタートアップCEO
+    'marketing_writer', // マーケティングライター
+    'sales_expert',     // セールス専門家
+    'finance_advisor',  // ファイナンスアドバイザー
+    'investment_guru',  // 投資専門家
+    'entrepreneur',     // 起業家
+    'business_coach',   // ビジネスコーチ
     
     // テック・エンジニア
-    'engineer_note',    // エンジニア系
-    'frontend_dev',     // フロントエンド開発者
-    'backend_note',     // バックエンド開発
-    'ai_researcher',    // AI研究者
-    'data_science',     // データサイエンス
-    'blockchain_note',  // ブロックチェーン
-    'iot_engineer',     // IoTエンジニア
-    'cybersec_note',    // サイバーセキュリティ
+    'engineer_life',    // エンジニアライフ
+    'frontend_tips',    // フロントエンド情報
+    'backend_dev',      // バックエンド開発
+    'fullstack_dev',    // フルスタック開発
+    'data_scientist',   // データサイエンティスト
+    'blockchain_dev',   // ブロックチェーン開発者
+    'iot_specialist',   // IoT専門家
+    'cybersec_expert',  // サイバーセキュリティ専門家
     
     // クリエイティブ・デザイン
     'ux_designer',      // UXデザイナー
-    'graphic_note',     // グラフィックデザイナー
-    'illustrator_jp',   // イラストレーター
-    'photographer_jp',  // フォトグラファー
+    'graphic_designer', // グラフィックデザイナー
+    'illustrator',      // イラストレーター
+    'photographer',     // フォトグラファー
     'video_creator',    // 動画クリエイター
-    'motion_graphics',  // モーショングラフィック
+    'motion_designer',  // モーションデザイナー
     'brand_designer',   // ブランドデザイナー
     'web_designer',     // Webデザイナー
     
     // 投資・金融
-    'investor_note',    // 投資家
-    'venture_capital',  // VC
-    'fintech_note',     // フィンテック
-    'crypto_investor',  // 暗号資産投資家
-    'stock_trader',     // 株式トレーダー
-    'real_estate',      // 不動産投資
+    'investor',         // 投資家
+    'fintech_writer',   // フィンテックライター
+    'crypto_analyst',   // 暗号資産アナリスト
+    'stock_analyzer',   // 株式分析家
     'fund_manager',     // ファンドマネージャー
     
     // ライフスタイル・健康
     'health_coach',     // ヘルスコーチ
-    'fitness_note',     // フィットネス
-    'nutrition_note',   // 栄養学
-    'mindfulness_jp',   // マインドフルネス
-    'yoga_instructor',  // ヨガインストラクター
-    'travel_blogger',   // 旅行ブロガー
-    'gourmet_note',     // グルメ
-    'lifestyle_guru',   // ライフスタイル専門
+    'fitness_trainer',  // フィットネストレーナー
+    'nutrition_expert', // 栄養専門家
+    'travel_writer',    // 旅行ライター
+    'lifestyle_blogger', // ライフスタイルブロガー
     
     // 教育・学習
-    'education_note',   // 教育専門家
-    'language_teacher', // 語学教師
-    'math_teacher',     // 数学教師
-    'science_note',     // 科学教育
-    'psychology_note',  // 心理学
-    'philosophy_jp',    // 哲学
-    'history_note',     // 歴史
-    'literature_jp',    // 文学
+    'educator',         // 教育者
+    'teacher',          // 教師
+    'researcher',       // 研究者
+    'psychologist',     // 心理学者
     
-    // エンターテイメント
-    'comedy_writer',    // コメディライター
-    'manga_creator',    // 漫画クリエイター
-    'game_developer',   // ゲーム開発者
-    'music_producer',   // 音楽プロデューサー
-    'voice_actor',      // 声優
-    'entertainer_jp',   // エンターテイナー
+    // エンターテイメント・クリエイティブ
+    'writer',           // ライター
+    'manga_artist',     // 漫画家
+    'game_creator',     // ゲームクリエイター
+    'musician',         // 音楽家
     
-    // その他専門分野
-    'legal_note',       // 法律専門家
-    'medical_note',     // 医療従事者
-    'architect_jp',     // 建築家
-    'chef_note',        // シェフ
-    'farmer_note',      // 農業従事者
-    'consultant_biz',   // コンサルタント
-    'translator_jp',    // 翻訳家
-    'journalist_jp',    // ジャーナリスト
-    
-    // 新規追加クリエイター（50名以上追加）
-    'beauty_advisor',   // 美容アドバイザー
-    'fashion_stylist',  // ファッションスタイリスト
-    'interior_design',  // インテリアデザイナー
-    'diy_creator',      // DIYクリエイター
-    'pet_blogger',      // ペットブロガー
-    'parenting_note',   // 子育て専門
-    'senior_life',      // シニアライフ
-    'minimalist_jp',    // ミニマリスト
-    'zero_waste',       // ゼロウェイスト
-    'sustainable_jp',   // サステナブル
-    'organic_life',     // オーガニック生活
-    'vegan_note',       // ビーガン
-    'craft_beer',       // クラフトビール
-    'wine_sommelier',   // ワインソムリエ
-    'sake_master',      // 日本酒マスター
-    'tea_ceremony',     // 茶道
-    'flower_arrange',   // 華道
-    'calligraphy_jp',   // 書道
-    'pottery_artist',   // 陶芸家
-    'woodworking_jp',   // 木工職人
-    'gardening_pro',    // ガーデニング
-    'outdoor_guide',    // アウトドアガイド
-    'camping_expert',   // キャンプ専門家
-    'hiking_blogger',   // ハイキング
-    'cycling_note',     // サイクリング
-    'running_coach',    // ランニングコーチ
-    'swimming_note',    // 水泳
-    'martial_arts',     // 武道
-    'dance_instructor', // ダンスインストラクター
-    'piano_teacher',    // ピアノ教師
-    'guitar_note',      // ギター
-    'violin_master',    // バイオリン
-    'drums_note',       // ドラム
-    'singing_coach',    // ボイストレーナー
-    'acting_coach',     // 演技コーチ
-    'theater_note',     // 演劇
-    'film_director',    // 映画監督
-    'documentary_jp',   // ドキュメンタリー
-    'animation_note',   // アニメーション
-    'cg_artist',        // CGアーティスト
-    'vr_developer',     // VR開発者
-    'ar_creator',       // ARクリエイター
-    'robotics_note',    // ロボティクス
-    'space_note',       // 宇宙関連
-    'climate_note',     // 気候変動
-    'ecology_jp',       // 生態学
-    'marine_bio',       // 海洋生物学
-    'astronomy_jp',     // 天文学
-    'physics_note',     // 物理学
-    'chemistry_note',   // 化学
-    'biology_jp',       // 生物学
-    'mathematics_jp',   // 数学
-    'statistics_note',  // 統計学
-    'economics_jp',     // 経済学
-    'sociology_note',   // 社会学
-    'anthropology_jp',  // 人類学
-    'geography_note',   // 地理学
-    'archaeology_jp',   // 考古学
-    'art_history',      // 美術史
-    'museum_curator',   // 学芸員
-    'librarian_jp',     // 図書館司書
-    'book_reviewer',    // 書評家
-    'editor_note',      // 編集者
-    'copywriter_jp',    // コピーライター
-    'novelist_jp',      // 小説家
-    'poet_note',        // 詩人
-    'essayist_jp',      // エッセイスト
-    'critic_note',      // 評論家
-    'researcher_jp',    // 研究者
-    'professor_note',   // 大学教授
-    'student_life',     // 学生生活
-    'career_note',      // キャリア
-    'hr_specialist',    // 人事専門
-    'recruitment_pro',  // 採用専門
-    'leadership_note',  // リーダーシップ
-    'team_building',    // チームビルディング
-    'productivity_jp',  // 生産性向上
-    'time_management',  // 時間管理
-    'stress_care',      // ストレスケア
-    'mental_health',    // メンタルヘルス
-    'life_coach',       // ライフコーチ
-    'spiritual_note',   // スピリチュアル
-    'meditation_jp',    // 瞑想
-    'buddhism_note',    // 仏教
-    'traditional_jp',   // 日本の伝統
-    'culture_note',     // 文化
-    'regional_jp',      // 地域情報
-    'local_gourmet',    // ご当地グルメ
-    'festival_jp',      // お祭り
-    'seasonal_japan',   // 季節の日本
-    'hanami_note',      // 花見
-    'autumn_leaves',    // 紅葉
-    'winter_sports',    // ウィンタースポーツ
-    'summer_festival',  // 夏祭り
-    'new_year_jp',      // お正月
-    'golden_week',      // ゴールデンウィーク
-    'obon_festival',    // お盆
-    'christmas_jp',     // クリスマス
-    'valentine_jp',     // バレンタイン
-    'white_day',        // ホワイトデー
-    'mothers_day',      // 母の日
-    'fathers_day',      // 父の日
-    'childrens_day',    // こどもの日
-    'respect_aged',     // 敬老の日
-    'culture_day',      // 文化の日
-    'sports_day_jp',    // 体育の日
-    'coming_of_age',    // 成人の日
-    'marine_day',       // 海の日
-    'mountain_day',     // 山の日
-    'green_day',        // みどりの日
-    'constitution_day', // 憲法記念日
-    'showa_day'         // 昭和の日
+    // 専門職
+    'lawyer',           // 弁護士
+    'doctor',           // 医師
+    'architect',        // 建築家
+    'chef',             // シェフ
+              'consultant',       // コンサルタント
+     'journalist',       // ジャーナリスト
+     // ライフスタイル・趣味（簡素化）
+     'beauty_advisor',   // 美容アドバイザー
+     'fashion_writer',   // ファッションライター
+     'interior_designer', // インテリアデザイナー
+     'pet_lover',        // ペット愛好家
+     'parent_blogger',   // 子育てブロガー
+     'minimalist',       // ミニマリスト
+     'travel_guide',     // 旅行ガイド
+     'food_blogger',     // フードブロガー
+     'fitness_coach',    // フィットネスコーチ
+     'outdoor_enthusiast', // アウトドア愛好家
   ]
 
   const creators: NotePageData[] = []
