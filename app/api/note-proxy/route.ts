@@ -1043,10 +1043,10 @@ async function searchArticles(query: string, limit: number = 100, sortBy: string
     return filteredArticles.slice(0, limit)
   }
   
-  // 最終フォールバック: 最低限のサンプルデータを確保
+  // 結果がない場合は空の配列を返す
   if (uniqueResults.length === 0) {
-    console.log('🆘 No results found, using fallback sample data')
-    return getSampleArticlesForQuery(query, limit)
+    console.log('⚠️ No results found')
+    return []
   }
   
   // クエリがない場合はそのまま返す
@@ -1835,7 +1835,7 @@ export async function GET(request: NextRequest) {
         if (decodedQuery) {
           // クエリありの検索（強化版）
           console.log(`🔍 Processing search query: "${decodedQuery}"`)
-          const searchResults = await searchArticles(decodedQuery, 50, sortBy, dateFilter)
+          const searchResults = await searchArticles(decodedQuery, 100, sortBy, dateFilter)
           console.log(`📊 Search returned ${searchResults.length} articles`)
           
           articles = searchResults.map(article => {
@@ -1850,42 +1850,18 @@ export async function GET(request: NextRequest) {
         } else {
           // カテゴリー別トレンド記事取得
           console.log(`📂 Getting category articles for: "${category}"`)
-          articles = await getTrendingArticlesByCategory(category, 50, sortBy, dateFilter)
+          articles = await getTrendingArticlesByCategory(category, 100, sortBy, dateFilter)
           console.log(`📂 Category search returned ${articles.length} articles`)
         }
         
-        // 最終確認：記事が0件の場合はフォールバックデータを生成
-        if (articles.length === 0) {
-          console.log('⚠️ No articles found, generating fallback data')
-          const fallbackQuery = decodedQuery || category || 'トレンド'
-          const fallbackData = getSampleArticlesForQuery(fallbackQuery, 10)
-          articles = fallbackData.map(article => {
-            const authorFollowers = getEstimatedFollowers(article.authorId)
-            const engagement = calculateEngagementMetrics(article, authorFollowers)
-            return {
-              ...article,
-              engagement,
-              category: categorizeArticle(article)
-            }
-          })
-          console.log(`🆘 Generated ${articles.length} fallback articles`)
-        }
+        // 実際のデータのみを使用（サンプルデータは使わない）
+        console.log(`📊 Found ${articles.length} real articles`)
         
       } catch (error) {
         console.error('❌ Search error:', error)
-        // エラー時のフォールバック
-        const fallbackQuery = decodedQuery || category || 'エラー'
-        const fallbackData = getSampleArticlesForQuery(fallbackQuery, 10)
-        articles = fallbackData.map(article => {
-          const authorFollowers = getEstimatedFollowers(article.authorId)
-          const engagement = calculateEngagementMetrics(article, authorFollowers)
-          return {
-            ...article,
-            engagement,
-            category: categorizeArticle(article)
-          }
-        })
-        console.log(`🚨 Error fallback: generated ${articles.length} articles`)
+        // エラー時は空の配列を返す
+        console.log(`🚨 Error occurred, returning empty array`)
+        articles = []
       }
       
       data = {
