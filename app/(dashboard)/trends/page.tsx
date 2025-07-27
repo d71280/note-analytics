@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingUp, Eye, Heart, MessageCircle, Clock, Loader2, ExternalLink, Filter, SortDesc } from 'lucide-react'
 import { noteAPI, NoteArticle } from '@/lib/api/note-api-client'
@@ -15,7 +15,7 @@ interface TrendingData {
 }
 
 type SortType = 'engagement' | 'like' | 'comment' | 'recent' | 'trending_velocity' | 'like_ratio'
-type DateFilter = 'today' | 'yesterday' | 'this_week' | undefined
+type DateFilter = 'today' | 'yesterday' | 'this_week' | 'this_month' | undefined
 type CategoryFilter = 'all' | 'テクノロジー' | 'ビジネス' | 'ライフスタイル' | '哲学・思想' | 'クリエイティブ' | '学術・研究'
 
 interface EngagementMetrics {
@@ -83,11 +83,27 @@ export default function TrendsPage() {
     fetchTrendData()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 統計データの計算
+  // 統計データの計算（強化版）
   const totalTrendingArticles = trendData.articles.length
   const averageEngagement = trendData.articles.length > 0
-    ? (trendData.articles.reduce((sum, article) => sum + (article.likeCount || 0), 0) / trendData.articles.length / 100).toFixed(1)
+    ? (trendData.articles.reduce((sum, article) => {
+        const enhancedArticle = article as EnhancedNoteArticle
+        return sum + (enhancedArticle.engagement?.totalEngagementScore || article.likeCount / 100 || 0)
+      }, 0) / trendData.articles.length).toFixed(1)
     : '0.0'
+  
+  // カテゴリー別記事数統計（将来の機能拡張用）
+  const categoryStats = useMemo(() => {
+    const stats: Record<string, number> = {}
+    trendData.articles.forEach(article => {
+      const category = (article as EnhancedNoteArticle).category || 'その他'
+      stats[category] = (stats[category] || 0) + 1
+    })
+    return stats
+  }, [trendData.articles])
+  
+  // コンソールでカテゴリー統計を確認（開発用）
+  console.log('📊 Category stats:', categoryStats)
 
   if (trendData.loading) {
     return (
@@ -192,6 +208,13 @@ export default function TrendsPage() {
                 onClick={() => handleDateFilterChange('this_week')}
               >
                 今週
+              </Button>
+              <Button
+                size="sm"
+                variant={dateFilter === 'this_month' ? "default" : "outline"}
+                onClick={() => handleDateFilterChange('this_month')}
+              >
+                今月
               </Button>
             </div>
           </div>

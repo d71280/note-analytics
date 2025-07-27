@@ -314,7 +314,7 @@ class NoteAPIClient {
     query: string, 
     page: number = 1, 
     sortBy: 'engagement' | 'like' | 'comment' | 'recent' | 'trending_velocity' | 'like_ratio' = 'engagement',
-    dateFilter?: 'today' | 'yesterday' | 'this_week',
+    dateFilter?: 'today' | 'yesterday' | 'this_week' | 'this_month',
     category?: string
   ): Promise<ApiResponse<NoteArticle[]>> {
     let url = `/api/v2/searches/notes?q=${encodeURIComponent(query)}&page=${page}&sort=${sortBy}`
@@ -401,7 +401,7 @@ class NoteAPIClient {
   async getTrendingArticles(
     limit: number = 50, 
     sortBy: 'engagement' | 'like' | 'comment' | 'recent' | 'trending_velocity' | 'like_ratio' = 'engagement',
-    dateFilter?: 'today' | 'yesterday' | 'this_week'
+    dateFilter?: 'today' | 'yesterday' | 'this_week' | 'this_month'
   ): Promise<ApiResponse<NoteArticle[]>> {
     // 空のクエリでトレンド記事を直接取得
     let url = `/api/v2/searches/notes?q=&page=1&sort=${sortBy}`
