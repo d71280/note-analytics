@@ -136,10 +136,10 @@ export default function TrendsPage() {
     try {
       console.log('🔍 Fetching trend data with filters:', filters)
       
-      // カテゴリー検索でデータ取得
+      // カテゴリー検索でデータ取得（100件まで取得）
       const response = await noteAPI.searchArticles(
         filters.category,
-        1,
+        100, // 100件まで取得
         filters.sortBy,
         undefined, // dateFilterは削除
         filters.category

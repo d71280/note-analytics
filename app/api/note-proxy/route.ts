@@ -401,33 +401,12 @@ async function getRealNoteComTrendingData(): Promise<NoteArticleData[]> {
     allArticles.push(...graphqlData)
   }
   
-  // Method 3: 強化されたNote.comトレンドページスクレイピング
-  const trendingData = await scrapeNoteComTrendingPages()
-  if (trendingData.length > 0) {
-    console.log(`✅ Successfully scraped ${trendingData.length} trending articles from Note.com`)
-    allArticles.push(...trendingData)
-  }
+  // Method 3-5: 追加のスクレイピング（現在は無効化）
+  console.log('⚠️ Additional scraping methods are currently disabled for performance')
+  console.log(`📊 Total articles collected: ${allArticles.length}`)
   
-  // Method 4: カテゴリー別キーワード検索スクレイピング
-  const categoryData = await scrapeNoteComByCategories()
-  if (categoryData.length > 0) {
-    console.log(`✅ Successfully scraped ${categoryData.length} category articles from Note.com`)
-    allArticles.push(...categoryData)
-  }
-  
-  // Method 5: 人気ユーザーの最新記事スクレイピング
-  const userArticles = await scrapePopularUsersLatestArticles()
-  if (userArticles.length > 0) {
-    console.log(`✅ Successfully scraped ${userArticles.length} user articles from Note.com`)
-    allArticles.push(...userArticles)
-  }
-  
-  // 重複削除とフィルタリング
-  const uniqueArticles = removeDuplicateArticles(allArticles)
-  console.log(`📊 Total unique articles collected: ${uniqueArticles.length}`)
-  
-  if (uniqueArticles.length > 0) {
-    return uniqueArticles
+  if (allArticles.length > 0) {
+    return allArticles
   }
   
   console.log('⚠️ All scraping methods failed, using verified fallback articles')
@@ -793,7 +772,7 @@ async function scrapeNoteArticle(username: string, noteId: string): Promise<Note
 }
 
 // 人気記事の取得 - 実際のNote.comデータ使用
-async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', dateFilter?: string): Promise<NoteArticleData[]> {
+async function getTrendingArticles(limit: number = 100, sortBy: string = 'like', dateFilter?: string): Promise<NoteArticleData[]> {
   console.log(`🔍 Getting trending articles from Note.com (limit: ${limit}, sort: ${sortBy}, filter: ${dateFilter})`)
   
   // 実際のNote.com傾向を反映したデータを取得
@@ -945,7 +924,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
 }
 
 // Note.comで直接検索を実行
-async function searchNoteComDirectly(query: string, limit: number = 20): Promise<NoteArticleData[]> {
+async function searchNoteComDirectly(query: string, limit: number = 100): Promise<NoteArticleData[]> {
   try {
     console.log(`🔍 Searching Note.com directly for: "${query}"`)
     
@@ -1004,7 +983,7 @@ async function searchNoteComDirectly(query: string, limit: number = 20): Promise
 }
 
 // 記事検索機能 - 強化版フォールバック対応
-async function searchArticles(query: string, limit: number = 50, sortBy: string = 'like', dateFilter?: string): Promise<NoteArticleData[]> {
+async function searchArticles(query: string, limit: number = 100, sortBy: string = 'like', dateFilter?: string): Promise<NoteArticleData[]> {
   console.log(`🔍 Enhanced search for: "${query}" [sort: ${sortBy}, filter: ${dateFilter || 'none'}]`)
   
   // Method 1: 実際のNote.com検索を試行
@@ -1019,7 +998,7 @@ async function searchArticles(query: string, limit: number = 50, sortBy: string 
   }
   
   // Method 2: 基本トレンド記事を取得
-  if (searchResults.length < 10) {
+  if (searchResults.length < Math.min(30, limit)) {
     try {
       const trendingArticles = await getRealNoteComTrendingData()
       console.log(`📈 Trending articles: ${trendingArticles.length}`)
@@ -1030,9 +1009,9 @@ async function searchArticles(query: string, limit: number = 50, sortBy: string 
   }
   
   // Method 3: カテゴリー別記事を追加取得
-  if (searchResults.length < 20) {
+  if (searchResults.length < Math.min(50, limit)) {
     try {
-      const categoryArticles = await getTrendingArticlesByCategory(query, Math.max(20, limit))
+      const categoryArticles = await getTrendingArticlesByCategory(query, Math.max(50, limit))
       console.log(`🗂️ Category articles: ${categoryArticles.length}`)
       searchResults = [...searchResults, ...categoryArticles]
     } catch (error) {
@@ -1040,8 +1019,10 @@ async function searchArticles(query: string, limit: number = 50, sortBy: string 
     }
   }
   
-  // 重複除去
-  const uniqueResults = removeDuplicateArticles(searchResults)
+  // 重複除去（簡易版）
+  const uniqueResults = searchResults.filter((article, index, self) => 
+    index === self.findIndex((a) => a.id === article.id || a.title === article.title)
+  )
   console.log(`🔗 Unique results: ${uniqueResults.length}`)
   
   // 検索クエリでフィルタリング（より柔軟に）
@@ -1072,72 +1053,49 @@ async function searchArticles(query: string, limit: number = 50, sortBy: string 
   return uniqueResults.slice(0, limit)
 }
 
-// フォールバック用サンプル記事データ生成
+// フォールバック用サンプル記事データ生成（動的生成対応）
 function getSampleArticlesForQuery(query: string, limit: number): NoteArticleData[] {
-  const sampleArticles: NoteArticleData[] = [
-    {
-      id: 'sample_1',
-      title: `${query}について考えてみた`,
-      excerpt: `${query}の最新動向と今後の展望について詳しく解説します。`,
-      authorId: 'sample_author_1',
-      publishedAt: new Date().toISOString(),
-      likeCount: Math.floor(Math.random() * 100) + 50,
-      commentCount: Math.floor(Math.random() * 20) + 5,
-      tags: [query, 'トレンド', '分析'],
-      url: `https://note.com/sample_author_1/n/sample_1`,
-      category: query
-    },
-    {
-      id: 'sample_2', 
-      title: `初心者向け ${query} 入門ガイド`,
-      excerpt: `${query}を始めたい方向けの基本的な内容をまとめました。`,
-      authorId: 'sample_author_2',
-      publishedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      likeCount: Math.floor(Math.random() * 150) + 80,
-      commentCount: Math.floor(Math.random() * 30) + 10,
-      tags: [query, '初心者', 'ガイド'],
-      url: `https://note.com/sample_author_2/n/sample_2`,
-      category: query
-    },
-    {
-      id: 'sample_3',
-      title: `${query}の最新トレンドまとめ`,
-      excerpt: `2024年の${query}業界で注目されている最新動向をピックアップ。`,
-      authorId: 'sample_author_3', 
-      publishedAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-      likeCount: Math.floor(Math.random() * 200) + 120,
-      commentCount: Math.floor(Math.random() * 40) + 15,
-      tags: [query, '2024', 'トレンド', 'まとめ'],
-      url: `https://note.com/sample_author_3/n/sample_3`,
-      category: query
-    },
-    {
-      id: 'sample_4',
-      title: `${query}で成功するための3つのポイント`,
-      excerpt: `実際に${query}で成果を上げるために重要な要素を解説。`,
-      authorId: 'sample_author_4',
-      publishedAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
-      likeCount: Math.floor(Math.random() * 80) + 40,
-      commentCount: Math.floor(Math.random() * 15) + 8,
-      tags: [query, '成功', 'ポイント', 'ノウハウ'],
-      url: `https://note.com/sample_author_4/n/sample_4`,
-      category: query
-    },
-    {
-      id: 'sample_5',
-      title: `${query}の活用事例集`,
-      excerpt: `様々な分野での${query}活用事例を紹介します。`,
-      authorId: 'sample_author_5',
-      publishedAt: new Date(Date.now() - 96 * 60 * 60 * 1000).toISOString(),
-      likeCount: Math.floor(Math.random() * 90) + 60,
-      commentCount: Math.floor(Math.random() * 25) + 12,
-      tags: [query, '事例', '活用', '実例'],
-      url: `https://note.com/sample_author_5/n/sample_5`,
-      category: query
-    }
+  const sampleArticles: NoteArticleData[] = []
+  
+  // 基本的なタイトルテンプレート
+  const titleTemplates = [
+    `${query}について考えてみた`,
+    `初心者向け ${query} 入門ガイド`, 
+    `${query}の最新トレンドまとめ`,
+    `${query}で成功するための3つのポイント`,
+    `${query}の活用事例集`,
+    `${query}完全解説`,
+    `${query}のメリット・デメリット`,
+    `${query}を始める前に知っておきたいこと`,
+    `${query}の未来予測`,
+    `${query}実践ガイド`,
+    `${query}のよくある質問`,
+    `${query}比較検討`,
+    `${query}導入のポイント`,
+    `${query}の基礎知識`,
+    `${query}ベストプラクティス`
   ]
   
-  return sampleArticles.slice(0, limit)
+  // 必要な数だけサンプル記事を生成
+  for (let i = 0; i < limit; i++) {
+    const templateIndex = i % titleTemplates.length
+    const title = titleTemplates[templateIndex] + (i >= titleTemplates.length ? ` #${Math.floor(i / titleTemplates.length) + 1}` : '')
+    
+    sampleArticles.push({
+      id: `sample_${i + 1}`,
+      title: title,
+      excerpt: `${query}に関する詳細な解説記事です。実践的な内容をお届けします。`,
+      authorId: `sample_author_${(i % 20) + 1}`,
+      publishedAt: new Date(Date.now() - (i * 60 * 60 * 1000)).toISOString(),
+             likeCount: Math.floor(Math.random() * 200) + Math.max(1, 50 - i * 2), // 順位に応じて減少
+       commentCount: Math.floor(Math.random() * 15) + 8,
+       tags: [query, 'トレンド', '分析'],
+       url: `https://note.com/sample_author_${(i % 20) + 1}/n/sample_${i + 1}`,
+       category: query
+     })
+   }
+   
+   return sampleArticles
 }
 
 // 高度なエンゲージメント計算アルゴリズム
@@ -1241,14 +1199,14 @@ function categorizeArticle(article: NoteArticleData): string {
 // カテゴリー別トレンド記事取得
 async function getTrendingArticlesByCategory(
   category: string = 'all', 
-  limit: number = 10, 
+  limit: number = 100, 
   sortBy: string = 'engagement',
   dateFilter?: string
 ): Promise<NoteArticleData[]> {
-  console.log(`🎯 Getting trending articles for category: ${category}`)
+  console.log(`🎯 Getting trending articles for category: ${category}, limit: ${limit}`)
   
-  // 基本記事データ取得
-  let articles = await getTrendingArticles(50, sortBy, dateFilter) // より多くの記事を取得
+  // 基本記事データ取得（limitパラメータを使用）
+  let articles = await getTrendingArticles(Math.max(100, limit), sortBy, dateFilter) // 指定されたlimitを使用
   
   // カテゴリーフィルタリング
   if (category && category !== 'all') {
@@ -1302,6 +1260,7 @@ function getEstimatedFollowers(authorId: string): number {
 }
 
 // Note.comトレンドページスクレイピング強化版
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function scrapeNoteComTrendingPages(): Promise<NoteArticleData[]> {
   const articles: NoteArticleData[] = []
   
@@ -1350,6 +1309,7 @@ async function scrapeNoteComTrendingPages(): Promise<NoteArticleData[]> {
 }
 
 // カテゴリー別記事検索・スクレイピング
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function scrapeNoteComByCategories(): Promise<NoteArticleData[]> {
   const articles: NoteArticleData[] = []
   
@@ -1407,6 +1367,7 @@ async function scrapeNoteComByCategories(): Promise<NoteArticleData[]> {
 }
 
 // 人気ユーザーの最新記事スクレイピング
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function scrapePopularUsersLatestArticles(): Promise<NoteArticleData[]> {
   const articles: NoteArticleData[] = []
   
@@ -1763,6 +1724,7 @@ function extractTagsFromContent(content: string): string[] {
 }
 
 // 重複記事の削除
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function removeDuplicateArticles(articles: NoteArticleData[]): NoteArticleData[] {
   const seen = new Set<string>()
   const unique: NoteArticleData[] = []
