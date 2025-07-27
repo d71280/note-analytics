@@ -42,7 +42,7 @@ export function AITrendAnalyzer({ articles, currentCategory = 'all', currentPeri
     {
       id: 'welcome',
       type: 'ai',
-      content: '🚀 今日の急上昇トレンド分析AIです！\n\n現在のデータを分析して、伸びている記事の傾向や特徴をお伝えします。何について分析したいですか？',
+      content: '🤖 **Gemini AI トレンド分析アシスタント** です！\n\n✨ **新機能搭載:**\n• Google Gemini AI による高度な分析\n• 実際の記事データの深層分析\n• パーソナライズされた投稿戦略提案\n\n📊 現在のデータを分析して、伸びている記事の傾向や特徴を詳しくお伝えします。\n\n💬 何について分析したいですか？',
       timestamp: new Date()
     }
   ])
@@ -58,131 +58,91 @@ export function AITrendAnalyzer({ articles, currentCategory = 'all', currentPeri
     scrollToBottom()
   }, [messages])
 
-  // トレンド分析用の提案質問
+  // Gemini AI向け高度な分析質問
   const suggestedQuestions = [
-    '今日最も伸びている記事の特徴は？',
-    'どのカテゴリーが人気？',
-    'エンゲージメントが高い記事の共通点は？',
-    '急上昇している記事のタイトルパターンは？',
-    '今週のトレンドキーワードは？'
+    '今日最も伸びている記事の成功要因を詳しく分析して',
+    'バイラル記事になりやすいタイトルパターンを教えて',
+    'エンゲージメントを最大化する投稿戦略は？',
+    'このトレンドを活用した記事企画を提案して',
+    '競合との差別化ポイントを分析して'
   ]
 
-  // 記事データを分析してAIレスポンスを生成
+  // Gemini AIを使って記事データを分析
   const analyzeArticles = async (question: string): Promise<string> => {
-    // 記事データの統計を計算
-    const totalArticles = articles.length
-    const avgLikes = articles.reduce((sum, article) => sum + article.likeCount, 0) / totalArticles
-    const avgEngagement = articles.reduce((sum, article) => sum + (article.engagement?.totalEngagementScore || 0), 0) / totalArticles
+    try {
+      console.log('🤖 Sending question to Gemini AI:', question)
+      
+      // Gemini API に記事データと質問を送信
+      const response = await fetch('/api/gemini-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: question,
+          articles: articles,
+          category: currentCategory,
+          period: currentPeriod
+        })
+      })
 
-    // カテゴリー別統計
-    const categoryStats: Record<string, number> = {}
-    articles.forEach(article => {
-      const category = article.category || 'その他'
-      categoryStats[category] = (categoryStats[category] || 0) + 1
-    })
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`)
+      }
 
-    // 人気カテゴリーTOP3
-    const topCategories = Object.entries(categoryStats)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 3)
+      const data = await response.json()
+      
+      if (data.analysis) {
+        console.log('✅ Received analysis from Gemini AI')
+        return data.analysis
+      } else {
+        throw new Error('No analysis received from API')
+      }
 
-    // 高エンゲージメント記事（上位20%）
-    const sortedByEngagement = articles
-      .filter(article => article.engagement?.totalEngagementScore)
-      .sort((a, b) => (b.engagement?.totalEngagementScore || 0) - (a.engagement?.totalEngagementScore || 0))
-      .slice(0, Math.ceil(totalArticles * 0.2))
-
-    // タイトルパターン分析
-    const titleWords = articles.flatMap(article => 
-      article.title.split(/[\s　、。！？]+/).filter(word => word.length > 1)
-    )
-    const wordCount: Record<string, number> = {}
-    titleWords.forEach(word => {
-      wordCount[word] = (wordCount[word] || 0) + 1
-    })
-    const popularWords = Object.entries(wordCount)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5)
-      .map(([word]) => word)
-
-    // 質問に応じた分析結果を生成
-    if (question.includes('特徴') || question.includes('共通点')) {
-      return `📊 **今日の急上昇記事分析結果**
-
-**📈 全体統計:**
-• 分析記事数: ${totalArticles}件
-• 平均いいね数: ${Math.round(avgLikes)}
-• 平均エンゲージメント: ${avgEngagement.toFixed(1)}
-
-**🔥 高エンゲージメント記事の特徴:**
-${sortedByEngagement.slice(0, 3).map((article, i) => 
-  `${i + 1}. "${article.title}" (${article.likeCount}いいね, ${article.engagement?.totalEngagementScore.toFixed(1)}点)`
-).join('\n')}
-
-**💡 成功パターン:**
-• タイトルによく使われるキーワード: ${popularWords.join('、')}
-• 最も伸びているカテゴリー: ${topCategories[0]?.[0]}（${topCategories[0]?.[1]}件）
-• 投稿時期: 多くの人気記事が最近投稿されています`
-
-    } else if (question.includes('カテゴリー')) {
-      return `📂 **カテゴリー別トレンド分析**
-
-**🏆 人気カテゴリーTOP3:**
-${topCategories.map(([category, count], i) => 
-  `${i + 1}. ${category}: ${count}件 (${((count / totalArticles) * 100).toFixed(1)}%)`
-).join('\n')}
-
-**📊 カテゴリー別平均エンゲージメント:**
-${Object.entries(categoryStats).map(([category, count]) => {
-  const categoryArticles = articles.filter(a => (a.category || 'その他') === category)
-  const avgCategoryEngagement = categoryArticles.reduce((sum, a) => sum + (a.engagement?.totalEngagementScore || 0), 0) / count
-  return `• ${category}: ${avgCategoryEngagement.toFixed(1)}点`
-}).join('\n')}`
-
-    } else if (question.includes('タイトル') || question.includes('パターン')) {
-      return `📝 **タイトルパターン分析**
-
-**🔤 人気キーワードTOP5:**
-${popularWords.map((word, i) => `${i + 1}. "${word}"`).join('\n')}
-
-**✨ 効果的なタイトルの特徴:**
-• 文字数: 平均${Math.round(articles.reduce((sum, a) => sum + a.title.length, 0) / totalArticles)}文字
-• 疑問形の使用率が高い
-• 具体的な数字を含む記事が伸びやすい
-• 感情を動かすキーワードが効果的
-
-**📈 高エンゲージメント記事のタイトル例:**
-${sortedByEngagement.slice(0, 3).map(a => `"${a.title}"`).join('\n')}`
-
-    } else if (question.includes('キーワード') || question.includes('トレンド')) {
-      return `🔍 **今週のトレンドキーワード分析**
-
-**🚀 急上昇キーワード:**
-${popularWords.slice(0, 3).map((word, i) => `${i + 1}. ${word}`).join('\n')}
-
-**📈 トレンド要因:**
-• AI・テクノロジー関連の話題が活発
-• ライフスタイル改善への関心が高まり
-• 副業・キャリア系のコンテンツが人気
-
-**💡 今後注目のテーマ:**
-• ${topCategories[0]?.[0]}系のコンテンツ
-• 実体験ベースのストーリー
-• 実用的なノウハウ記事`
-
-    } else {
-      return `🤖 **AI分析レポート**
-
-現在${totalArticles}件の記事を分析中です。
-
-**📊 クイック分析:**
-• 最も活発なカテゴリー: ${topCategories[0]?.[0]}
-• 平均エンゲージメント: ${avgEngagement.toFixed(1)}点
-• 人気キーワード: ${popularWords.slice(0, 3).join('、')}
-
-より詳しい分析をお求めでしたら、具体的な質問をお聞かせください！
-例: "どのカテゴリーが人気？"、"タイトルのパターンは？"など`
+    } catch (error) {
+      console.error('❌ Error calling Gemini API:', error)
+      
+      // フォールバック: 基本的な統計分析
+      return generateBasicAnalysis(question)
     }
+  }
+
+  // フォールバック用の基本分析
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const generateBasicAnalysis = (question: string): string => {
+    const totalArticles = articles.length
+    
+    if (totalArticles === 0) {
+      return `📊 **分析不可**
+
+現在分析できる記事データがありません。
+
+💡 **対処方法:**
+• データ更新ボタンを押してください
+• フィルター設定を確認してください
+• しばらく時間をおいてから再度お試しください`
+    }
+
+    const avgLikes = Math.round(articles.reduce((sum, article) => sum + article.likeCount, 0) / totalArticles)
+    const topArticle = articles.sort((a, b) => b.likeCount - a.likeCount)[0]
+    
+    return `🤖 **基本分析結果**
+
+📊 **統計情報:**
+• 分析記事数: ${totalArticles}件
+• 平均いいね数: ${avgLikes}
+• カテゴリー: ${currentCategory}
+• 期間: ${currentPeriod}
+
+🏆 **トップ記事:**
+• "${topArticle?.title}"
+• 著者: ${topArticle?.authorId}
+• いいね: ${topArticle?.likeCount}
+
+💡 **より詳細な分析をご希望の場合:**
+• Gemini AI接続を確認中です
+• 具体的な質問を入力してください
+• データ更新をお試しください`
   }
 
   const handleSendMessage = async () => {
@@ -240,7 +200,7 @@ ${popularWords.slice(0, 3).map((word, i) => `${i + 1}. ${word}`).join('\n')}
       <CardHeader className="border-b">
         <CardTitle className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-blue-500" />
-          AI トレンド分析アシスタント
+          Gemini AI トレンド分析アシスタント
           <Sparkles className="h-4 w-4 text-yellow-500" />
         </CardTitle>
         <div className="text-sm text-gray-500">
@@ -283,7 +243,7 @@ ${popularWords.slice(0, 3).map((word, i) => `${i + 1}. ${word}`).join('\n')}
 
         {/* 提案質問ボタン */}
         <div className="border-t p-3">
-          <div className="text-xs text-gray-500 mb-2">💡 提案質問:</div>
+          <div className="text-xs text-gray-500 mb-2">🤖 Gemini AI 提案質問:</div>
           <div className="flex flex-wrap gap-1">
             {suggestedQuestions.map((question, index) => (
               <Button
@@ -307,7 +267,7 @@ ${popularWords.slice(0, 3).map((word, i) => `${i + 1}. ${word}`).join('\n')}
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="今日のトレンドについて何でも聞いてください..."
+              placeholder="Gemini AIに高度なトレンド分析を依頼してください..."
               disabled={isAnalyzing}
               className="flex-1"
             />
