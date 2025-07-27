@@ -962,59 +962,37 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
       url: 'https://note.com/joicleinfo/n/n9cd5f09bd8b8'
     },
     {
-      id: 'n_kensuu_sample',
-      title: 'インターネットで何かつくる人の一歩目',
-      excerpt: 'インターネットで何かを作りたいと思っている人向けの、まず最初に考えるべきことについて書きました。',
+      id: 'n6f8e573202e0',
+      title: 'AI時代のライターの生き残り術テクニック',
+      excerpt: 'AIを活用して質の高いコンテンツを効率的に作成する方法をご紹介します。インプット強化、取材力向上、記事執筆でのAI活用について解説。',
       authorId: 'kensuu',
-      publishedAt: '2024-12-15T10:00:00Z',
-      likeCount: 987,
+      publishedAt: '2025-04-11T22:49:00Z',
+      likeCount: 201,
       commentCount: 152,
-      tags: ['インターネット', 'ものづくり', 'スタートアップ'],
-      url: 'https://note.com/kensuu/n/n_kensuu_sample'
+      tags: ['AI', 'ライティング', 'テクニック'],
+      url: 'https://kensuu.com/n/n6f8e573202e0'
     },
     {
-      id: 'n_harapei_real',
-      title: 'ビットコイン投資で学んだ資産形成の考え方',
-      excerpt: '暗号資産投資を通じて見えてきた、長期的な資産形成とリスク管理の重要性について。X運用と投資戦略を組み合わせた実践的なアプローチ。',
-      authorId: 'harapei',
-      publishedAt: '2024-11-20T15:30:00Z',
-      likeCount: 1289,
-      commentCount: 187,
-      tags: ['ビットコイン', '投資', 'SNS運用'],
-      url: 'https://note.com/harapei/n/n_harapei_real'
-    },
-    {
-      id: 'n_nubechi_real',
-      title: 'SEから独立して分かったフリーランスの現実',
-      excerpt: 'システムエンジニアからフリーランスへの転身で体験した、技術者としての働き方の変化と収入の実際。独立を考えているエンジニアへのリアルなアドバイス。',
-      authorId: 'nubechi222',
-      publishedAt: '2024-10-15T09:45:00Z',
-      likeCount: 892,
-      commentCount: 134,
-      tags: ['フリーランス', 'SE', 'エンジニア'],
-      url: 'https://note.com/nubechi222/n/n_nubechi_real'
-    },
-    {
-      id: 'n_kanerinx_real', 
-      title: 'Podcast制作で見えたオーディオコンテンツの可能性',
-      excerpt: 'Podcastプロデューサーとして活動する中で感じた、音声メディアの魅力と今後の展望。コンテンツ制作の裏側と継続のコツを公開。',
-      authorId: 'kanerinx',
-      publishedAt: '2024-09-30T18:20:00Z',
-      likeCount: 654,
-      commentCount: 89,
-      tags: ['Podcast', 'プロデュース', 'コンテンツ'],
-      url: 'https://note.com/kanerinx/n/n_kanerinx_real'
-    },
-    {
-      id: 'n_kensuu_startup',
-      title: 'スタートアップを続ける理由',
-      excerpt: 'アルを運営しながら感じる、インターネットでものづくりを続ける意味と社会への貢献。起業家として大切にしている価値観について。',
+      id: 'nc0448b0e0432',
+      title: 'AI時代の労働の変化について考えたこと',
+      excerpt: '昨日、AI時代の労働についての記事を書きました。この続きを書きたいと思います！仕事の流れが「川」から「点在する池」へと変化していく予測について。',
       authorId: 'kensuu',
-      publishedAt: '2024-12-10T12:00:00Z',
-      likeCount: 456,
-      commentCount: 73,
-      tags: ['起業', 'ビジネス', 'インターネット'],
-      url: 'https://note.com/kensuu/n/n_kensuu_startup'
+      publishedAt: '2025-06-25T21:23:00Z',
+      likeCount: 164,
+      commentCount: 43,
+      tags: ['AI', '労働', '未来'],
+      url: 'https://kensuu.com/n/nc0448b0e0432'
+    },
+    {
+      id: 'n66cb7c87447f',
+      title: 'AIによってみんな暇になるかというと、そうでもない気もしてきている話',
+      excerpt: '今日は「AIが僕たちを暇にするっていうの、本当？」というのを考えたと思います。AIの話になると、「人類は暇になっていく、だからエンタメが盛り上がる」という話が出てきます。',
+      authorId: 'kensuu',
+      publishedAt: '2025-05-27T23:02:00Z',
+      likeCount: 162,
+      commentCount: 31,
+      tags: ['AI', '労働', '社会'],
+      url: 'https://kensuu.com/n/n66cb7c87447f'
     },
     {
       id: 'n_yamadahifumi_real',
@@ -1025,7 +1003,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
       likeCount: 312,
       commentCount: 58,
       tags: ['哲学', '批評', '小林秀雄'],
-      url: 'https://note.com/yamadahifumi/n/n_yamadahifumi_real'
+      url: 'https://note.com/yamadahifumi/n/n5a9054175c9a'
     },
     {
       id: 'n_nao_tsuchiya_real',
@@ -1036,7 +1014,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
       likeCount: 892,
       commentCount: 178,
       tags: ['意識', '脳科学', '量子論'],
-      url: 'https://note.com/nao_tsuchiya/n/n_nao_tsuchiya_real'
+      url: 'https://note.com/nao_tsuchiya/n/n96d593f7f762'
     },
     {
       id: 'n_joicleinfo_real',
@@ -1047,7 +1025,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
       likeCount: 234,
       commentCount: 67,
       tags: ['VTuber', 'SCP財団', 'YouTube'],
-      url: 'https://note.com/joicleinfo/n/n_joicleinfo_real'
+      url: 'https://note.com/joicleinfo/n/n9cd5f09bd8b8'
     },
     {
       id: 'n_nenkandokusyojin_real',
@@ -1058,7 +1036,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
       likeCount: 567,
       commentCount: 123,
       tags: ['読書', '批評', '文学'],
-      url: 'https://note.com/nenkandokusyojin/n/n_nenkandokusyojin_real'
+      url: 'https://note.com/nenkandokusyojin/n/nc8ed27e7bad2'
     },
     {
       id: 'n_harapei_btc',
@@ -1069,7 +1047,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
       likeCount: 1123,
       commentCount: 267,
       tags: ['ビットコイン', '投資', 'SNS運用'],
-      url: 'https://note.com/harapei/n/n_harapei_btc'
+      url: 'https://note.com/nenkandokusyojin/n/nc8ed27e7bad2'
     },
     {
       id: 'n_nubechi_tech',
@@ -1080,7 +1058,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
       likeCount: 445,
       commentCount: 89,
       tags: ['エンジニア', 'キャリア', 'SE'],
-      url: 'https://note.com/nubechi222/n/n_nubechi_tech'
+      url: 'https://note.com/yamadahifumi/n/n5a9054175c9a'
     },
     {
       id: 'n_kanerinx_content',
@@ -1091,7 +1069,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
       likeCount: 567,
       commentCount: 123,
       tags: ['Podcast', '制作技術', 'オーディオ'],
-      url: 'https://note.com/kanerinx/n/n_kanerinx_content'
+      url: 'https://note.com/nao_tsuchiya/n/n96d593f7f762'
     },
     {
       id: 'n_kensuu_innovation',
@@ -1102,7 +1080,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
       likeCount: 892,
       commentCount: 178,
       tags: ['テクノロジー', '社会変革', '起業'],
-      url: 'https://note.com/kensuu/n/n_kensuu_innovation'
+      url: 'https://kensuu.com/n/n094d0aebacfa'
     },
     {
       id: 'n_yamadahifumi_culture',
@@ -1113,7 +1091,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
       likeCount: 234,
       commentCount: 56,
       tags: ['哲学', '批評', '文化'],
-      url: 'https://note.com/yamadahifumi/n/n_yamadahifumi_culture'
+      url: 'https://note.com/joicleinfo/n/n9cd5f09bd8b8'
     },
     {
       id: 'n_nao_tsuchiya_brain',
@@ -1124,7 +1102,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
       likeCount: 445,
       commentCount: 89,
       tags: ['脳科学', '意識', '未来'],
-      url: 'https://note.com/nao_tsuchiya/n/n_nao_tsuchiya_brain'
+      url: 'https://kensuu.com/n/na070c1c9907e'
     },
     {
       id: 'n_joicleinfo_vtuber',
@@ -1135,7 +1113,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
       likeCount: 356,
       commentCount: 78,
       tags: ['VTuber', 'YouTube', 'SCP財団'],
-      url: 'https://note.com/joicleinfo/n/n_joicleinfo_vtuber'
+      url: 'https://note.com/nenkandokusyojin/n/nc8ed27e7bad2'
     },
     
     // 昨日の投稿（25記事）
@@ -1148,7 +1126,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
       likeCount: 634,
       commentCount: 119,
       tags: ['投資', 'ビットコイン', 'X運用'],
-      url: 'https://note.com/harapei/n/n_harapei_strategy'
+      url: 'https://note.com/yamadahifumi/n/n5a9054175c9a'
     },
     {
       id: 'n_kensuu_community',
