@@ -14,8 +14,22 @@ interface TrendingData {
   error: string | null
 }
 
-type SortType = 'like' | 'comment' | 'recent'
+type SortType = 'engagement' | 'like' | 'comment' | 'recent' | 'trending_velocity' | 'like_ratio'
 type DateFilter = 'today' | 'yesterday' | 'this_week' | undefined
+type CategoryFilter = 'all' | 'テクノロジー' | 'ビジネス' | 'ライフスタイル' | '哲学・思想' | 'クリエイティブ' | '学術・研究'
+
+interface EngagementMetrics {
+  likeToViewRatio: number
+  commentToLikeRatio: number
+  viewToFollowerRatio: number
+  totalEngagementScore: number
+  trendingVelocity: number
+}
+
+interface EnhancedNoteArticle extends NoteArticle {
+  engagement?: EngagementMetrics
+  category?: string
+}
 
 export default function TrendsPage() {
   const [trendData, setTrendData] = useState<TrendingData>({
@@ -26,19 +40,21 @@ export default function TrendsPage() {
     error: null
   })
 
-  const [sortBy, setSortBy] = useState<SortType>('like')
+  const [sortBy, setSortBy] = useState<SortType>('engagement')
   const [dateFilter, setDateFilter] = useState<DateFilter>(undefined)
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
 
-  const fetchTrendData = async (customSort?: SortType, customDateFilter?: DateFilter) => {
+  const fetchTrendData = async (customSort?: SortType, customDateFilter?: DateFilter, customCategory?: CategoryFilter) => {
     setTrendData(prev => ({ ...prev, loading: true, error: null }))
     
     try {
       const currentSort = customSort || sortBy
       const currentDateFilter = customDateFilter || dateFilter
+      const currentCategory = customCategory || categoryFilter
       
-      // 並列でデータを取得（記事数を大幅増加）
+      // カテゴリー機能付きでデータを取得
       const [articlesRes, keywordsRes, categoryRes] = await Promise.all([
-        noteAPI.getTrendingArticles(50, currentSort, currentDateFilter),
+        noteAPI.searchArticles('', 50, currentSort, currentDateFilter, currentCategory),
         noteAPI.getTrendingKeywords(),
         noteAPI.getCategoryStats()
       ])
@@ -91,18 +107,23 @@ export default function TrendsPage() {
 
   const handleSortChange = (newSort: SortType) => {
     setSortBy(newSort)
-    fetchTrendData(newSort, dateFilter)
+    fetchTrendData(newSort, dateFilter, categoryFilter)
   }
 
   const handleDateFilterChange = (newDateFilter: DateFilter) => {
     setDateFilter(newDateFilter)
-    fetchTrendData(sortBy, newDateFilter)
+    fetchTrendData(sortBy, newDateFilter, categoryFilter)
+  }
+
+  const handleCategoryChange = (newCategory: CategoryFilter) => {
+    setCategoryFilter(newCategory)
+    fetchTrendData(sortBy, dateFilter, newCategory)
   }
 
   const handleTodayTopLiked = () => {
     setSortBy('like')
     setDateFilter('today')
-    fetchTrendData('like', 'today')
+    fetchTrendData('like', 'today', categoryFilter)
   }
 
   return (
@@ -174,11 +195,90 @@ export default function TrendsPage() {
               </Button>
             </div>
           </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">カテゴリー:</span>
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant={categoryFilter === 'all' ? "default" : "outline"}
+                onClick={() => handleCategoryChange('all')}
+              >
+                全て
+              </Button>
+              <Button
+                size="sm"
+                variant={categoryFilter === 'テクノロジー' ? "default" : "outline"}
+                onClick={() => handleCategoryChange('テクノロジー')}
+              >
+                テクノロジー
+              </Button>
+              <Button
+                size="sm"
+                variant={categoryFilter === 'ビジネス' ? "default" : "outline"}
+                onClick={() => handleCategoryChange('ビジネス')}
+              >
+                ビジネス
+              </Button>
+              <Button
+                size="sm"
+                variant={categoryFilter === 'ライフスタイル' ? "default" : "outline"}
+                onClick={() => handleCategoryChange('ライフスタイル')}
+              >
+                ライフスタイル
+              </Button>
+              <Button
+                size="sm"
+                variant={categoryFilter === '哲学・思想' ? "default" : "outline"}
+                onClick={() => handleCategoryChange('哲学・思想')}
+              >
+                哲学・思想
+              </Button>
+              <Button
+                size="sm"
+                variant={categoryFilter === 'クリエイティブ' ? "default" : "outline"}
+                onClick={() => handleCategoryChange('クリエイティブ')}
+              >
+                クリエイティブ
+              </Button>
+              <Button
+                size="sm"
+                variant={categoryFilter === '学術・研究' ? "default" : "outline"}
+                onClick={() => handleCategoryChange('学術・研究')}
+              >
+                学術・研究
+              </Button>
+            </div>
+          </div>
           
           <div className="flex items-center gap-2">
             <SortDesc className="h-4 w-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-700">並び順:</span>
             <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant={sortBy === 'engagement' ? "default" : "outline"}
+                onClick={() => handleSortChange('engagement')}
+              >
+                <TrendingUp className="h-3 w-3 mr-1" />
+                エンゲージメント
+              </Button>
+              <Button
+                size="sm"
+                variant={sortBy === 'trending_velocity' ? "default" : "outline"}
+                onClick={() => handleSortChange('trending_velocity')}
+              >
+                <TrendingUp className="h-3 w-3 mr-1" />
+                急上昇度
+              </Button>
+              <Button
+                size="sm"
+                variant={sortBy === 'like_ratio' ? "default" : "outline"}
+                onClick={() => handleSortChange('like_ratio')}
+              >
+                <Eye className="h-3 w-3 mr-1" />
+                いいね率
+              </Button>
               <Button
                 size="sm"
                 variant={sortBy === 'like' ? "default" : "outline"}
@@ -288,7 +388,14 @@ export default function TrendsPage() {
                 {trendData.articles.map((article, index) => (
                   <div key={`${article.id}-${index}`} className="flex items-start justify-between p-4 border rounded-lg hover:bg-gray-50">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{article.title}</h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-900">{article.title}</h3>
+                        {(article as EnhancedNoteArticle).category && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                            {(article as EnhancedNoteArticle).category}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600 mt-1">by {article.authorId}</p>
                       <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                         <span className="flex items-center gap-1">
@@ -303,7 +410,19 @@ export default function TrendsPage() {
                           <MessageCircle className="h-4 w-4" />
                           {article.commentCount || 0}
                         </span>
+                        {(article as EnhancedNoteArticle).engagement && (
+                          <span className="flex items-center gap-1">
+                            <TrendingUp className="h-3 w-3" />
+                            {(article as EnhancedNoteArticle).engagement!.totalEngagementScore.toFixed(1)}
+                          </span>
+                        )}
                       </div>
+                      {(article as EnhancedNoteArticle).engagement && (
+                        <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
+                          <span>いいね率: {(article as EnhancedNoteArticle).engagement!.likeToViewRatio.toFixed(1)}%</span>
+                          <span>急上昇度: {(article as EnhancedNoteArticle).engagement!.trendingVelocity.toFixed(1)}</span>
+                        </div>
+                      )}
                       {article.tags && article.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {article.tags.slice(0, 3).map((tag: string, tagIndex: number) => (

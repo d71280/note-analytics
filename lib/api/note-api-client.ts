@@ -89,6 +89,14 @@ export interface NoteUser {
   url: string
 }
 
+export interface EngagementMetrics {
+  likeToViewRatio: number
+  commentToLikeRatio: number
+  viewToFollowerRatio: number
+  totalEngagementScore: number
+  trendingVelocity: number
+}
+
 export interface NoteArticle {
   id: string
   title: string
@@ -101,6 +109,10 @@ export interface NoteArticle {
   tags?: string[]
   thumbnailUrl?: string
   url: string
+  // エンゲージメント情報（新機能）
+  engagement?: EngagementMetrics
+  category?: string
+  viewCount?: number
 }
 
 export interface NoteCategory {
@@ -297,16 +309,20 @@ class NoteAPIClient {
     }
   }
 
-  // 記事検索 - 日付・ソート機能強化
+  // 記事検索 - 日付・ソート・カテゴリー・エンゲージメント機能強化
   async searchArticles(
     query: string, 
     page: number = 1, 
-    sortBy: 'like' | 'comment' | 'recent' = 'like',
-    dateFilter?: 'today' | 'yesterday' | 'this_week'
+    sortBy: 'engagement' | 'like' | 'comment' | 'recent' | 'trending_velocity' | 'like_ratio' = 'engagement',
+    dateFilter?: 'today' | 'yesterday' | 'this_week',
+    category?: string
   ): Promise<ApiResponse<NoteArticle[]>> {
     let url = `/api/v2/searches/notes?q=${encodeURIComponent(query)}&page=${page}&sort=${sortBy}`
     if (dateFilter) {
       url += `&date=${dateFilter}`
+    }
+    if (category && category !== 'all') {
+      url += `&category=${encodeURIComponent(category)}`
     }
     
     const response = await this.makeRequest<any>(url)
@@ -325,7 +341,17 @@ class NoteAPIClient {
       likeCount: item.likeCount || 0,
       commentCount: item.commentCount || 0,
       tags: item.hashtags?.map((tag: any) => tag.name) || item.tags || [],
-      url: item.url || `https://note.com/${item.user?.urlname || item.authorId}/n/${item.key || item.id}`
+      url: item.url || `https://note.com/${item.user?.urlname || item.authorId}/n/${item.key || item.id}`,
+      // エンゲージメント情報（APIから取得）
+      engagement: item.engagement ? {
+        likeToViewRatio: item.engagement.likeToViewRatio || 0,
+        commentToLikeRatio: item.engagement.commentToLikeRatio || 0,
+        viewToFollowerRatio: item.engagement.viewToFollowerRatio || 0,
+        totalEngagementScore: item.engagement.totalEngagementScore || 0,
+        trendingVelocity: item.engagement.trendingVelocity || 0
+      } : undefined,
+      category: item.category || undefined,
+      viewCount: item.viewCount || undefined
     }))
 
     return {
@@ -371,10 +397,10 @@ class NoteAPIClient {
     }
   }
 
-  // トレンド記事の取得（人気記事ランキング）- 日付・ソート対応
+  // トレンド記事の取得（人気記事ランキング）- 日付・ソート・エンゲージメント対応
   async getTrendingArticles(
     limit: number = 50, 
-    sortBy: 'like' | 'comment' | 'recent' = 'like',
+    sortBy: 'engagement' | 'like' | 'comment' | 'recent' | 'trending_velocity' | 'like_ratio' = 'engagement',
     dateFilter?: 'today' | 'yesterday' | 'this_week'
   ): Promise<ApiResponse<NoteArticle[]>> {
     // 空のクエリでトレンド記事を直接取得
@@ -399,7 +425,17 @@ class NoteAPIClient {
       likeCount: item.likeCount || 0,
       commentCount: item.commentCount || 0,
       tags: item.hashtags?.map((tag: any) => tag.name) || item.tags || [],
-      url: item.url || `https://note.com/${item.user?.urlname || item.authorId}/n/${item.key || item.id}`
+      url: item.url || `https://note.com/${item.user?.urlname || item.authorId}/n/${item.key || item.id}`,
+      // エンゲージメント情報（APIから取得）
+      engagement: item.engagement ? {
+        likeToViewRatio: item.engagement.likeToViewRatio || 0,
+        commentToLikeRatio: item.engagement.commentToLikeRatio || 0,
+        viewToFollowerRatio: item.engagement.viewToFollowerRatio || 0,
+        totalEngagementScore: item.engagement.totalEngagementScore || 0,
+        trendingVelocity: item.engagement.trendingVelocity || 0
+      } : undefined,
+      category: item.category || undefined,
+      viewCount: item.viewCount || undefined
     }))
     
     // リミットに応じて結果を制限

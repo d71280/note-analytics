@@ -1002,6 +1002,167 @@ async function searchArticles(query: string, limit: number = 50, sortBy: string 
   return allArticles.slice(0, limit)
 }
 
+// 高度なエンゲージメント計算アルゴリズム
+interface EngagementMetrics {
+  likeToViewRatio: number       // 閲覧数におけるいいね数の割合
+  commentToLikeRatio: number    // いいね数におけるコメント数の割合  
+  viewToFollowerRatio: number   // フォロワー数における閲覧数の割合
+  totalEngagementScore: number  // 総合エンゲージメントスコア
+  trendingVelocity: number      // トレンド勢い（時間当たりの伸び率）
+}
+
+// カテゴリー定義
+interface CategoryDefinition {
+  name: string
+  keywords: string[]
+  tags: string[]
+}
+
+const CATEGORIES: CategoryDefinition[] = [
+  {
+    name: 'テクノロジー',
+    keywords: ['AI', 'プログラミング', 'Web開発', 'エンジニア', 'IT', 'ChatGPT', 'DX', 'クラウド', 'セキュリティ'],
+    tags: ['AI', 'プログラミング', 'テクノロジー', 'エンジニア', 'Web開発', 'IT', 'DX']
+  },
+  {
+    name: 'ビジネス',
+    keywords: ['起業', 'スタートアップ', 'マーケティング', '経営', 'ビジネス', '投資', '副業', 'フリーランス'],
+    tags: ['ビジネス', '起業', 'マーケティング', '副業', 'フリーランス', '投資', 'キャリア']
+  },
+  {
+    name: 'ライフスタイル',
+    keywords: ['健康', '習慣', 'ライフスタイル', '読書', '学習', '自己啓発', 'ミニマリスト', '断捨離'],
+    tags: ['ライフスタイル', '健康', '習慣', '自己啓発', '学習', '読書']
+  },
+  {
+    name: '哲学・思想',
+    keywords: ['哲学', '思想', '批評', '社会', '文化', '政治', '宗教', '価値観'],
+    tags: ['哲学', '批評', '思想', '社会', '文化', '小林秀雄']
+  },
+  {
+    name: 'クリエイティブ',
+    keywords: ['デザイン', 'アート', 'イラスト', '写真', '音楽', '動画', 'VTuber', 'コンテンツ'],
+    tags: ['デザイン', 'アート', 'クリエイティブ', 'VTuber', 'YouTube', 'エッセイ']
+  },
+  {
+    name: '学術・研究',
+    keywords: ['研究', '学術', '科学', '心理学', '脳科学', '量子論', '物理', '医学'],
+    tags: ['研究', '学術', '意識', '量子論', '仏教', '脳科学']
+  }
+]
+
+// エンゲージメント計算関数
+function calculateEngagementMetrics(article: NoteArticleData, authorFollowers: number = 1000): EngagementMetrics {
+  const viewCount = article.viewCount || (article.likeCount * 15) // 推定閲覧数
+  const timeElapsed = (Date.now() - new Date(article.publishedAt).getTime()) / (1000 * 60 * 60) // 経過時間（時間）
+  
+  // 基本比率の計算
+  const likeToViewRatio = viewCount > 0 ? (article.likeCount / viewCount) * 100 : 0
+  const commentToLikeRatio = article.likeCount > 0 ? (article.commentCount / article.likeCount) * 100 : 0
+  const viewToFollowerRatio = authorFollowers > 0 ? (viewCount / authorFollowers) * 100 : 0
+  
+  // トレンド勢い（時間当たりのエンゲージメント）
+  const trendingVelocity = timeElapsed > 0 ? article.likeCount / Math.max(timeElapsed, 1) : article.likeCount
+  
+  // 総合エンゲージメントスコア計算
+  // 重み付け: いいね率(30%) + コメント率(25%) + 閲覧率(25%) + 勢い(20%)
+  const totalEngagementScore = 
+    (likeToViewRatio * 0.30) +
+    (commentToLikeRatio * 0.25) +
+    (viewToFollowerRatio * 0.25) +
+    (trendingVelocity * 0.20)
+  
+  return {
+    likeToViewRatio: Math.round(likeToViewRatio * 100) / 100,
+    commentToLikeRatio: Math.round(commentToLikeRatio * 100) / 100,
+    viewToFollowerRatio: Math.round(viewToFollowerRatio * 100) / 100,
+    totalEngagementScore: Math.round(totalEngagementScore * 100) / 100,
+    trendingVelocity: Math.round(trendingVelocity * 100) / 100
+  }
+}
+
+// カテゴリー判定関数
+function categorizeArticle(article: NoteArticleData): string {
+  const content = `${article.title} ${article.excerpt} ${article.tags.join(' ')}`.toLowerCase()
+  
+  for (const category of CATEGORIES) {
+    const matchCount = category.keywords.filter(keyword => 
+      content.includes(keyword.toLowerCase())
+    ).length + category.tags.filter(tag => 
+      article.tags.some(articleTag => articleTag.toLowerCase().includes(tag.toLowerCase()))
+    ).length
+    
+    if (matchCount > 0) {
+      return category.name
+    }
+  }
+  
+  return 'その他'
+}
+
+// カテゴリー別トレンド記事取得
+async function getTrendingArticlesByCategory(
+  category: string = 'all', 
+  limit: number = 10, 
+  sortBy: string = 'engagement',
+  dateFilter?: string
+): Promise<NoteArticleData[]> {
+  console.log(`🎯 Getting trending articles for category: ${category}`)
+  
+  // 基本記事データ取得
+  let articles = await getTrendingArticles(50, sortBy, dateFilter) // より多くの記事を取得
+  
+  // カテゴリーフィルタリング
+  if (category && category !== 'all') {
+    articles = articles.filter(article => categorizeArticle(article) === category)
+  }
+  
+  // エンゲージメント計算とソート
+  const articlesWithEngagement = articles.map(article => {
+    const authorFollowers = getEstimatedFollowers(article.authorId)
+    const engagement = calculateEngagementMetrics(article, authorFollowers)
+    
+    return {
+      ...article,
+      engagement,
+      category: categorizeArticle(article)
+    }
+  })
+  
+  // ソート
+  switch (sortBy) {
+    case 'engagement':
+      articlesWithEngagement.sort((a, b) => b.engagement.totalEngagementScore - a.engagement.totalEngagementScore)
+      break
+    case 'trending_velocity':
+      articlesWithEngagement.sort((a, b) => b.engagement.trendingVelocity - a.engagement.trendingVelocity)
+      break
+    case 'like_ratio':
+      articlesWithEngagement.sort((a, b) => b.engagement.likeToViewRatio - a.engagement.likeToViewRatio)
+      break
+    default:
+      articlesWithEngagement.sort((a, b) => b.likeCount - a.likeCount)
+  }
+  
+  return articlesWithEngagement.slice(0, limit)
+}
+
+// フォロワー数推定（実在ユーザーベース）
+function getEstimatedFollowers(authorId: string): number {
+  const followerEstimates: Record<string, number> = {
+    'kensuu': 15000,           // 有名起業家
+    'nenkandokusyojin': 3500,  // 文学批評家
+    'yamadahifumi': 1200,      // 哲学者
+    'nao_tsuchiya': 2800,      // 研究者
+    'joicleinfo': 800,         // VTuber
+    'harapei': 5000,           // 投資家
+    'nubechi222': 1500,        // エンジニア
+    'kanerinx': 2200           // Podcast制作者
+  }
+  
+  return followerEstimates[authorId] || 1000
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Get client IP for rate limiting
@@ -1078,21 +1239,32 @@ export async function GET(request: NextRequest) {
         }
       }
     } else if (endpoint.includes('/api/v2/searches/notes')) {
-      // 記事検索 - 日付・ソート機能強化
+      // 記事検索 - 日付・ソート・カテゴリー・エンゲージメント機能強化
       const params = new URLSearchParams(endpoint.split('?')[1] || '')
       const query = params.get('q') || ''
-      const sortBy = params.get('sort') || 'like' // like, comment, recent
+      const sortBy = params.get('sort') || 'engagement' // engagement, like, comment, recent, trending_velocity, like_ratio
       const dateFilter = params.get('date') || undefined // today, yesterday, this_week
+      const category = params.get('category') || 'all' // all, テクノロジー, ビジネス, ライフスタイル, etc.
       const decodedQuery = decodeURIComponent(query)
       
-      console.log('🔍 Searching articles:', { query: decodedQuery, sortBy, dateFilter })
+      console.log('🔍 Searching articles:', { query: decodedQuery, sortBy, dateFilter, category })
       
-      let articles: NoteArticleData[]
+      let articles: any[]
       if (decodedQuery) {
-        articles = await searchArticles(decodedQuery, 50, sortBy, dateFilter)
+        // クエリありの検索（既存機能）
+        const searchResults = await searchArticles(decodedQuery, 50, sortBy, dateFilter)
+        articles = searchResults.map(article => {
+          const authorFollowers = getEstimatedFollowers(article.authorId)
+          const engagement = calculateEngagementMetrics(article, authorFollowers)
+          return {
+            ...article,
+            engagement,
+            category: categorizeArticle(article)
+          }
+        })
       } else {
-        // クエリが空の場合はトレンド記事を返す（日付・ソート対応）
-        articles = await getTrendingArticles(50, sortBy, dateFilter)
+        // カテゴリー別トレンド記事取得（新機能）
+        articles = await getTrendingArticlesByCategory(category, 50, sortBy, dateFilter)
       }
       
       data = {
@@ -1107,8 +1279,17 @@ export async function GET(request: NextRequest) {
             publishAt: article.publishedAt,
             likeCount: article.likeCount,
             commentCount: article.commentCount,
-            hashtags: article.tags.map(tag => ({ name: tag })),
-            url: article.url
+            hashtags: article.tags.map((tag: string) => ({ name: tag })),
+            url: article.url,
+            // エンゲージメント情報を追加
+            engagement: article.engagement ? {
+              likeToViewRatio: article.engagement.likeToViewRatio,
+              commentToLikeRatio: article.engagement.commentToLikeRatio,
+              viewToFollowerRatio: article.engagement.viewToFollowerRatio,
+              totalEngagementScore: article.engagement.totalEngagementScore,
+              trendingVelocity: article.engagement.trendingVelocity
+            } : undefined,
+            category: article.category
           }))
         }
       }
