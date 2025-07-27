@@ -19,15 +19,31 @@ interface ArticleData {
 }
 
 export async function POST(request: NextRequest) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let body: any = {}
+  
   try {
-    const body = await request.json()
+    body = await request.json()
     const { question, articles, category, period } = body
+
+    console.log('🤖 Gemini Analysis Request:', { 
+      question: question?.substring(0, 50) + '...', 
+      articlesCount: articles?.length,
+      category,
+      period 
+    })
 
     if (!question || !articles) {
       return NextResponse.json(
         { error: 'Question and articles are required' },
         { status: 400 }
       )
+    }
+
+    // APIキーの検証
+    if (!GEMINI_API_KEY || GEMINI_API_KEY.length < 20) {
+      console.warn('⚠️ Gemini API key not configured, using fallback')
+      return generateFallbackResponse(articles, question, category, period)
     }
 
     // 記事データを分析用に要約
@@ -115,27 +131,26 @@ ${question}
   } catch (error) {
     console.error('Error in Gemini analysis:', error)
     
-    // エラー時は基本的なレスポンスを返す
-    return NextResponse.json({
-      analysis: `申し訳ございません。AI分析中にエラーが発生しました。
-
-🚫 **エラー状況**
-• Gemini API接続に問題があります
-• 一時的な問題の可能性があります
-
-💡 **対処方法**
-• しばらく時間をおいてから再度お試しください
-• 質問を変更してみてください
-• データ更新ボタンを押してみてください`,
-      metadata: {
-        articlesAnalyzed: 0,
-        category: 'エラー',
-        period: 'エラー',
-        timestamp: new Date().toISOString(),
-        error: true
-      }
-    })
+    // エラー時はフォールバック分析を使用
+    return generateFallbackResponse(body?.articles || [], body?.question || '', body?.category, body?.period)
   }
+}
+
+// フォールバック分析レスポンス生成
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function generateFallbackResponse(articles: any[], question: string, category?: string, period?: string) {
+  const analysis = generateFallbackAnalysis(articles, question)
+  
+  return NextResponse.json({
+    analysis: analysis,
+    metadata: {
+      articlesAnalyzed: articles.length,
+      category: category || 'フォールバック',
+      period: period || 'フォールバック',
+      timestamp: new Date().toISOString(),
+      fallback: true
+    }
+  })
 }
 
 // フォールバック分析関数（将来の機能拡張用）

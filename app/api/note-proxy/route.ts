@@ -1538,22 +1538,54 @@ function extractUserArticlesFromHTML(html: string, username: string): NoteArticl
   return articles
 }
 
-// HTMLから個別記事の詳細情報を抽出
+// HTMLタグを除去してクリーンなテキストを取得
+function cleanHtmlText(text: string): string {
+  if (!text) return ''
+  
+  return text
+    // HTMLタグを除去
+    .replace(/<[^>]*>/g, '')
+    // HTMLエンティティをデコード
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, '/')
+    // 余分な空白・改行を除去
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// HTMLから個別記事の詳細情報を抽出（改良版）
 function extractArticleInfoFromHTML(html: string, username: string, noteId: string): NoteArticleData | null {
   try {
-    // タイトル抽出パターン
+    // タイトル抽出パターン（改良版）
     const titlePatterns = [
-      new RegExp(`<title>([^|]+)\\s*\\|`, 'i'),
-      new RegExp(`<h1[^>]*>([^<]+)</h1>`, 'i'),
+      new RegExp(`<title>([^|<]+)`, 'i'),
+      new RegExp(`<h1[^>]*>([^<]+)</h1>`, 'i'), 
       new RegExp(`<meta property="og:title" content="([^"]+)"`, 'i'),
+      new RegExp(`<meta name="twitter:title" content="([^"]+)"`, 'i'),
     ]
     
     let title = ''
     for (const pattern of titlePatterns) {
       const match = html.match(pattern)
-      if (match && match[1].trim()) {
-        title = match[1].trim()
-        break
+      if (match && match[1]) {
+        const rawTitle = match[1].trim()
+        title = cleanHtmlText(rawTitle)
+        
+        // タイトルの妥当性チェック（HTMLタグっぽい内容を除外）
+        if (title && 
+            !title.includes('meta') && 
+            !title.includes('charset') && 
+            !title.includes('viewport') &&
+            title.length > 3 && 
+            title.length < 200) {
+          break
+        } else {
+          title = '' // 無効なタイトルをリセット
+        }
       }
     }
     
@@ -1580,11 +1612,38 @@ function extractArticleInfoFromHTML(html: string, username: string, noteId: stri
       publishedAt = new Date(year, month, day).toISOString()
     }
     
-    // 記事の概要抽出
-    const excerptMatch = html.match(/<meta name="description" content="([^"]+)"/) ||
-                        html.match(/<p[^>]*>([^<]{50,200})<\/p>/)
+    // 記事の概要抽出（改良版）
+    const excerptPatterns = [
+      /<meta name="description" content="([^"]+)"/,
+      /<meta property="og:description" content="([^"]+)"/,
+      /<p[^>]*>([^<]{30,300})<\/p>/,
+      /<div[^>]*class="[^"]*note-content[^"]*"[^>]*>([^<]{30,200})/
+    ]
     
-    const excerpt = excerptMatch && excerptMatch[1] ? excerptMatch[1].trim() : `${username}の記事です。`
+    let excerpt = ''
+    for (const pattern of excerptPatterns) {
+      const match = html.match(pattern)
+      if (match && match[1]) {
+        const rawExcerpt = match[1].trim()
+        excerpt = cleanHtmlText(rawExcerpt)
+        
+        // 概要の妥当性チェック
+        if (excerpt && 
+            !excerpt.includes('meta') &&
+            !excerpt.includes('charset') &&
+            !excerpt.includes('viewport') &&
+            excerpt.length > 10 && 
+            excerpt.length < 500) {
+          break
+        } else {
+          excerpt = ''
+        }
+      }
+    }
+    
+    if (!excerpt) {
+      excerpt = `${username}の記事です。`
+    }
     
     return {
       id: noteId,
