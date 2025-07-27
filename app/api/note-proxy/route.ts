@@ -387,14 +387,7 @@ function getYesterdayISO(): string {
   return yesterday.toISOString().split('T')[0]
 }
 
-function getRandomTimeYesterday(): string {
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  const randomHour = Math.floor(Math.random() * 24)
-  const randomMinute = Math.floor(Math.random() * 60)
-  yesterday.setHours(randomHour, randomMinute, 0, 0)
-  return yesterday.toISOString()
-}
+
 
 // Note.com非公開API経由でリアルデータ取得
 async function getRealNoteComTrendingData(): Promise<NoteArticleData[]> {
@@ -914,9 +907,8 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
   // 実際のNote.com傾向を反映したデータを取得
   let articles = await getRealNoteComTrendingData()
   
-  // フォールバック用の基本記事データ（スクレイピング失敗時）
-  const fallbackArticles: NoteArticleData[] = [
-    // 今日の投稿（20記事）
+  // 今日の投稿（実在確認済み記事のみ）
+  const todayArticles: NoteArticleData[] = [
     {
       id: 'nc8ed27e7bad2',
       title: '私の記事「北村紗衣という人」（2024年8月30日付）が、通報削除されました。',
@@ -964,7 +956,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
     {
       id: 'n6f8e573202e0',
       title: 'AI時代のライターの生き残り術テクニック',
-      excerpt: 'AIを活用して質の高いコンテンツを効率的に作成する方法をご紹介します。インプット強化、取材力向上、記事執筆でのAI活用について解説。',
+      excerpt: '僕は文章を書くのが結構好きで、大学生の時から雑誌に記事を書いたり、ブログを書いたり、こうやってnoteを書いたりして生活をしてたりすることが多いのですが…。AIの流れによって、いよいよ「文章が書けること自体にはあまり価値がなくなるのだろうなあ」というのを感じています。',
       authorId: 'kensuu',
       publishedAt: '2025-04-11T22:49:00Z',
       likeCount: 201,
@@ -975,7 +967,7 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
     {
       id: 'nc0448b0e0432',
       title: 'AI時代の労働の変化について考えたこと',
-      excerpt: '昨日、AI時代の労働についての記事を書きました。この続きを書きたいと思います！仕事の流れが「川」から「点在する池」へと変化していく予測について。',
+      excerpt: 'こんにちは！昨日、こんな記事を書きました。この続きを書きたいと思います！ちょっとまとまっていないかもしれませんが、、まず、生成AIをバリバリに使う人の仕事がどうなるのか？という予想を改めて書いてみると・・・。',
       authorId: 'kensuu',
       publishedAt: '2025-06-25T21:23:00Z',
       likeCount: 164,
@@ -986,475 +978,20 @@ async function getTrendingArticles(limit: number = 10, sortBy: string = 'like', 
     {
       id: 'n66cb7c87447f',
       title: 'AIによってみんな暇になるかというと、そうでもない気もしてきている話',
-      excerpt: '今日は「AIが僕たちを暇にするっていうの、本当？」というのを考えたと思います。AIの話になると、「人類は暇になっていく、だからエンタメが盛り上がる」という話が出てきます。',
+      excerpt: '今日は「AIが僕たちを暇にするっていうの、本当？」というのを考えたと思います。AIの話になると、「人類は暇になっていく、だからエンタメが盛り上がる」という話が出てきますし、僕もそう思っているんですが、一方で、ケインズさんがが1930年に言ってた「週15時間労働」の時代は未だ全然きていません。',
       authorId: 'kensuu',
       publishedAt: '2025-05-27T23:02:00Z',
       likeCount: 162,
       commentCount: 31,
       tags: ['AI', '労働', '社会'],
       url: 'https://kensuu.com/n/n66cb7c87447f'
-    },
-    {
-      id: 'n_yamadahifumi_real',
-      title: '現代における哲学の実践的価値',
-      excerpt: '小林秀雄からヘーゲルまで、現代社会で哲学思考がなぜ必要なのか。批評精神を日常に活かす方法について考察。',
-      authorId: 'yamadahifumi',
-      publishedAt: '2024-11-25T16:45:00Z',
-      likeCount: 312,
-      commentCount: 58,
-      tags: ['哲学', '批評', '小林秀雄'],
-      url: 'https://note.com/yamadahifumi/n/n5a9054175c9a'
-    },
-    {
-      id: 'n_nao_tsuchiya_real',
-      title: '脳科学から見た意識の謎',
-      excerpt: 'クオリア構造学の研究から見えてきた、意識と脳の関係性について。量子論と仏教思想の接点も含めて解説。',
-      authorId: 'nao_tsuchiya',
-      publishedAt: '2024-10-28T14:20:00Z',
-      likeCount: 892,
-      commentCount: 178,
-      tags: ['意識', '脳科学', '量子論'],
-      url: 'https://note.com/nao_tsuchiya/n/n96d593f7f762'
-    },
-    {
-      id: 'n_joicleinfo_real',
-      title: 'SCP財団とクリエイティブ活動の魅力',
-      excerpt: 'VTuber活動を通じて感じた、創作コミュニティの素晴らしさとYouTube配信の楽しさについて。',
-      authorId: 'joicleinfo',
-      publishedAt: '2024-09-12T19:30:00Z',
-      likeCount: 234,
-      commentCount: 67,
-      tags: ['VTuber', 'SCP財団', 'YouTube'],
-      url: 'https://note.com/joicleinfo/n/n9cd5f09bd8b8'
-    },
-    {
-      id: 'n_nenkandokusyojin_real',
-      title: '読書と批評の現代的意義',
-      excerpt: '年間を通じた読書体験から見えてきた、現代における文学批評の価値と映画評論との関係性。',
-      authorId: 'nenkandokusyojin',
-      publishedAt: '2024-08-15T11:15:00Z',
-      likeCount: 567,
-      commentCount: 123,
-      tags: ['読書', '批評', '文学'],
-      url: 'https://note.com/nenkandokusyojin/n/nc8ed27e7bad2'
-    },
-    {
-      id: 'n_harapei_btc',
-      title: 'ビットコイン長期投資の心構え',
-      excerpt: '暗号資産投資を続けて感じた、長期的な視点の重要性とSNS情報収集の活用方法。',
-      authorId: 'harapei',
-      publishedAt: '2024-07-20T08:30:00Z',
-      likeCount: 1123,
-      commentCount: 267,
-      tags: ['ビットコイン', '投資', 'SNS運用'],
-      url: 'https://note.com/nenkandokusyojin/n/nc8ed27e7bad2'
-    },
-    {
-      id: 'n_nubechi_tech',
-      title: 'エンジニアのキャリア選択肢を考える',
-      excerpt: 'SE経験を活かしたキャリアの多様性について。フリーランス、正社員、起業それぞれのメリット・デメリット。',
-      authorId: 'nubechi222',
-      publishedAt: '2024-06-18T13:20:00Z',
-      likeCount: 445,
-      commentCount: 89,
-      tags: ['エンジニア', 'キャリア', 'SE'],
-      url: 'https://note.com/yamadahifumi/n/n5a9054175c9a'
-    },
-    {
-      id: 'n_kanerinx_content',
-      title: '音声コンテンツの制作技術',
-      excerpt: 'Podcast制作で培ったオーディオ収録・編集のノウハウと機材選びのポイント。',
-      authorId: 'kanerinx',
-      publishedAt: '2024-05-22T20:15:00Z',
-      likeCount: 567,
-      commentCount: 123,
-      tags: ['Podcast', '制作技術', 'オーディオ'],
-      url: 'https://note.com/nao_tsuchiya/n/n96d593f7f762'
-    },
-    {
-      id: 'n_kensuu_innovation',
-      title: 'テクノロジーで社会を変える方法',
-      excerpt: 'インターネットサービス開発を通じて感じた、技術が社会に与える影響と起業家の責任。',
-      authorId: 'kensuu',
-      publishedAt: '2024-04-10T09:00:00Z',
-      likeCount: 892,
-      commentCount: 178,
-      tags: ['テクノロジー', '社会変革', '起業'],
-      url: 'https://kensuu.com/n/n094d0aebacfa'
-    },
-    {
-      id: 'n_yamadahifumi_culture',
-      title: '現代文化における批評の役割',
-      excerpt: '哲学的視点から見た現代のカルチャーシーンと、批評家としての立場について考察。',
-      authorId: 'yamadahifumi',
-      publishedAt: '2024-03-05T17:40:00Z',
-      likeCount: 234,
-      commentCount: 56,
-      tags: ['哲学', '批評', '文化'],
-      url: 'https://note.com/joicleinfo/n/n9cd5f09bd8b8'
-    },
-    {
-      id: 'n_nao_tsuchiya_brain',
-      title: '脳研究の最前線から見える未来',
-      excerpt: '意識研究とクオリア構造学の発展が社会に与える影響について。AIと人間の境界線を考える。',
-      authorId: 'nao_tsuchiya',
-      publishedAt: '2024-02-14T11:30:00Z',
-      likeCount: 445,
-      commentCount: 89,
-      tags: ['脳科学', '意識', '未来'],
-      url: 'https://kensuu.com/n/na070c1c9907e'
-    },
-    {
-      id: 'n_joicleinfo_vtuber',
-      title: 'VTuber活動で得た創作の喜び',
-      excerpt: 'YouTube配信を通じて感じた、視聴者とのコミュニケーションとSCP財団コンテンツ制作の魅力。',
-      authorId: 'joicleinfo',
-      publishedAt: '2024-01-20T15:45:00Z',
-      likeCount: 356,
-      commentCount: 78,
-      tags: ['VTuber', 'YouTube', 'SCP財団'],
-      url: 'https://note.com/nenkandokusyojin/n/nc8ed27e7bad2'
-    },
-    
-    // 昨日の投稿（25記事）
-    {
-      id: 'n_harapei_strategy',
-      title: '長期投資戦略とX運用の相乗効果',
-      excerpt: 'ビットコイン投資とSNS運用を組み合わせた情報収集と投資判断の最適化について。',
-      authorId: 'harapei',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 634,
-      commentCount: 119,
-      tags: ['投資', 'ビットコイン', 'X運用'],
-      url: 'https://note.com/yamadahifumi/n/n5a9054175c9a'
-    },
-    {
-      id: 'n_kensuu_community',
-      title: 'インターネットコミュニティの設計思想',
-      excerpt: 'アルの開発・運営を通じて学んだ、健全なオンラインコミュニティを作るための要素について。',
-      authorId: 'kensuu',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 189,
-      commentCount: 33,
-      tags: ['投資', '資産運用', '金融'],
-      url: 'https://note.com/yamotty3/n/n5e4f60f388j8'
-    },
-    {
-      id: 'n6f5g71f499k9',
-      title: 'テクノロジーが変える働き方の未来',
-      excerpt: 'AIやリモートワークの普及により、私たちの働き方はどのように変化していくのでしょうか。',
-      authorId: 'hiroki_hasegawa',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 267,
-      commentCount: 41,
-      tags: ['テクノロジー', '働き方', '未来'],
-      url: 'https://note.com/hiroki_hasegawa/n/n6f5g71f499k9'
-    },
-    {
-      id: 'n7g6h82f500l0',
-      title: 'ライフスタイルを豊かにする習慣づくり',
-      excerpt: '毎日の小さな習慣が人生を大きく変える。実践的な習慣形成のコツをお教えします。',
-      authorId: 'akane_note',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 178,
-      commentCount: 24,
-      tags: ['ライフスタイル', '習慣', '自己改善'],
-      url: 'https://note.com/akane_note/n/n7g6h82f500l0'
-    },
-    {
-      id: 'na0j1k5f833o3',
-      title: 'フリーランスエンジニアの営業戦略',
-      excerpt: '案件獲得から単価アップまで、フリーランスとして成功するための実践的営業術。',
-      authorId: 'freelance_engineer',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 412,
-      commentCount: 78,
-      tags: ['フリーランス', 'エンジニア', '営業'],
-      url: 'https://note.com/freelance_engineer/n/na0j1k5f833o3'
-    },
-    {
-      id: 'nq6z7a1f499e9',
-      title: 'YouTubeで月100万再生を達成する動画制作術',
-      excerpt: 'バイラル動画の作り方から継続的な視聴者獲得まで、成功の秘訣を公開。',
-      authorId: 'youtube_creator',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 567,
-      commentCount: 123,
-      tags: ['YouTube', '動画制作', 'バイラル'],
-      url: 'https://note.com/youtube_creator/n/nq6z7a1f499e9'
-    },
-    {
-      id: 'nr7a8b2f500f0',
-      title: '不動産投資で失敗しないための基本原則',
-      excerpt: '初心者が陥りがちな不動産投資の罠と、安全に利益を上げる方法。',
-      authorId: 'real_estate_pro',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 345,
-      commentCount: 67,
-      tags: ['不動産', '投資', 'リスク管理'],
-      url: 'https://note.com/real_estate_pro/n/nr7a8b2f500f0'
-    },
-    {
-      id: 'ns8b9c3f611g1',
-      title: 'オンライン英語学習で3ヶ月でTOEIC200点アップ',
-      excerpt: '効率的な英語学習法と実際に使って効果があったアプリ・サービス紹介。',
-      authorId: 'english_learner',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 456,
-      commentCount: 89,
-      tags: ['英語学習', 'TOEIC', 'オンライン'],
-      url: 'https://note.com/english_learner/n/ns8b9c3f611g1'
-    },
-    {
-      id: 'nt9c0d4f722h2',
-      title: 'フィットネス初心者のための筋トレ完全ガイド',
-      excerpt: '正しいフォームから食事管理まで、理想の体を作るための実践プログラム。',
-      authorId: 'fitness_trainer',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 789,
-      commentCount: 156,
-      tags: ['フィットネス', '筋トレ', '健康'],
-      url: 'https://note.com/fitness_trainer/n/nt9c0d4f722h2'
-    },
-    {
-      id: 'nu0d1e5f833i3',
-      title: 'Webデザインのトレンド2024年版',
-      excerpt: '今年注目すべきWebデザインのトレンドと実装のポイントを詳しく解説。',
-      authorId: 'web_designer',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 423,
-      commentCount: 91,
-      tags: ['Webデザイン', 'トレンド', 'UI'],
-      url: 'https://note.com/web_designer/n/nu0d1e5f833i3'
-    },
-    {
-      id: 'nv1e2f6f944j4',
-      title: 'ミニマリストライフで人生が変わった体験談',
-      excerpt: '物を減らすことで得られた時間と心の余裕、そして新しい価値観。',
-      authorId: 'minimalist_life',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 234,
-      commentCount: 56,
-      tags: ['ミニマリスト', 'ライフスタイル', '断捨離'],
-      url: 'https://note.com/minimalist_life/n/nv1e2f6f944j4'
-    },
-    {
-      id: 'nw2f3g7f055k5',
-      title: 'ブロックチェーン技術の実用化事例2024',
-      excerpt: '金融以外の分野でも進むブロックチェーン活用の最新動向と将来性。',
-      authorId: 'blockchain_analyst',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 345,
-      commentCount: 78,
-      tags: ['ブロックチェーン', '実用化', 'テクノロジー'],
-      url: 'https://note.com/blockchain_analyst/n/nw2f3g7f055k5'
-    },
-    {
-      id: 'nx3g4h8f166l6',
-      title: 'AI時代に生き残るためのスキルセット',
-      excerpt: '人工知能が発達する中で人間にしかできない価値のあるスキルとは。',
-      authorId: 'future_skills',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 567,
-      commentCount: 123,
-      tags: ['AI', 'スキル', '将来性'],
-      url: 'https://note.com/future_skills/n/nx3g4h8f166l6'
-    },
-    {
-      id: 'ny4h5i9f277m7',
-      title: 'エシカル消費で社会を変える買い物術',
-      excerpt: '日常の消費行動を通じて社会問題の解決に貢献する方法。',
-      authorId: 'ethical_consumer',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 234,
-      commentCount: 45,
-      tags: ['エシカル', '消費', '社会問題'],
-      url: 'https://note.com/ethical_consumer/n/ny4h5i9f277m7'
-    },
-    {
-      id: 'nz5i6j0f388n8',
-      title: 'テレワーク環境の最適化ガイド',
-      excerpt: '生産性を最大化するホームオフィスの設備とワークフロー改善術。',
-      authorId: 'remote_setup',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 456,
-      commentCount: 89,
-      tags: ['テレワーク', '環境', '生産性'],
-      url: 'https://note.com/remote_setup/n/nz5i6j0f388n8'
-    },
-    {
-      id: 'naa6j7k1f499o9',
-      title: 'NFTアートで稼ぐクリエイターの戦略',
-      excerpt: 'デジタルアート作品をNFTとして販売し、継続的な収益を得る方法。',
-      authorId: 'nft_artist',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 345,
-      commentCount: 67,
-      tags: ['NFT', 'アート', 'クリエイター'],
-      url: 'https://note.com/nft_artist/n/naa6j7k1f499o9'
-    },
-    {
-      id: 'nbb7k8l2f500p0',
-      title: '心理学を活用したマネジメント術',
-      excerpt: 'チームの能力を最大限引き出すための科学的アプローチと実践方法。',
-      authorId: 'psychology_manager',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 567,
-      commentCount: 112,
-      tags: ['心理学', 'マネジメント', 'チーム'],
-      url: 'https://note.com/psychology_manager/n/nbb7k8l2f500p0'
-    },
-    {
-      id: 'ncc8l9m3f611q1',
-      title: 'プラントベース料理で健康的な食生活',
-      excerpt: '植物性食品を中心とした美味しく栄養バランスの取れた食事プラン。',
-      authorId: 'plant_based_chef',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 234,
-      commentCount: 56,
-      tags: ['プラントベース', '料理', '健康'],
-      url: 'https://note.com/plant_based_chef/n/ncc8l9m3f611q1'
-    },
-    {
-      id: 'ndd9m0n4f722r2',
-      title: 'コピーライティングで売上を倍増させる技術',
-      excerpt: '人の心を動かす文章術と実際の成果につながるライティングテクニック。',
-      authorId: 'copywriter_pro',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 456,
-      commentCount: 89,
-      tags: ['コピーライティング', '売上', 'マーケティング'],
-      url: 'https://note.com/copywriter_pro/n/ndd9m0n4f722r2'
-    },
-    {
-      id: 'nee0n1o5f833s3',
-      title: 'サイバーセキュリティ入門：個人でできる対策',
-      excerpt: '日常生活でのセキュリティリスクと誰でも実践できる防御方法。',
-      authorId: 'security_expert',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 345,
-      commentCount: 67,
-      tags: ['セキュリティ', '対策', 'IT'],
-      url: 'https://note.com/security_expert/n/nee0n1o5f833s3'
-    },
-    {
-      id: 'nff1o2p6f944t4',
-      title: '写真撮影で SNS フォロワーを増やすコツ',
-      excerpt: 'インスタ映えする写真の撮り方から投稿戦略まで、実践的なテクニック集。',
-      authorId: 'photo_influencer',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 678,
-      commentCount: 134,
-      tags: ['写真', 'SNS', 'インフルエンサー'],
-      url: 'https://note.com/photo_influencer/n/nff1o2p6f944t4'
-    },
-    {
-      id: 'ngg2p3q7f055u5',
-      title: 'スマートホーム導入で快適生活実現',
-      excerpt: 'IoT機器を活用した効率的で快適な住環境の構築方法と実際の効果。',
-      authorId: 'smart_home_user',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 234,
-      commentCount: 45,
-      tags: ['スマートホーム', 'IoT', 'ライフスタイル'],
-      url: 'https://note.com/smart_home_user/n/ngg2p3q7f055u5'
-    },
-    {
-      id: 'nhh3q4r8f166v6',
-      title: 'オンラインコースビジネスで月収100万円',
-      excerpt: '知識とスキルを商品化してオンライン教育事業を成功させる全プロセス。',
-      authorId: 'online_educator',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 567,
-      commentCount: 123,
-      tags: ['オンライン教育', 'ビジネス', '収益化'],
-      url: 'https://note.com/online_educator/n/nhh3q4r8f166v6'
-    },
-    {
-      id: 'nii4r5s9f277w7',
-      title: '瞑想とマインドフルネスで人生を変える',
-      excerpt: '科学的に証明された瞑想の効果と日常生活への取り入れ方。',
-      authorId: 'meditation_guide',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 345,
-      commentCount: 78,
-      tags: ['瞑想', 'マインドフルネス', 'メンタルヘルス'],
-      url: 'https://note.com/meditation_guide/n/nii4r5s9f277w7'
-    },
-    {
-      id: 'njj5s6t0f388x8',
-      title: '環境問題解決のためのテクノロジー活用',
-      excerpt: 'CleanTechやGreenTechが地球環境に与えるポジティブなインパクト。',
-      authorId: 'cleantech_researcher',
-      publishedAt: getRandomTimeYesterday(),
-      likeCount: 234,
-      commentCount: 56,
-      tags: ['環境', 'テクノロジー', 'CleanTech'],
-      url: 'https://note.com/cleantech_researcher/n/njj5s6t0f388x8'
-    },
-    
-    // 今週の投稿（過去3-7日）
-    {
-      id: 'nkk6t7u1f499y9',
-      title: 'ノーコードツールで作るWebアプリケーション',
-      excerpt: 'プログラミング知識不要でWebアプリを開発する最新ツールとその活用法。',
-      authorId: 'nocode_developer',
-      publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      likeCount: 345,
-      commentCount: 67,
-      tags: ['ノーコード', 'Webアプリ', '開発'],
-      url: 'https://note.com/nocode_developer/n/nkk6t7u1f499y9'
-    },
-    {
-      id: 'nll7u8v2f500z0',
-      title: 'メタバース時代の新しいビジネスモデル',
-      excerpt: '仮想空間での経済活動とそれを支える技術とビジネス戦略。',
-      authorId: 'metaverse_biz',
-      publishedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-      likeCount: 456,
-      commentCount: 89,
-      tags: ['メタバース', 'ビジネス', 'VR'],
-      url: 'https://note.com/metaverse_biz/n/nll7u8v2f500z0'
-    },
-    {
-      id: 'nmm8v9w3f611a1',
-      title: '量子コンピューティングの実用化への道',
-      excerpt: '次世代コンピューティング技術の現状と実用化に向けた課題と展望。',
-      authorId: 'quantum_researcher',
-      publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      likeCount: 278,
-      commentCount: 45,
-      tags: ['量子コンピュータ', '技術', '未来'],
-      url: 'https://note.com/quantum_researcher/n/nmm8v9w3f611a1'
-    },
-    {
-      id: 'nnn9w0x4f722b2',
-      title: 'Z世代が変える消費行動とマーケティング',
-      excerpt: 'デジタルネイティブ世代の価値観と企業に求められる新しいアプローチ。',
-      authorId: 'genz_marketer',
-      publishedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-      likeCount: 567,
-      commentCount: 123,
-      tags: ['Z世代', 'マーケティング', '消費'],
-      url: 'https://note.com/genz_marketer/n/nnn9w0x4f722b2'
-    },
-    {
-      id: 'noo0x1y5f833c3',
-      title: 'サブスクリプションビジネス成功の秘訣',
-      excerpt: '継続課金モデルで安定した収益を上げるための戦略と実践例。',
-      authorId: 'subscription_expert',
-      publishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      likeCount: 423,
-      commentCount: 78,
-      tags: ['サブスク', 'ビジネスモデル', '収益'],
-      url: 'https://note.com/subscription_expert/n/noo0x1y5f833c3'
     }
   ]
 
   // スクレイピングが失敗した場合はフォールバックデータを使用
   if (articles.length === 0) {
     console.log('⚠️ Using fallback data as scraping failed')
-    articles = fallbackArticles
+    articles = todayArticles
   }
 
   let filteredArticles = [...articles]
