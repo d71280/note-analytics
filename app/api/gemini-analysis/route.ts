@@ -153,7 +153,36 @@ function generateFallbackResponse(articles: any[], question: string, category?: 
   })
 }
 
-// フォールバック分析関数（将来の機能拡張用）
+// HTMLタグを除去してクリーンなテキストを取得
+function cleanText(text: string): string {
+  if (!text) return ''
+  
+  return text
+    // HTMLタグを除去
+    .replace(/<[^>]*>/g, '')
+    // HTMLエンティティをデコード
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, '/')
+    .replace(/&nbsp;/g, ' ')
+    // メタタグ関連のノイズを除去
+    .replace(/data-n-head="[^"]*"/g, '')
+    .replace(/charset="[^"]*"/g, '')
+    .replace(/content="[^"]*"/g, '')
+    .replace(/property="[^"]*"/g, '')
+    .replace(/name="[^"]*"/g, '')
+    // 連続する特殊文字や記号を整理
+    .replace(/[<>{}[\]]/g, '')
+    .replace(/[|｜]/g, ' ')
+    // 余分な空白・改行を除去
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// フォールバック分析関数（HTMLクリーニング対応版）
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateFallbackAnalysis(articles: ArticleData[], question: string): string {
   if (!articles || articles.length === 0) {
@@ -171,8 +200,12 @@ function generateFallbackAnalysis(articles: ArticleData[], question: string): st
   const avgLikes = Math.round(totalLikes / articles.length)
   const topArticle = articles.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))[0]
   
+  // タイトルをクリーンアップ
+  const cleanTopTitle = topArticle ? cleanText(topArticle.title) : ''
+  const cleanTopAuthor = topArticle ? cleanText(topArticle.authorId) : ''
+  
   const categories = Array.from(new Set(articles.map(a => a.category).filter(Boolean)))
-  const topAuthors = Array.from(new Set(articles.map(a => a.authorId))).slice(0, 5)
+  const topAuthors = Array.from(new Set(articles.map(a => cleanText(a.authorId || '')))).slice(0, 5)
 
   return `🤖 **AI分析結果** (簡易版)
 
@@ -182,12 +215,12 @@ function generateFallbackAnalysis(articles: ArticleData[], question: string): st
 • 総いいね数: ${totalLikes.toLocaleString()}
 
 🏆 **トップ記事**
-• タイトル: "${topArticle?.title}"
-• 著者: ${topArticle?.authorId}
+• タイトル: "${cleanTopTitle}"
+• 著者: ${cleanTopAuthor}
 • いいね: ${topArticle?.likeCount}
 
 📂 **カテゴリー**
-${categories.map(cat => `• ${cat}`).join('\n')}
+${categories.map(cat => `• ${cleanText(cat || '')}`).join('\n')}
 
 👤 **活発な著者**
 ${topAuthors.map(author => `• ${author}`).join('\n')}

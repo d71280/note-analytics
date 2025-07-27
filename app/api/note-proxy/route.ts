@@ -1538,12 +1538,12 @@ function extractUserArticlesFromHTML(html: string, username: string): NoteArticl
   return articles
 }
 
-// HTMLタグを除去してクリーンなテキストを取得
+// HTMLタグを除去してクリーンなテキストを取得（強化版）
 function cleanHtmlText(text: string): string {
   if (!text) return ''
   
   return text
-    // HTMLタグを除去
+    // HTMLタグを除去（ネストしたタグも含めて）
     .replace(/<[^>]*>/g, '')
     // HTMLエンティティをデコード
     .replace(/&lt;/g, '<')
@@ -1552,20 +1552,83 @@ function cleanHtmlText(text: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#x27;/g, "'")
     .replace(/&#x2F;/g, '/')
+    .replace(/&nbsp;/g, ' ')
+    // メタタグ関連のノイズを除去
+    .replace(/data-n-head="[^"]*"/g, '')
+    .replace(/charset="[^"]*"/g, '')
+    .replace(/content="[^"]*"/g, '')
+    .replace(/property="[^"]*"/g, '')
+    .replace(/name="[^"]*"/g, '')
+    .replace(/http-equiv="[^"]*"/g, '')
+    .replace(/data-hid="[^"]*"/g, '')
+    // JavaScriptやCSSのノイズを除去
+    .replace(/\{[^}]*\}/g, '')
+    .replace(/\[[^\]]*\]/g, '')
+    // 連続する特殊文字や記号を整理
+    .replace(/[<>{}[\]]/g, '')
+    .replace(/[|｜]/g, ' ')
     // 余分な空白・改行を除去
     .replace(/\s+/g, ' ')
     .trim()
 }
 
+// タイトル専用のクリーニング関数
+function cleanTitle(rawTitle: string): string {
+  if (!rawTitle) return ''
+  
+  let title = rawTitle
+  
+  // </title>タグより前の部分のみを取得
+  const titleEndMatch = title.match(/^([^<]+)(?:<\/title>|<)/i)
+  if (titleEndMatch) {
+    title = titleEndMatch[1]
+  }
+  
+  // パイプ記号(|)より前の部分のみを取得（サイト名除去）
+  const pipeIndex = title.indexOf('|')
+  if (pipeIndex > 0) {
+    title = title.substring(0, pipeIndex)
+  }
+  
+  // 「｜」記号より前の部分のみを取得
+  const japaneseIndex = title.indexOf('｜')
+  if (japaneseIndex > 0) {
+    title = title.substring(0, japaneseIndex)
+  }
+  
+  // HTMLクリーニング適用
+  title = cleanHtmlText(title)
+  
+  // タイトルの妥当性最終チェック
+  if (!title || 
+      title.length < 3 || 
+      title.length > 150 ||
+      title.includes('meta') ||
+      title.includes('charset') ||
+      title.includes('viewport') ||
+      title.includes('script') ||
+      title.includes('style')) {
+    return ''
+  }
+  
+  return title.trim()
+}
+
 // HTMLから個別記事の詳細情報を抽出（改良版）
 function extractArticleInfoFromHTML(html: string, username: string, noteId: string): NoteArticleData | null {
   try {
-    // タイトル抽出パターン（改良版）
+    // タイトル抽出パターン（大幅強化版）
     const titlePatterns = [
-      new RegExp(`<title>([^|<]+)`, 'i'),
-      new RegExp(`<h1[^>]*>([^<]+)</h1>`, 'i'), 
+      // より広範囲でtitleタグを取得
+      new RegExp(`<title[^>]*>([^<]*)</title>`, 'i'),
+      new RegExp(`<title[^>]*>([^<]+)`, 'i'),
+      // OGタイトルから取得
       new RegExp(`<meta property="og:title" content="([^"]+)"`, 'i'),
       new RegExp(`<meta name="twitter:title" content="([^"]+)"`, 'i'),
+      // h1タグから取得
+      new RegExp(`<h1[^>]*>([^<]+)</h1>`, 'i'),
+      // JSON-LDから取得
+      new RegExp(`"headline":"([^"]+)"`, 'i'),
     ]
     
     let title = ''
@@ -1573,24 +1636,20 @@ function extractArticleInfoFromHTML(html: string, username: string, noteId: stri
       const match = html.match(pattern)
       if (match && match[1]) {
         const rawTitle = match[1].trim()
-        title = cleanHtmlText(rawTitle)
+        title = cleanTitle(rawTitle)
         
-        // タイトルの妥当性チェック（HTMLタグっぽい内容を除外）
-        if (title && 
-            !title.includes('meta') && 
-            !title.includes('charset') && 
-            !title.includes('viewport') &&
-            title.length > 3 && 
-            title.length < 200) {
+        // 有効なタイトルが取得できた場合は終了
+        if (title && title.length > 0) {
+          console.log(`✅ Title extracted: "${title}" from pattern: ${pattern}`)
           break
-        } else {
-          title = '' // 無効なタイトルをリセット
         }
       }
     }
     
+    // フォールバック: タイトルが取得できない場合
     if (!title) {
-      title = `Note記事 by ${username}` // フォールバック
+      title = `Note記事 by ${username}`
+      console.log(`⚠️ Using fallback title for ${username}`)
     }
     
     // いいね数・コメント数の抽出
@@ -1612,12 +1671,18 @@ function extractArticleInfoFromHTML(html: string, username: string, noteId: stri
       publishedAt = new Date(year, month, day).toISOString()
     }
     
-    // 記事の概要抽出（改良版）
+    // 記事の概要抽出（強化版）
     const excerptPatterns = [
       /<meta name="description" content="([^"]+)"/,
       /<meta property="og:description" content="([^"]+)"/,
+      /<meta name="twitter:description" content="([^"]+)"/,
+      // JSON-LDから取得
+      /"description":"([^"]{20,400})"/,
+      // 記事内容から取得
       /<p[^>]*>([^<]{30,300})<\/p>/,
-      /<div[^>]*class="[^"]*note-content[^"]*"[^>]*>([^<]{30,200})/
+      /<div[^>]*class="[^"]*note-content[^"]*"[^>]*>([^<]{30,200})/,
+      // その他のコンテンツ
+      /<div[^>]*class="[^"]*content[^"]*"[^>]*>([^<]{30,200})/
     ]
     
     let excerpt = ''
@@ -1627,13 +1692,19 @@ function extractArticleInfoFromHTML(html: string, username: string, noteId: stri
         const rawExcerpt = match[1].trim()
         excerpt = cleanHtmlText(rawExcerpt)
         
-        // 概要の妥当性チェック
+        // 概要の妥当性チェック（より厳格）
         if (excerpt && 
+            excerpt.length > 10 && 
+            excerpt.length < 400 &&
             !excerpt.includes('meta') &&
             !excerpt.includes('charset') &&
             !excerpt.includes('viewport') &&
-            excerpt.length > 10 && 
-            excerpt.length < 500) {
+            !excerpt.includes('script') &&
+            !excerpt.includes('style') &&
+            !excerpt.includes('function') &&
+            !excerpt.includes('window') &&
+            !excerpt.includes('document')) {
+          console.log(`✅ Excerpt extracted: "${excerpt.substring(0, 50)}..." from pattern: ${pattern}`)
           break
         } else {
           excerpt = ''
@@ -1641,8 +1712,10 @@ function extractArticleInfoFromHTML(html: string, username: string, noteId: stri
       }
     }
     
+    // フォールバック: 概要が取得できない場合
     if (!excerpt) {
       excerpt = `${username}の記事です。`
+      console.log(`⚠️ Using fallback excerpt for ${username}`)
     }
     
     return {
