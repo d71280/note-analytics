@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -250,6 +250,13 @@ export default function TrendsPage() {
   const updateFilter = (key: keyof SearchFilters, value: string | SortType) => {
     setSearchFilters(prev => ({ ...prev, [key]: value }))
   }
+
+  // ソート順が変更されたら自動的に再検索
+  useEffect(() => {
+    if (hasSearched && searchFilters.category.trim()) {
+      fetchTrendData(searchFilters)
+    }
+  }, [searchFilters.sortBy]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // データクリア
   const handleClearData = () => {
