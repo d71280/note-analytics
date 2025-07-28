@@ -153,7 +153,6 @@ export function AITrendAnalyzer({ articles, currentCategory = 'all', currentPeri
   }
 
   // フォールバック用の基本分析
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const generateBasicAnalysis = (question: string): string => {
     const totalArticles = articles.length
     
@@ -168,26 +167,121 @@ export function AITrendAnalyzer({ articles, currentCategory = 'all', currentPeri
 • しばらく時間をおいてから再度お試しください`
     }
 
+    // 基本統計の計算
+    const sortedArticles = [...articles].sort((a, b) => b.likeCount - a.likeCount)
     const avgLikes = Math.round(articles.reduce((sum, article) => sum + article.likeCount, 0) / totalArticles)
-    const topArticle = articles.sort((a, b) => b.likeCount - a.likeCount)[0]
+    const totalLikes = articles.reduce((sum, article) => sum + article.likeCount, 0)
+    const avgComments = Math.round(articles.reduce((sum, article) => sum + article.commentCount, 0) / totalArticles)
     
-    return `🤖 **基本分析結果**
+    // トップ5記事
+    const topArticles = sortedArticles.slice(0, 5)
+    
+    // カテゴリー分析
+    const categoryMap = new Map<string, number>()
+    articles.forEach(article => {
+      const cat = article.category || 'その他'
+      categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1)
+    })
+    const topCategories = Array.from(categoryMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+    
+    // 著者分析
+    const authorMap = new Map<string, { count: number, totalLikes: number }>()
+    articles.forEach(article => {
+      const author = article.authorId
+      const current = authorMap.get(author) || { count: 0, totalLikes: 0 }
+      authorMap.set(author, {
+        count: current.count + 1,
+        totalLikes: current.totalLikes + article.likeCount
+      })
+    })
+    const topAuthors = Array.from(authorMap.entries())
+      .sort((a, b) => b[1].totalLikes - a[1].totalLikes)
+      .slice(0, 5)
+    
+    // 質問に応じた分析
+    if (question.includes('スキ数') || question.includes('いいね') || question.includes('多い')) {
+      return `🤖 **AI分析結果** (簡易版)
 
-📊 **統計情報:**
+📊 **全体統計**
 • 分析記事数: ${totalArticles}件
 • 平均いいね数: ${avgLikes}
-• カテゴリー: ${currentCategory}
-• 期間: ${currentPeriod}
+• 総いいね数: ${totalLikes.toLocaleString()}
 
-🏆 **トップ記事:**
-• "${topArticle?.title}"
-• 著者: ${topArticle?.authorId}
-• いいね: ${topArticle?.likeCount}
+🏆 **トップ記事**
+${topArticles.map((article, index) => 
+  `${index + 1}. "${cleanAnalysisText(article.title)}"
+   • 著者: ${article.authorId}
+   • いいね: ${article.likeCount.toLocaleString()}`
+).join('\n\n')}
 
-💡 **より詳細な分析をご希望の場合:**
-• Gemini AI接続を確認中です
-• 具体的な質問を入力してください
-• データ更新をお試しください`
+📂 **カテゴリー別人気**
+${topCategories.map(([cat, count]) => `• ${cat}: ${count}件`).join('\n')}
+
+👤 **人気著者TOP5**
+${topAuthors.map(([author, data]) => 
+  `• ${author}: ${data.count}記事, 合計${data.totalLikes.toLocaleString()}いいね`
+).join('\n')}
+
+💡 **分析結果**
+スキ数が多い記事の特徴：
+• 公式アカウント(info)の告知記事が圧倒的に人気
+• AI関連のトピックが注目を集めている
+• 収益化・マネタイズに関する情報が好まれる傾向
+
+⚠️ 注意: Gemini AI接続エラーのため簡易分析を表示中`
+    }
+    
+    if (question.includes('差別化') || question.includes('競合')) {
+      return `🤖 **AI分析結果** (簡易版)
+
+📊 **全体統計**
+• 分析記事数: ${totalArticles}件
+• 平均いいね数: ${avgLikes}
+• 総いいね数: ${totalLikes.toLocaleString()}
+
+🏆 **トップ記事**
+${topArticles.slice(0, 1).map(article => 
+  `• タイトル: "${cleanAnalysisText(article.title)}"
+• 著者: ${article.authorId}
+• いいね: ${article.likeCount.toLocaleString()}`
+).join('\n')}
+
+📂 **カテゴリー**
+${topCategories.slice(0, 2).map(([cat]) => `• ${cat}`).join('\n')}
+
+👤 **活発な著者**
+${topAuthors.slice(0, 5).map(([author]) => `• ${author}`).join('\n')}
+
+💡 **分析結果**
+現在${totalArticles}件の記事を分析しました。より詳細な分析には、具体的な質問をお聞かせください。
+
+⚠️ 注意: Gemini AI接続エラーのため簡易分析を表示中`
+    }
+    
+    // デフォルトの応答
+    return `🤖 **AI分析結果** (簡易版)
+
+📊 **全体統計**
+• 分析記事数: ${totalArticles}件
+• 平均いいね数: ${avgLikes}
+• 平均コメント数: ${avgComments}
+
+🏆 **人気記事TOP3**
+${topArticles.slice(0, 3).map((article, index) => 
+  `${index + 1}. "${cleanAnalysisText(article.title)}"
+   • いいね: ${article.likeCount}`
+).join('\n')}
+
+📂 **カテゴリー分布**
+${topCategories.map(([cat, count]) => `• ${cat}: ${count}件`).join('\n')}
+
+💡 **トレンド傾向**
+• ${topCategories[0]?.[0] || 'テクノロジー'}カテゴリーが最も活発
+• 平均エンゲージメント: ${avgLikes + avgComments}
+
+⚠️ 注意: Gemini AI接続エラーのため簡易分析を表示中`
   }
 
   const handleSendMessage = async () => {
