@@ -3209,7 +3209,14 @@ export async function GET(request: NextRequest) {
       const category = params.get('category') || 'all'
       const decodedQuery = decodeURIComponent(query)
       
-      console.log('🔍 Searching articles:', { query: decodedQuery, sortBy, dateFilter, category })
+      console.log('🔍 Searching articles:', { 
+        query: decodedQuery, 
+        sortBy, 
+        dateFilter, 
+        category,
+        fullEndpoint: endpoint,
+        parsedParams: Object.fromEntries(params.entries())
+      })
       
       let articles: any[] = []
       
@@ -3240,6 +3247,13 @@ export async function GET(request: NextRequest) {
           
           if (response.ok) {
             const data = await response.json()
+            console.log(`📊 API Response structure for page ${page + 1}:`, {
+              hasData: !!data.data,
+              hasNotes: !!data.data?.notes,
+              hasContents: !!data.data?.notes?.contents,
+              contentsLength: data.data?.notes?.contents?.length || 0,
+              firstItemKeys: data.data?.notes?.contents?.[0] ? Object.keys(data.data.notes.contents[0]) : []
+            })
             const apiArticles = data.data?.notes?.contents || []
             console.log(`✅ Page ${page + 1} returned ${apiArticles.length} articles`)
             
