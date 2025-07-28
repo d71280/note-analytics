@@ -3214,33 +3214,56 @@ export async function GET(request: NextRequest) {
       let articles: any[] = []
       
       try {
-        // Note.com API v3を使用して検索
-        const searchUrl = decodedQuery 
-          ? `https://note.com/api/v3/searches?context=note&q=${encodeURIComponent(decodedQuery)}&size=100&start=0`
-          : `https://note.com/api/v3/searches?context=note&size=100&start=0`
-          
-        console.log(`🔍 Calling Note.com API v3: ${searchUrl}`)
+        // Note.com API v3を使用して検索（ページネーション対応）
+        const pageSize = 20 // Note.com APIの実際のページサイズ
+        const totalPages = Math.ceil(100 / pageSize) // 100件取得するためのページ数
+        let allApiArticles: any[] = []
         
-        const response = await fetch(searchUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
-            'Referer': 'https://note.com',
-            'Origin': 'https://note.com'
+        for (let page = 0; page < totalPages; page++) {
+          const start = page * pageSize
+          const searchUrl = decodedQuery 
+            ? `https://note.com/api/v3/searches?context=note&q=${encodeURIComponent(decodedQuery)}&size=${pageSize}&start=${start}`
+            : `https://note.com/api/v3/searches?context=note&size=${pageSize}&start=${start}`
+            
+          console.log(`🔍 Calling Note.com API v3 (page ${page + 1}/${totalPages}): ${searchUrl}`)
+          
+          const response = await fetch(searchUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': 'application/json, text/plain, */*',
+              'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
+              'Referer': 'https://note.com',
+              'Origin': 'https://note.com'
+            }
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            const apiArticles = data.data?.notes?.contents || []
+            console.log(`✅ Page ${page + 1} returned ${apiArticles.length} articles`)
+            
+            if (apiArticles.length === 0) {
+              console.log(`🎯 No more articles available, stopping pagination`)
+              break
+            }
+            
+            allApiArticles.push(...apiArticles)
+            
+            // APIレートリミット対策
+            if (page < totalPages - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500)) // 500ms待機
+            }
+          } else {
+            console.log(`❌ Page ${page + 1} request failed: ${response.status}`)
+            break
           }
-        })
+        }
         
-        if (response.ok) {
-          const data = await response.json()
-          console.log(`📥 Raw API response:`, JSON.stringify(data).substring(0, 500))
-          const apiArticles = data.data?.notes?.contents || []
-          console.log(`✅ API returned ${apiArticles.length} articles`)
-          console.log(`🔢 First article:`, apiArticles[0]?.name || 'No articles')
-          console.log(`🔢 Total count from API:`, data.data?.notes?.total_count || 'Not provided')
-          
+        console.log(`📦 Total articles fetched from API: ${allApiArticles.length}`)
+        
+        if (allApiArticles.length > 0) {
           // APIレスポンスを変換
-          articles = apiArticles.map((item: any) => {
+          articles = allApiArticles.map((item: any) => {
             const article = {
               id: item.key || item.id,
               title: item.name || item.title || '',
@@ -3270,8 +3293,9 @@ export async function GET(request: NextRequest) {
               category: article.category || categorizeArticle(article)
             }
           })
-          
-          // ソート処理
+        }
+        
+        // ソート処理
           if (sortBy === 'like') {
             articles.sort((a, b) => b.likeCount - a.likeCount)
           } else if (sortBy === 'comment') {
