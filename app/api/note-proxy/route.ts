@@ -3204,7 +3204,7 @@ export async function GET(request: NextRequest) {
       // 記事検索 - Note.com API v3を使用
       const params = new URLSearchParams(endpoint.split('?')[1] || '')
       const query = params.get('q') || ''
-      const sortBy = params.get('sort') || 'engagement'
+      const sortBy = params.get('sort') || 'like'
       const dateFilter = params.get('date') || undefined
       const category = params.get('category') || 'all'
       const decodedQuery = decodeURIComponent(query)
@@ -3303,8 +3303,9 @@ export async function GET(request: NextRequest) {
           articles.sort((a, b) => b.commentCount - a.commentCount)
         } else if (sortBy === 'recent') {
           articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-        } else if (sortBy === 'engagement') {
-          articles.sort((a, b) => (b.engagement?.totalEngagementScore || 0) - (a.engagement?.totalEngagementScore || 0))
+        } else {
+          // デフォルトはスキ順
+          articles.sort((a, b) => b.likeCount - a.likeCount)
         }
         
         // 日付フィルタリング

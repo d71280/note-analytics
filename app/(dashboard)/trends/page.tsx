@@ -84,7 +84,7 @@ function cleanDisplayTitle(rawTitle: string): string {
   return title.trim()
 }
 
-type SortType = 'engagement' | 'like' | 'comment' | 'recent' | 'trending_velocity' | 'like_ratio'
+type SortType = 'like' | 'comment' | 'recent'
 
 interface SearchFilters {
   category: string
@@ -112,7 +112,7 @@ export default function TrendsPage() {
     category: '',
     startDate: '',
     endDate: '',
-    sortBy: 'engagement'
+    sortBy: 'like'
   })
   
   // データ状態
@@ -272,7 +272,7 @@ export default function TrendsPage() {
       category: '',
       startDate: '',
       endDate: '',
-      sortBy: 'engagement'
+      sortBy: 'like'
     })
   }
 
@@ -441,14 +441,6 @@ export default function TrendsPage() {
             <SortDesc className="h-5 w-5 text-blue-600" />
             <span className="text-sm font-medium text-gray-700 w-20">並び順:</span>
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant={searchFilters.sortBy === 'engagement' ? "default" : "outline"}
-                onClick={() => updateFilter('sortBy', 'engagement')}
-              >
-                <TrendingUp className="h-3 w-3 mr-1" />
-                エンゲージメント
-              </Button>
               <Button
                 size="sm"
                 variant={searchFilters.sortBy === 'like' ? "default" : "outline"}

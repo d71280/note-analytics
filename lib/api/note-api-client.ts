@@ -314,7 +314,7 @@ class NoteAPIClient {
     query: string, 
     limit: number = 500, 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    sortBy: 'engagement' | 'like' | 'comment' | 'recent' | 'trending_velocity' | 'like_ratio' = 'engagement',
+    sortBy: 'like' | 'comment' | 'recent' = 'like',
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     dateFilter?: 'today' | 'yesterday' | 'this_week' | 'this_month',
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -397,7 +397,7 @@ class NoteAPIClient {
   async getTrendingArticles(
     limit: number = 50, 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    sortBy: 'engagement' | 'like' | 'comment' | 'recent' | 'trending_velocity' | 'like_ratio' = 'engagement',
+    sortBy: 'like' | 'comment' | 'recent' = 'like',
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     dateFilter?: 'today' | 'yesterday' | 'this_week' | 'this_month'
   ): Promise<ApiResponse<NoteArticle[]>> {
