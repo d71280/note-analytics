@@ -1143,6 +1143,277 @@ async function getTrendingArticles(limit: number = 100, sortBy: string = 'like',
       commentCount: 94,
       tags: ['コンサル', 'フレームワーク', '思考法'],
       url: 'https://note.com/strategy_consultant/n/n9b6c752d8a4'
+    },
+    // 更なるテクノロジー記事（AI・プログラミング・Web開発）
+    {
+      id: 'n1e5d847c3a9',
+      title: 'ChatGPT API活用でビジネス自動化',
+      excerpt: 'ChatGPT APIを使って業務プロセスを自動化し、生産性を向上させる具体的な実装方法。',
+      authorId: 'api_developer',
+      publishedAt: '2024-03-28T13:45:00Z',
+      likeCount: 189,
+      commentCount: 42,
+      tags: ['ChatGPT', 'API', '自動化'],
+      url: 'https://note.com/api_developer/n/n1e5d847c3a9'
+    },
+    {
+      id: 'n4b7f629e1c8',
+      title: 'React Hooks完全ガイド2024',
+      excerpt: 'React 18以降の最新Hooksパターンと実践的な使い方を詳しく解説。',
+      authorId: 'react_expert',
+      publishedAt: '2024-04-15T16:20:00Z',
+      likeCount: 412,
+      commentCount: 73,
+      tags: ['React', 'JavaScript', 'フロントエンド'],
+      url: 'https://note.com/react_expert/n/n4b7f629e1c8'
+    },
+    {
+      id: 'n7a3e594d2f6',
+      title: 'Pythonデータ分析で始める機械学習',
+      excerpt: 'PythonとPandasを使った基本的なデータ分析から機械学習まで、実務に役立つノウハウ。',
+      authorId: 'ml_engineer',
+      publishedAt: '2024-02-22T11:30:00Z',
+      likeCount: 298,
+      commentCount: 56,
+      tags: ['Python', '機械学習', 'データ分析'],
+      url: 'https://note.com/ml_engineer/n/n7a3e594d2f6'
+    },
+    {
+      id: 'n8c6d172a4b9',
+      title: 'クラウドインフラ設計の基本原則',
+      excerpt: 'AWS、Azure、GCPでのインフラ設計において重要な可用性、拡張性、セキュリティの考え方。',
+      authorId: 'cloud_architect',
+      publishedAt: '2024-03-10T14:15:00Z',
+      likeCount: 156,
+      commentCount: 28,
+      tags: ['クラウド', 'インフラ', 'AWS'],
+      url: 'https://note.com/cloud_architect/n/n8c6d172a4b9'
+    },
+    {
+      id: 'n2f8a653e7d1',
+      title: 'TypeScript実践入門：型安全なWebアプリ開発',
+      excerpt: 'TypeScriptの型システムを活用して、保守性の高いWebアプリケーションを開発する方法。',
+      authorId: 'ts_developer',
+      publishedAt: '2024-01-18T09:45:00Z',
+      likeCount: 234,
+      commentCount: 41,
+      tags: ['TypeScript', 'Web開発', '型安全'],
+      url: 'https://note.com/ts_developer/n/n2f8a653e7d1'
+    },
+    // さらなるビジネス記事（マーケティング・経営・投資）
+    {
+      id: 'n5e9b274f6c3',
+      title: 'BtoB営業のデジタル化戦略',
+      excerpt: 'デジタルツールを活用してBtoB営業プロセスを効率化し、成約率を向上させる方法。',
+      authorId: 'b2b_sales',
+      publishedAt: '2024-03-22T15:30:00Z',
+      likeCount: 178,
+      commentCount: 35,
+      tags: ['営業', 'BtoB', 'デジタル化'],
+      url: 'https://note.com/b2b_sales/n/n5e9b274f6c3'
+    },
+    {
+      id: 'n9d4c816a7e2',
+      title: 'インフルエンサーマーケティングの費用対効果',
+      excerpt: 'インフルエンサーマーケティングのROI測定方法と効果的なパートナー選びのポイント。',
+      authorId: 'influencer_marketer',
+      publishedAt: '2024-02-14T12:40:00Z',
+      likeCount: 267,
+      commentCount: 48,
+      tags: ['インフルエンサー', 'マーケティング', 'ROI'],
+      url: 'https://note.com/influencer_marketer/n/n9d4c816a7e2'
+    },
+    {
+      id: 'n3a7f592c8e4',
+      title: 'DX推進プロジェクトの成功パターン',
+      excerpt: '企業のデジタルトランスフォーメーション推進において成功しやすいアプローチと注意点。',
+      authorId: 'dx_consultant',
+      publishedAt: '2024-01-25T16:55:00Z',
+      likeCount: 345,
+      commentCount: 62,
+      tags: ['DX', 'デジタル変革', '企業変革'],
+      url: 'https://note.com/dx_consultant/n/n3a7f592c8e4'
+    },
+    {
+      id: 'n6b8e473d5a1',
+      title: '個人投資家のための情報収集術',
+      excerpt: '株式投資で成功するために必要な情報収集の方法と、信頼できる情報源の見極め方。',
+      authorId: 'individual_investor',
+      publishedAt: '2024-03-01T10:20:00Z',
+      likeCount: 456,
+      commentCount: 89,
+      tags: ['投資', '株式', '情報収集'],
+      url: 'https://note.com/individual_investor/n/n6b8e473d5a1'
+    },
+    // 追加のライフスタイル記事（健康・趣味・自己啓発）
+    {
+      id: 'n4f6d921b8e7',
+      title: '朝活で人生を変える具体的な方法',
+      excerpt: '早起きして朝の時間を有効活用することで、仕事もプライベートも充実させるライフハック。',
+      authorId: 'morning_person',
+      publishedAt: '2024-03-12T06:00:00Z',
+      likeCount: 189,
+      commentCount: 43,
+      tags: ['朝活', 'ライフハック', '習慣'],
+      url: 'https://note.com/morning_person/n/n4f6d921b8e7'
+    },
+    {
+      id: 'n8a2e745c9f3',
+      title: 'ランニング初心者が継続するコツ',
+      excerpt: 'ランニングを始めたばかりの人が挫折せずに継続するための心構えとトレーニング方法。',
+      authorId: 'running_coach',
+      publishedAt: '2024-02-28T17:30:00Z',
+      likeCount: 234,
+      commentCount: 52,
+      tags: ['ランニング', '運動', '継続'],
+      url: 'https://note.com/running_coach/n/n8a2e745c9f3'
+    },
+    {
+      id: 'n7c5b638e4d2',
+      title: 'カメラ初心者のための構図とライティング',
+      excerpt: '写真撮影で重要な構図の基本ルールと、自然光を活かしたライティングテクニック。',
+      authorId: 'photo_instructor',
+      publishedAt: '2024-01-20T14:45:00Z',
+      likeCount: 145,
+      commentCount: 31,
+      tags: ['写真', 'カメラ', '構図'],
+      url: 'https://note.com/photo_instructor/n/n7c5b638e4d2'
+    },
+    {
+      id: 'n1d9f826a3c7',
+      title: '英語学習を挫折せずに続ける方法',
+      excerpt: '大人になってから英語を学び直す際の効果的な学習計画と、モチベーション維持のコツ。',
+      authorId: 'english_teacher',
+      publishedAt: '2024-04-08T19:15:00Z',
+      likeCount: 312,
+      commentCount: 67,
+      tags: ['英語', '学習', '語学'],
+      url: 'https://note.com/english_teacher/n/n1d9f826a3c7'
+    },
+    // さらなるクリエイティブ記事（デザイン・動画・音楽）
+    {
+      id: 'n5b8c427f9e6',
+      title: 'Figmaを使ったデザインシステム構築',
+      excerpt: 'チーム開発で一貫性のあるデザインを実現するためのFigmaデザインシステム作成方法。',
+      authorId: 'design_system_lead',
+      publishedAt: '2024-03-15T13:00:00Z',
+      likeCount: 198,
+      commentCount: 36,
+      tags: ['Figma', 'デザインシステム', 'UI'],
+      url: 'https://note.com/design_system_lead/n/n5b8c427f9e6'
+    },
+    {
+      id: 'n9e4a716d2b8',
+      title: 'YouTube動画編集で差をつけるテクニック',
+      excerpt: 'Adobe Premiere ProとAfter Effectsを使った、視聴者を惹きつける動画編集術。',
+      authorId: 'video_editor',
+      publishedAt: '2024-02-18T16:20:00Z',
+      likeCount: 289,
+      commentCount: 54,
+      tags: ['動画編集', 'YouTube', 'Premiere'],
+      url: 'https://note.com/video_editor/n/n9e4a716d2b8'
+    },
+    {
+      id: 'n3f7e592a4c1',
+      title: 'DTMで楽曲制作を始める完全ガイド',
+      excerpt: 'デスクトップミュージック(DTM)の基礎知識から、実際の楽曲制作までの流れを解説。',
+      authorId: 'dtm_producer',
+      publishedAt: '2024-01-12T20:30:00Z',
+      likeCount: 167,
+      commentCount: 29,
+      tags: ['DTM', '音楽制作', '作曲'],
+      url: 'https://note.com/dtm_producer/n/n3f7e592a4c1'
+    },
+    // 追加の学術・研究記事（データサイエンス・心理学・社会学）
+    {
+      id: 'n6d8b351c7a4',
+      title: 'ベイズ統計学の直感的理解',
+      excerpt: '複雑に見えるベイズ統計学を直感的に理解し、実際のデータ分析で活用する方法。',
+      authorId: 'bayesian_statistician',
+      publishedAt: '2024-03-06T15:45:00Z',
+      likeCount: 134,
+      commentCount: 22,
+      tags: ['ベイズ統計', '統計学', 'データ分析'],
+      url: 'https://note.com/bayesian_statistician/n/n6d8b351c7a4'
+    },
+    {
+      id: 'n2a5f683e9d7',
+      title: '行動経済学から学ぶ意思決定の心理',
+      excerpt: '人間の非合理的な意思決定パターンを行動経済学の視点から分析し、日常に活かす方法。',
+      authorId: 'behavioral_economist',
+      publishedAt: '2024-02-25T11:10:00Z',
+      likeCount: 201,
+      commentCount: 38,
+      tags: ['行動経済学', '心理学', '意思決定'],
+      url: 'https://note.com/behavioral_economist/n/n2a5f683e9d7'
+    },
+    {
+      id: 'n8c6a947b3e5',
+      title: 'SNS時代の社会学的考察',
+      excerpt: 'ソーシャルメディアが人間関係や社会構造に与える影響を社会学の理論を用いて分析。',
+      authorId: 'digital_sociologist',
+      publishedAt: '2024-01-30T14:25:00Z',
+      likeCount: 176,
+      commentCount: 41,
+      tags: ['社会学', 'SNS', 'デジタル社会'],
+      url: 'https://note.com/digital_sociologist/n/n8c6a947b3e5'
+    },
+    // 更なる哲学・思想記事（現代哲学・東洋思想）
+    {
+      id: 'n4e7c281f5b9',
+      title: '禅の教えから学ぶマインドフルネス',
+      excerpt: '禅仏教の教えを現代のマインドフルネス実践に活かし、心の平静を保つ方法。',
+      authorId: 'zen_practitioner',
+      publishedAt: '2024-03-18T18:00:00Z',
+      likeCount: 98,
+      commentCount: 16,
+      tags: ['禅', 'マインドフルネス', '仏教'],
+      url: 'https://note.com/zen_practitioner/n/n4e7c281f5b9'
+    },
+    {
+      id: 'n7b5d629a8c4',
+      title: 'ニーチェの「超人」思想と現代社会',
+      excerpt: 'ニーチェの超人思想を現代の自己実現や個人の成長という文脈で再解釈する試み。',
+      authorId: 'nietzsche_scholar',
+      publishedAt: '2024-02-10T16:40:00Z',
+      likeCount: 112,
+      commentCount: 24,
+      tags: ['ニーチェ', '哲学', '自己実現'],
+      url: 'https://note.com/nietzsche_scholar/n/n7b5d629a8c4'
+    },
+    // 専門分野記事（法律・医療・教育）
+    {
+      id: 'n9a4e756c2d8',
+      title: 'フリーランス必見の契約書チェックポイント',
+      excerpt: 'フリーランスが業務委託契約を結ぶ際に必ずチェックすべき法的なポイントと注意事項。',
+      authorId: 'freelance_lawyer',
+      publishedAt: '2024-03-25T10:30:00Z',
+      likeCount: 278,
+      commentCount: 47,
+      tags: ['法律', 'フリーランス', '契約'],
+      url: 'https://note.com/freelance_lawyer/n/n9a4e756c2d8'
+    },
+    {
+      id: 'n3c8b412e7f6',
+      title: '現代人の睡眠問題と改善策',
+      excerpt: '睡眠の質を医学的観点から分析し、現代人特有の睡眠問題を解決する実践的アプローチ。',
+      authorId: 'sleep_doctor',
+      publishedAt: '2024-02-20T21:15:00Z',
+      likeCount: 234,
+      commentCount: 58,
+      tags: ['睡眠', '医学', '健康'],
+      url: 'https://note.com/sleep_doctor/n/n3c8b412e7f6'
+    },
+    {
+      id: 'n6f1d837a9c5',
+      title: 'オンライン教育の効果的な設計方法',
+      excerpt: 'eラーニングの教育効果を最大化するためのカリキュラム設計と学習体験デザイン。',
+      authorId: 'education_designer',
+      publishedAt: '2024-01-15T13:20:00Z',
+      likeCount: 156,
+      commentCount: 32,
+      tags: ['教育', 'eラーニング', '学習設計'],
+      url: 'https://note.com/education_designer/n/n6f1d837a9c5'
     }
   ]
 
