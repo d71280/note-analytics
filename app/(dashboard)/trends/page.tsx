@@ -98,6 +98,7 @@ interface EnhancedNoteArticle extends NoteArticle {
   category?: string
   viewCount?: number
   followerCount?: number
+  content?: string
 }
 
 interface TrendData {
@@ -128,6 +129,10 @@ export default function TrendsPage() {
   // ページネーション状態
   const [currentPage, setCurrentPage] = useState(1)
   const articlesPerPage = 100
+  
+  // 本文取得状態
+  const [fetchingContent, setFetchingContent] = useState(false)
+  const [includeContent, setIncludeContent] = useState(false)
 
   // データ取得関数
   const fetchTrendData = async (filters: SearchFilters) => {
@@ -222,6 +227,63 @@ export default function TrendsPage() {
         loading: false,
         error: error instanceof Error ? error.message : '不明なエラーが発生しました'
       })
+    }
+  }
+
+  // 記事本文を取得する関数
+  const fetchArticleContents = async () => {
+    if (trendData.articles.length === 0) return
+    
+    setFetchingContent(true)
+    try {
+      // 現在のページの上位10記事の本文を取得
+      const articlesToFetch = trendData.articles
+        .slice((currentPage - 1) * articlesPerPage, currentPage * articlesPerPage)
+        .slice(0, 10) // 最大10記事まで
+      
+      const articlesWithContent = await Promise.all(
+        articlesToFetch.map(async (article) => {
+          try {
+            // 記事IDを抽出（URLから）
+            const noteIdMatch = article.url.match(/\/n\/([a-zA-Z0-9]+)/)
+            if (!noteIdMatch) return article
+            
+            const noteId = noteIdMatch[1]
+            const response = await noteAPI.getArticleDetail(noteId)
+            
+            if (response.data && response.data.content) {
+              return {
+                ...article,
+                content: response.data.content
+              }
+            }
+          } catch (error) {
+            console.error(`Failed to fetch content for article ${article.id}:`, error)
+          }
+          return article
+        })
+      )
+      
+      // 取得した本文でデータを更新
+      const updatedArticles = [...trendData.articles]
+      articlesToFetch.forEach((article, index) => {
+        const globalIndex = trendData.articles.findIndex(a => a.id === article.id)
+        if (globalIndex !== -1 && articlesWithContent[index]?.content) {
+          updatedArticles[globalIndex] = articlesWithContent[index]
+        }
+      })
+      
+      setTrendData({
+        ...trendData,
+        articles: updatedArticles
+      })
+      
+      setIncludeContent(true)
+      console.log('✅ Successfully fetched article contents')
+    } catch (error) {
+      console.error('❌ Error fetching article contents:', error)
+    } finally {
+      setFetchingContent(false)
     }
   }
 
@@ -368,7 +430,36 @@ export default function TrendsPage() {
 
       {/* AIアシスタント（最上段） */}
       {hasSearched && (
-        <div className="mb-8">
+        <div className="mb-8 space-y-4">
+          {/* 本文取得ボタン */}
+          {trendData.articles.length > 0 && (
+            <div className="flex justify-end">
+              <Button
+                onClick={fetchArticleContents}
+                disabled={fetchingContent}
+                variant="outline"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700"
+              >
+                {fetchingContent ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    記事本文を取得中...
+                  </>
+                ) : includeContent ? (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    本文取得済み（上位10記事）
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    本文を含めて詳細分析
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+          
           <AITrendAnalyzer
             articles={trendData.articles}
             currentCategory={searchFilters.category}

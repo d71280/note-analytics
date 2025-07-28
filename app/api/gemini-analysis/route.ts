@@ -10,6 +10,7 @@ interface ArticleData {
   commentCount: number
   tags?: string[]
   category?: string
+  content?: string
   engagement?: {
     totalEngagementScore: number
     likeToViewRatio: number
@@ -58,7 +59,9 @@ export async function POST(request: NextRequest) {
       comments: article.commentCount,
       category: article.category,
       tags: article.tags?.slice(0, 3),
-      engagement: article.engagement?.totalEngagementScore
+      engagement: article.engagement?.totalEngagementScore,
+      // 本文の最初の200文字を含める（もし存在すれば）
+      contentPreview: article.content ? article.content.substring(0, 200) + '...' : undefined
     }))
 
     // Gemini APIへのプロンプト構築
@@ -81,6 +84,7 @@ ${question}
 - 数値や傾向を具体的に示してください
 - トレンドの要因や背景も説明してください
 - 記事のタイトルや著者名を具体的に言及してください
+- 記事本文のプレビュー（contentPreview）がある場合は、内容の特徴も分析してください
 - 投稿戦略のアドバイスも含めてください
 - 絵文字を使って見やすく整理してください
 
