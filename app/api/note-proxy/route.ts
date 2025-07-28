@@ -3330,30 +3330,37 @@ export async function GET(request: NextRequest) {
         articles = []
       }
       
+      // API v3のレスポンス形式に合わせる
       data = {
         data: {
-          contents: articles.map(article => ({
-            key: article.id,
-            name: article.title,
-            description: article.excerpt,
-            user: {
-              urlname: article.authorId
-            },
-            publishAt: article.publishedAt,
-            likeCount: article.likeCount,
-            commentCount: article.commentCount,
-            hashtags: article.tags.map((tag: string) => ({ name: tag })),
-            url: article.url,
-            // エンゲージメント情報を追加
-            engagement: article.engagement ? {
-              likeToViewRatio: article.engagement.likeToViewRatio,
-              commentToLikeRatio: article.engagement.commentToLikeRatio,
-              viewToFollowerRatio: article.engagement.viewToFollowerRatio,
-              totalEngagementScore: article.engagement.totalEngagementScore,
-              trendingVelocity: article.engagement.trendingVelocity
-            } : undefined,
-            category: article.category
-          }))
+          notes: {
+            contents: articles.map(article => ({
+              key: article.id,
+              name: article.title,
+              description: article.excerpt,
+              highlight: article.excerpt,
+              user: {
+                urlname: article.authorId,
+                nickname: article.authorId
+              },
+              publish_at: article.publishedAt,
+              like_count: article.likeCount,
+              comment_count: article.commentCount,
+              view_count: article.viewCount,
+              hashtags: article.tags,
+              url: article.url,
+              external_url: article.url,
+              // エンゲージメント情報を追加
+              engagement: article.engagement ? {
+                likeToViewRatio: article.engagement.likeToViewRatio,
+                commentToLikeRatio: article.engagement.commentToLikeRatio,
+                viewToFollowerRatio: article.engagement.viewToFollowerRatio,
+                totalEngagementScore: article.engagement.totalEngagementScore,
+                trendingVelocity: article.engagement.trendingVelocity
+              } : undefined,
+              category: article.category
+            }))
+          }
         }
       }
     } else if (endpoint.includes('/api/v2/creators/')) {
