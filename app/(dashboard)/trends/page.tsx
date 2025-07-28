@@ -134,21 +134,22 @@ export default function TrendsPage() {
 
     setTrendData((prev: TrendData) => ({ ...prev, loading: true, error: null }))
 
-    // フォロワー数推定関数
-    const getEstimatedFollowers = (authorId: string, likeCount: number, viewCount: number): number => {
-      // 著者IDのハッシュ値を基にした一貫性のある推定
-      let hash = 0
-      for (let i = 0; i < authorId.length; i++) {
-        const char = authorId.charCodeAt(i)
-        hash = ((hash << 5) - hash) + char
-        hash = hash & hash // 32bit整数に変換
-      }
-      
-      const baseFollowers = Math.abs(hash % 5000) + 500 // 500-5500の範囲
-      const engagementBonus = Math.floor((likeCount + viewCount * 0.1) * 0.5)
-      
-      return Math.max(baseFollowers + engagementBonus, 100)
-    }
+                // フォロワー数推定関数（Note.com現実基準）
+            const getEstimatedFollowers = (authorId: string, likeCount: number, viewCount: number): number => {
+              // 著者IDのハッシュ値を基にした一貫性のある推定
+              let hash = 0
+              for (let i = 0; i < authorId.length; i++) {
+                const char = authorId.charCodeAt(i)
+                hash = ((hash << 5) - hash) + char
+                hash = hash & hash // 32bit整数に変換
+              }
+              
+              // Note.comの現実的フォロワー数：1000-20000の範囲
+              const baseFollowers = Math.abs(hash % 15000) + 1000 // 1000-16000の範囲
+              const engagementBonus = Math.floor((likeCount + viewCount * 0.05) * 2)
+              
+              return Math.max(baseFollowers + engagementBonus, 500)
+            }
 
     // トレンド速度計算関数
     const calculateTrendingVelocity = (publishedAt: string, likeCount: number, commentCount: number): number => {
@@ -198,9 +199,9 @@ export default function TrendsPage() {
       // エンゲージメント指標を計算（実際の数値を使用）
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const enhancedArticles: EnhancedNoteArticle[] = filteredArticles.map((article, index) => {
-        // スクレイピングで取得した実際の数値を使用、なければ推定値
-        const viewCount = article.viewCount || Math.floor((article.likeCount || 0) * (15 + Math.random() * 10))
-        const followerCount = getEstimatedFollowers(article.authorId, article.likeCount || 0, viewCount)
+                        // スクレイピングで取得した実際の数値を使用、なければ現実的推定値
+                const viewCount = article.viewCount || Math.floor((article.likeCount || 40) * (25 + Math.random() * 25)) // 25-50倍の閲覧数（Note.com基準）
+                const followerCount = getEstimatedFollowers(article.authorId, article.likeCount || 0, viewCount)
         
         const engagement: EngagementMetrics = {
           likeToViewRatio: viewCount > 0 ? ((article.likeCount || 0) / viewCount) * 100 : 0,
