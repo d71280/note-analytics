@@ -3200,7 +3200,7 @@ export async function GET(request: NextRequest) {
           }
         }
       }
-    } else if (endpoint.includes('/api/v2/searches/notes')) {
+    } else if (endpoint.includes('/api/v2/searches/notes') || endpoint.includes('/api/v3/searches')) {
       // 記事検索 - Note.com API v3を使用
       const params = new URLSearchParams(endpoint.split('?')[1] || '')
       const query = params.get('q') || ''
