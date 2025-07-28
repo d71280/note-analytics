@@ -134,6 +134,34 @@ export default function TrendsPage() {
 
     setTrendData((prev: TrendData) => ({ ...prev, loading: true, error: null }))
 
+    // フォロワー数推定関数
+    const getEstimatedFollowers = (authorId: string, likeCount: number, viewCount: number): number => {
+      // 著者IDのハッシュ値を基にした一貫性のある推定
+      let hash = 0
+      for (let i = 0; i < authorId.length; i++) {
+        const char = authorId.charCodeAt(i)
+        hash = ((hash << 5) - hash) + char
+        hash = hash & hash // 32bit整数に変換
+      }
+      
+      const baseFollowers = Math.abs(hash % 5000) + 500 // 500-5500の範囲
+      const engagementBonus = Math.floor((likeCount + viewCount * 0.1) * 0.5)
+      
+      return Math.max(baseFollowers + engagementBonus, 100)
+    }
+
+    // トレンド速度計算関数
+    const calculateTrendingVelocity = (publishedAt: string, likeCount: number, commentCount: number): number => {
+      const publishDate = new Date(publishedAt)
+      const now = new Date()
+      const hoursSincePublish = (now.getTime() - publishDate.getTime()) / (1000 * 60 * 60)
+      
+      if (hoursSincePublish <= 0) return 100
+      
+      const engagementPerHour = (likeCount + commentCount * 3) / Math.max(hoursSincePublish, 1)
+      return Math.min(engagementPerHour * 2, 100)
+    }
+
     try {
       console.log('🔍 Fetching trend data with filters:', filters)
       
@@ -196,34 +224,6 @@ export default function TrendsPage() {
           category: article.category || categorizeArticle(article.title, article.tags)
         }
       })
-
-      // フォロワー数推定関数
-      const getEstimatedFollowers = (authorId: string, likeCount: number, viewCount: number): number => {
-        // 著者IDのハッシュ値を基にした一貫性のある推定
-        let hash = 0
-        for (let i = 0; i < authorId.length; i++) {
-          const char = authorId.charCodeAt(i)
-          hash = ((hash << 5) - hash) + char
-          hash = hash & hash // 32bit整数に変換
-        }
-        
-        const baseFollowers = Math.abs(hash % 5000) + 500 // 500-5500の範囲
-        const engagementBonus = Math.floor((likeCount + viewCount * 0.1) * 0.5)
-        
-        return Math.max(baseFollowers + engagementBonus, 100)
-      }
-
-      // トレンド速度計算関数
-      const calculateTrendingVelocity = (publishedAt: string, likeCount: number, commentCount: number): number => {
-        const publishDate = new Date(publishedAt)
-        const now = new Date()
-        const hoursSincePublish = (now.getTime() - publishDate.getTime()) / (1000 * 60 * 60)
-        
-        if (hoursSincePublish <= 0) return 100
-        
-        const engagementPerHour = (likeCount + commentCount * 3) / Math.max(hoursSincePublish, 1)
-        return Math.min(engagementPerHour * 2, 100)
-      }
 
       setTrendData({
         articles: enhancedArticles,
