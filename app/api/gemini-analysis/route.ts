@@ -42,6 +42,8 @@ export async function POST(request: NextRequest) {
     // APIキーを環境変数から取得
     const GEMINI_API_KEY = process.env.Gemini_API_Key || process.env.GEMINI_API_KEY
     
+    console.log('🔑 API Key status:', GEMINI_API_KEY ? `Found (${GEMINI_API_KEY.substring(0, 10)}...)` : 'Not found')
+    
     // APIキーの検証
     if (!GEMINI_API_KEY || GEMINI_API_KEY.length < 20) {
       console.warn('⚠️ Gemini API key not configured, using fallback')
@@ -88,10 +90,11 @@ ${question}
     // Gemini API呼び出し（強化版エラーハンドリング）
     try {
       console.log('🚀 Calling Gemini API...')
-      const geminiResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      const geminiResponse = await fetch(GEMINI_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-goog-api-key': GEMINI_API_KEY
         },
         body: JSON.stringify({
           contents: [{
@@ -112,7 +115,11 @@ ${question}
 
       if (!geminiResponse.ok) {
         const errorData = await geminiResponse.text()
-        console.error('❌ Gemini API error response:', errorData)
+        console.error('❌ Gemini API error response:', {
+          status: geminiResponse.status,
+          statusText: geminiResponse.statusText,
+          error: errorData
+        })
         console.warn('🔄 Falling back to enhanced analysis')
         return generateFallbackResponse(articles, question, category, period)
       }
