@@ -3233,6 +3233,7 @@ export async function GET(request: NextRequest) {
         
         if (response.ok) {
           const data = await response.json()
+          console.log(`📥 Raw API response:`, JSON.stringify(data).substring(0, 500))
           const apiArticles = data.data?.notes?.contents || []
           console.log(`✅ API returned ${apiArticles.length} articles`)
           console.log(`🔢 First article:`, apiArticles[0]?.name || 'No articles')
@@ -3313,23 +3314,18 @@ export async function GET(request: NextRequest) {
           
         } else {
           console.log(`❌ API request failed: ${response.status}`)
-          // フォールバックデータを使用
-          const fallbackArticles = await getTrendingArticles(100, sortBy, dateFilter)
-          articles = fallbackArticles.map(article => {
-            const authorFollowers = getEstimatedFollowers(article.authorId)
-            const engagement = calculateEngagementMetrics(article, authorFollowers)
-            return {
-              ...article,
-              engagement,
-              category: categorizeArticle(article)
-            }
-          })
+          const errorText = await response.text()
+          console.log(`❌ API error response:`, errorText.substring(0, 500))
+          // APIエラー時は空の配列を返す
+          articles = []
         }
         
         console.log(`📊 Total articles after processing: ${articles.length}`)
         
       } catch (error) {
         console.error('❌ Search error:', error)
+        console.error('❌ Error details:', error instanceof Error ? error.message : 'Unknown error')
+        console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
         // エラー時は空の配列を返す
         console.log(`🚨 Error occurred, returning empty array`)
         articles = []
