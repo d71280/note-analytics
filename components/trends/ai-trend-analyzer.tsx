@@ -335,8 +335,8 @@ ${topCategories.map(([cat, count]) => `• ${cat}: ${count}件`).join('\n')}
   }
 
   return (
-    <Card className="h-[600px] flex flex-col">
-      <CardHeader className="border-b">
+    <Card className="h-[600px] flex flex-col overflow-hidden">
+      <CardHeader className="border-b flex-shrink-0">
         <CardTitle className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-blue-500" />
           Gemini AI トレンド分析アシスタント
@@ -347,9 +347,9 @@ ${topCategories.map(([cat, count]) => `• ${cat}: ${count}件`).join('\n')}
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0">
+      <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
         {/* チャット表示エリア */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -381,15 +381,15 @@ ${topCategories.map(([cat, count]) => `• ${cat}: ${count}件`).join('\n')}
         </div>
 
         {/* 提案質問ボタン */}
-        <div className="border-t p-3">
+        <div className="border-t p-3 flex-shrink-0 bg-gray-50">
           <div className="text-xs text-gray-500 mb-2">🤖 Gemini AI 提案質問:</div>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto">
             {suggestedQuestions.map((question, index) => (
               <Button
                 key={index}
                 variant="outline"
                 size="sm"
-                className="text-xs"
+                className="text-xs h-7"
                 onClick={() => handleSuggestedQuestion(question)}
                 disabled={isAnalyzing}
               >
@@ -400,7 +400,7 @@ ${topCategories.map(([cat, count]) => `• ${cat}: ${count}件`).join('\n')}
         </div>
 
         {/* 入力エリア */}
-        <div className="border-t p-4">
+        <div className="border-t p-4 flex-shrink-0 bg-white">
           <div className="flex gap-2">
             <Input
               value={inputMessage}
