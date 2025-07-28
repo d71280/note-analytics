@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AITrendAnalyzer } from '@/components/trends/ai-trend-analyzer'
-import { Loader2, TrendingUp, Heart, Eye, MessageCircle, Clock, Filter, Search, ExternalLink, Users, SortDesc } from 'lucide-react'
+import { Loader2, TrendingUp, Heart, Eye, MessageCircle, Clock, Filter, Search, ExternalLink, SortDesc } from 'lucide-react'
 import noteAPI, { EngagementMetrics, NoteArticle } from '@/lib/api/note-api-client' // noteAPIをデフォルトインポート
 
 // HTMLタグを除去してクリーンなテキストを取得（フロントエンド用）
