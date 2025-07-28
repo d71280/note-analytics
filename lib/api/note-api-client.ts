@@ -309,21 +309,16 @@ class NoteAPIClient {
     }
   }
 
-  // 記事検索 - 日付・ソート・カテゴリー・エンゲージメント機能強化
+  // 記事検索 - Note.com API v3対応
   async searchArticles(
     query: string, 
-    page: number = 1, 
+    limit: number = 100, 
     sortBy: 'engagement' | 'like' | 'comment' | 'recent' | 'trending_velocity' | 'like_ratio' = 'engagement',
     dateFilter?: 'today' | 'yesterday' | 'this_week' | 'this_month',
     category?: string
   ): Promise<ApiResponse<NoteArticle[]>> {
-    let url = `/api/v2/searches/notes?q=${encodeURIComponent(query)}&page=${page}&sort=${sortBy}`
-    if (dateFilter) {
-      url += `&date=${dateFilter}`
-    }
-    if (category && category !== 'all') {
-      url += `&category=${encodeURIComponent(category)}`
-    }
+    // API v3エンドポイントを使用（limitパラメータを使用）
+    let url = `/api/v3/searches?context=note&q=${encodeURIComponent(query)}&size=${limit}&start=0`
     
     const response = await this.makeRequest<any>(url)
     
@@ -331,17 +326,18 @@ class NoteAPIClient {
       return response as ApiResponse<NoteArticle[]>
     }
 
-    const articlesData = response.data?.data?.contents || []
+    // API v3のレスポンス形式に対応
+    const articlesData = response.data?.data?.notes?.contents || []
     const articles: NoteArticle[] = articlesData.map((item: any) => ({
       id: item.key || item.id,
       title: item.name || item.title,
-      excerpt: item.description || item.excerpt || '',
-      authorId: item.user?.urlname || item.authorId || '',
-      publishedAt: item.publishAt || item.createdAt || item.publishedAt || '',
-      likeCount: item.likeCount || 0,
-      commentCount: item.commentCount || 0,
-      tags: item.hashtags?.map((tag: any) => tag.name) || item.tags || [],
-      url: item.url || `https://note.com/${item.user?.urlname || item.authorId}/n/${item.key || item.id}`,
+      excerpt: item.description || item.highlight || '',
+      authorId: item.user?.urlname || item.user?.nickname || '',
+      publishedAt: item.publish_at || item.publishedAt || '',
+      likeCount: item.like_count || 0,
+      commentCount: item.comment_count || 0,
+      tags: item.hashtags || [],
+      url: item.external_url || `https://note.com/${item.user?.urlname}/n/${item.key}`,
       // エンゲージメント情報（APIから取得）
       engagement: item.engagement ? {
         likeToViewRatio: item.engagement.likeToViewRatio || 0,
@@ -351,7 +347,7 @@ class NoteAPIClient {
         trendingVelocity: item.engagement.trendingVelocity || 0
       } : undefined,
       category: item.category || undefined,
-      viewCount: item.viewCount || undefined
+      viewCount: item.view_count || undefined
     }))
 
     return {
@@ -363,10 +359,7 @@ class NoteAPIClient {
 
   // 今日のスキ順検索（専用メソッド）
   async getTodayTopLiked(limit: number = 10): Promise<ApiResponse<NoteArticle[]>> {
-    const response = await this.searchArticles('', 1, 'like', 'today')
-    if (response.data) {
-      response.data = response.data.slice(0, limit)
-    }
+    const response = await this.searchArticles('', limit, 'like', 'today')
     return response
   }
 
@@ -397,17 +390,14 @@ class NoteAPIClient {
     }
   }
 
-  // トレンド記事の取得（人気記事ランキング）- 日付・ソート・エンゲージメント対応
+  // トレンド記事の取得（人気記事ランキング）- Note.com API v3対応
   async getTrendingArticles(
     limit: number = 50, 
     sortBy: 'engagement' | 'like' | 'comment' | 'recent' | 'trending_velocity' | 'like_ratio' = 'engagement',
     dateFilter?: 'today' | 'yesterday' | 'this_week' | 'this_month'
   ): Promise<ApiResponse<NoteArticle[]>> {
-    // 空のクエリでトレンド記事を直接取得
-    let url = `/api/v2/searches/notes?q=&page=1&sort=${sortBy}`
-    if (dateFilter) {
-      url += `&date=${dateFilter}`
-    }
+    // API v3で空のクエリを使用してトレンド記事を取得
+    let url = `/api/v3/searches?context=note&q=&size=${limit}&start=0`
     
     const response = await this.makeRequest<any>(url)
     
@@ -415,17 +405,18 @@ class NoteAPIClient {
       return response as ApiResponse<NoteArticle[]>
     }
     
-    const articlesData = response.data?.data?.contents || []
+    // API v3のレスポンス形式に対応
+    const articlesData = response.data?.data?.notes?.contents || []
     const articles: NoteArticle[] = articlesData.map((item: any) => ({
       id: item.key || item.id,
       title: item.name || item.title,
-      excerpt: item.description || item.excerpt || '',
-      authorId: item.user?.urlname || item.authorId || '',
-      publishedAt: item.publishAt || item.createdAt || item.publishedAt || '',
-      likeCount: item.likeCount || 0,
-      commentCount: item.commentCount || 0,
-      tags: item.hashtags?.map((tag: any) => tag.name) || item.tags || [],
-      url: item.url || `https://note.com/${item.user?.urlname || item.authorId}/n/${item.key || item.id}`,
+      excerpt: item.description || item.highlight || '',
+      authorId: item.user?.urlname || item.user?.nickname || '',
+      publishedAt: item.publish_at || item.publishedAt || '',
+      likeCount: item.like_count || 0,
+      commentCount: item.comment_count || 0,
+      tags: item.hashtags || [],
+      url: item.external_url || `https://note.com/${item.user?.urlname}/n/${item.key}`,
       // エンゲージメント情報（APIから取得）
       engagement: item.engagement ? {
         likeToViewRatio: item.engagement.likeToViewRatio || 0,
@@ -435,14 +426,11 @@ class NoteAPIClient {
         trendingVelocity: item.engagement.trendingVelocity || 0
       } : undefined,
       category: item.category || undefined,
-      viewCount: item.viewCount || undefined
+      viewCount: item.view_count || undefined
     }))
     
-    // リミットに応じて結果を制限
-    const limitedArticles = articles.slice(0, limit)
-    
     return {
-      data: limitedArticles,
+      data: articles,
       error: null,
       status: 200
     }
