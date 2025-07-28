@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const GEMINI_API_KEY = 'AIzaSyADSPuDzF28H6u8NsWY217Foij9txK8PcU'
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent'
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
 
 interface ArticleData {
   id: string
@@ -40,6 +39,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // APIキーを環境変数から取得
+    const GEMINI_API_KEY = process.env.Gemini_API_Key || process.env.GEMINI_API_KEY
+    
     // APIキーの検証
     if (!GEMINI_API_KEY || GEMINI_API_KEY.length < 20) {
       console.warn('⚠️ Gemini API key not configured, using fallback')
@@ -127,7 +129,16 @@ ${question}
       const analysisResult = geminiData.candidates[0].content.parts[0].text
       console.log('✅ Gemini analysis successful, length:', analysisResult.length)
       
-      
+      return NextResponse.json({
+        analysis: analysisResult,
+        metadata: {
+          articlesAnalyzed: articles.length,
+          category: category || 'すべて',
+          period: period || 'すべて',
+          timestamp: new Date().toISOString(),
+          fallback: false
+        }
+      })
       
     } catch (fetchError) {
       console.error('❌ Gemini API fetch error:', fetchError)
