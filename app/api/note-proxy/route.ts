@@ -3217,7 +3217,7 @@ export async function GET(request: NextRequest) {
         // Note.com API v3を使用して検索（ページネーション対応）
         const pageSize = 20 // Note.com APIの実際のページサイズ
         const totalPages = Math.ceil(100 / pageSize) // 100件取得するためのページ数
-        let allApiArticles: any[] = []
+        const allApiArticles: any[] = []
         
         for (let page = 0; page < totalPages; page++) {
           const start = page * pageSize
@@ -3296,52 +3296,44 @@ export async function GET(request: NextRequest) {
         }
         
         // ソート処理
-          if (sortBy === 'like') {
-            articles.sort((a, b) => b.likeCount - a.likeCount)
-          } else if (sortBy === 'comment') {
-            articles.sort((a, b) => b.commentCount - a.commentCount)
-          } else if (sortBy === 'recent') {
-            articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-          } else if (sortBy === 'engagement') {
-            articles.sort((a, b) => (b.engagement?.totalEngagementScore || 0) - (a.engagement?.totalEngagementScore || 0))
-          }
+        if (sortBy === 'like') {
+          articles.sort((a, b) => b.likeCount - a.likeCount)
+        } else if (sortBy === 'comment') {
+          articles.sort((a, b) => b.commentCount - a.commentCount)
+        } else if (sortBy === 'recent') {
+          articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+        } else if (sortBy === 'engagement') {
+          articles.sort((a, b) => (b.engagement?.totalEngagementScore || 0) - (a.engagement?.totalEngagementScore || 0))
+        }
+        
+        // 日付フィルタリング
+        if (dateFilter) {
+          const now = new Date()
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+          const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
+          const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+          const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
           
-          // 日付フィルタリング
-          if (dateFilter) {
-            const now = new Date()
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-            const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
-            const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
-            const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
-            
-            articles = articles.filter(article => {
-              const articleDate = new Date(article.publishedAt)
-              switch (dateFilter) {
-                case 'today':
-                  return articleDate >= today
-                case 'yesterday':
-                  return articleDate >= yesterday && articleDate < today
-                case 'this_week':
-                  return articleDate >= weekAgo
-                case 'this_month':
-                  return articleDate >= monthAgo
-                default:
-                  return true
-              }
-            })
-          }
-          
-          // カテゴリーフィルタリング
-          if (category && category !== 'all' && decodedQuery === category) {
-            articles = articles.filter(article => article.category === category)
-          }
-          
-        } else {
-          console.log(`❌ API request failed: ${response.status}`)
-          const errorText = await response.text()
-          console.log(`❌ API error response:`, errorText.substring(0, 500))
-          // APIエラー時は空の配列を返す
-          articles = []
+          articles = articles.filter(article => {
+            const articleDate = new Date(article.publishedAt)
+            switch (dateFilter) {
+              case 'today':
+                return articleDate >= today
+              case 'yesterday':
+                return articleDate >= yesterday && articleDate < today
+              case 'this_week':
+                return articleDate >= weekAgo
+              case 'this_month':
+                return articleDate >= monthAgo
+              default:
+                return true
+            }
+          })
+        }
+        
+        // カテゴリーフィルタリング
+        if (category && category !== 'all' && decodedQuery === category) {
+          articles = articles.filter(article => article.category === category)
         }
         
         console.log(`📊 Total articles after processing: ${articles.length}`)
