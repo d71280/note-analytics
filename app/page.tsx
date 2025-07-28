@@ -32,10 +32,10 @@ export default function Home() {
         </div>
         <div className="flex justify-center">
           <Link
-            href="/dashboard"
+            href="/trends"
             className="rounded-lg bg-indigo-600 px-8 py-3 text-white hover:bg-indigo-700 transition-colors"
           >
-            使ってみる
+            トレンド分析を始める
           </Link>
         </div>
       </div>

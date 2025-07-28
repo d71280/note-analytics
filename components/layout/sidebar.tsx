@@ -2,11 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, FileText, Users, TrendingUp, Settings, Upload } from 'lucide-react'
+import { FileText, Users, TrendingUp, Settings, Upload } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
-  { name: 'ダッシュボード', href: '/dashboard', icon: Home },
   { name: '記事分析', href: '/analyze', icon: FileText },
   { name: 'クリエイター', href: '/creators', icon: Users },
   { name: 'トレンド', href: '/trends', icon: TrendingUp },
