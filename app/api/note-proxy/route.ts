@@ -3235,6 +3235,8 @@ export async function GET(request: NextRequest) {
           const data = await response.json()
           const apiArticles = data.data?.notes?.contents || []
           console.log(`✅ API returned ${apiArticles.length} articles`)
+          console.log(`🔢 First article:`, apiArticles[0]?.name || 'No articles')
+          console.log(`🔢 Total count from API:`, data.data?.notes?.total_count || 'Not provided')
           
           // APIレスポンスを変換
           articles = apiArticles.map((item: any) => {
@@ -3243,6 +3245,7 @@ export async function GET(request: NextRequest) {
               title: item.name || item.title || '',
               excerpt: item.description || item.highlight || '',
               authorId: item.user?.urlname || item.user?.nickname || '',
+              authorName: item.user?.nickname || item.user?.name || '',
               publishedAt: item.publish_at || item.publishedAt || new Date().toISOString(),
               likeCount: item.like_count || 0,
               commentCount: item.comment_count || 0,
@@ -3251,7 +3254,9 @@ export async function GET(request: NextRequest) {
               category: item.category || categorizeFromContent(item.name, item.description),
               url: item.external_url || item.custom_domain?.host 
                 ? `https://${item.custom_domain?.host || 'note.com'}/${item.slug || item.key}`
-                : `https://note.com/${item.user?.urlname}/n/${item.key}`
+                : `https://note.com/${item.user?.urlname}/n/${item.key}`,
+              // ユーザー情報を含める（フォロワー数は通常APIに含まれない）
+              userInfo: item.user || {}
             }
             
             // エンゲージメント計算

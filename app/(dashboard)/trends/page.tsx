@@ -134,22 +134,6 @@ export default function TrendsPage() {
 
     setTrendData((prev: TrendData) => ({ ...prev, loading: true, error: null }))
 
-                // フォロワー数推定関数（Note.com現実基準）
-            const getEstimatedFollowers = (authorId: string, likeCount: number, viewCount: number): number => {
-              // 著者IDのハッシュ値を基にした一貫性のある推定
-              let hash = 0
-              for (let i = 0; i < authorId.length; i++) {
-                const char = authorId.charCodeAt(i)
-                hash = ((hash << 5) - hash) + char
-                hash = hash & hash // 32bit整数に変換
-              }
-              
-              // Note.comの現実的フォロワー数：1000-20000の範囲
-              const baseFollowers = Math.abs(hash % 15000) + 1000 // 1000-16000の範囲
-              const engagementBonus = Math.floor((likeCount + viewCount * 0.05) * 2)
-              
-              return Math.max(baseFollowers + engagementBonus, 500)
-            }
 
     // トレンド速度計算関数
     const calculateTrendingVelocity = (publishedAt: string, likeCount: number, commentCount: number): number => {
@@ -199,29 +183,22 @@ export default function TrendsPage() {
       // エンゲージメント指標を計算（実際の数値を使用）
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const enhancedArticles: EnhancedNoteArticle[] = filteredArticles.map((article, index) => {
-                        // スクレイピングで取得した実際の数値を使用、なければ現実的推定値
-                const viewCount = article.viewCount || Math.floor((article.likeCount || 40) * (25 + Math.random() * 25)) // 25-50倍の閲覧数（Note.com基準）
-                const followerCount = getEstimatedFollowers(article.authorId, article.likeCount || 0, viewCount)
-        
         const engagement: EngagementMetrics = {
-          likeToViewRatio: viewCount > 0 ? ((article.likeCount || 0) / viewCount) * 100 : 0,
+          likeToViewRatio: 0, // 閲覧数は検索APIでは取得できない
           commentToLikeRatio: (article.likeCount || 0) > 0 ? ((article.commentCount || 0) / (article.likeCount || 0)) * 100 : 0,
-          viewToFollowerRatio: followerCount > 0 ? (viewCount / followerCount) * 100 : 0,
+          viewToFollowerRatio: 0, // フォロワー数は検索APIでは取得できない
           totalEngagementScore: 0,
           trendingVelocity: calculateTrendingVelocity(article.publishedAt, article.likeCount || 0, article.commentCount || 0)
         }
         
         engagement.totalEngagementScore = 
-          (engagement.likeToViewRatio * 0.4) +
+          (article.likeCount || 0) * 0.5 + // スキ数を重視
           (engagement.commentToLikeRatio * 0.3) +
-          (engagement.viewToFollowerRatio * 0.2) +
-          (engagement.trendingVelocity * 0.1)
+          (engagement.trendingVelocity * 0.2)
 
         return {
           ...article,
           engagement,
-          viewCount,
-          followerCount, // フォロワー数を追加
           category: article.category || categorizeArticle(article.title, article.tags)
         }
       })
@@ -553,11 +530,6 @@ export default function TrendsPage() {
               <CardContent>
                                  <div className="space-y-3">
                    {trendData.articles.map((article: EnhancedNoteArticle, index: number) => {
-                    // スクレイピングで取得した実際の数値を使用
-                    const viewCount = article.viewCount || Math.floor((article.likeCount || 0) * 15)
-                    const followerCount = article.followerCount || 1000
-                    const engagementRate = article.engagement?.likeToViewRatio || ((article.likeCount || 0) / viewCount * 100) || 0
-
                     return (
                       <div key={`${article.id}-${index}`} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                         <div className="flex items-start justify-between">
@@ -580,37 +552,21 @@ export default function TrendsPage() {
                             </h3>
 
                             {/* 統計データ */}
-                            <div className="grid grid-cols-4 gap-4 text-sm">
-                              <div className="flex flex-col items-center p-2 bg-red-50 rounded">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div className="flex flex-col items-center p-3 bg-red-50 rounded">
                                 <div className="flex items-center gap-1 text-red-600 mb-1">
                                   <Heart className="h-4 w-4" />
-                                  <span className="font-medium">いいね</span>
+                                  <span className="font-medium">スキ</span>
                                 </div>
-                                <span className="font-bold text-lg">{article.likeCount || 0}</span>
+                                <span className="font-bold text-2xl">{article.likeCount || 0}</span>
                               </div>
 
-                              <div className="flex flex-col items-center p-2 bg-blue-50 rounded">
+                              <div className="flex flex-col items-center p-3 bg-blue-50 rounded">
                                 <div className="flex items-center gap-1 text-blue-600 mb-1">
-                                  <Eye className="h-4 w-4" />
-                                  <span className="font-medium">閲覧</span>
+                                  <MessageCircle className="h-4 w-4" />
+                                  <span className="font-medium">コメント</span>
                                 </div>
-                                <span className="font-bold text-lg">{viewCount.toLocaleString()}</span>
-                              </div>
-
-                              <div className="flex flex-col items-center p-2 bg-green-50 rounded">
-                                <div className="flex items-center gap-1 text-green-600 mb-1">
-                                  <Users className="h-4 w-4" />
-                                  <span className="font-medium">フォロワー</span>
-                                </div>
-                                <span className="font-bold text-lg">{followerCount.toLocaleString()}</span>
-                              </div>
-
-                              <div className="flex flex-col items-center p-2 bg-purple-50 rounded">
-                                <div className="flex items-center gap-1 text-purple-600 mb-1">
-                                  <TrendingUp className="h-4 w-4" />
-                                  <span className="font-medium">エンゲージ率</span>
-                                </div>
-                                <span className="font-bold text-lg">{engagementRate.toFixed(1)}%</span>
+                                <span className="font-bold text-2xl">{article.commentCount || 0}</span>
                               </div>
                             </div>
                           </div>
