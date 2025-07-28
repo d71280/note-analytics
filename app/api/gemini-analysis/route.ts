@@ -83,50 +83,57 @@ ${question}
 回答:
 `
 
-    // Gemini API呼び出し
-    const geminiResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2048,
-        }
+    // Gemini API呼び出し（強化版エラーハンドリング）
+    try {
+      console.log('🚀 Calling Gemini API...')
+      const geminiResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 2048,
+          }
+        })
       })
-    })
 
-    if (!geminiResponse.ok) {
-      const errorData = await geminiResponse.text()
-      console.error('Gemini API error:', errorData)
-      throw new Error(`Gemini API error: ${geminiResponse.status}`)
-    }
+      console.log(`📡 Gemini API response status: ${geminiResponse.status}`)
 
-    const geminiData = await geminiResponse.json()
-    
-    if (!geminiData.candidates || !geminiData.candidates[0]?.content?.parts?.[0]?.text) {
-      throw new Error('Invalid response from Gemini API')
-    }
-
-    const analysisResult = geminiData.candidates[0].content.parts[0].text
-
-    return NextResponse.json({
-      analysis: analysisResult,
-      metadata: {
-        articlesAnalyzed: articles.length,
-        category: category || 'すべて',
-        period: period || 'すべて',
-        timestamp: new Date().toISOString()
+      if (!geminiResponse.ok) {
+        const errorData = await geminiResponse.text()
+        console.error('❌ Gemini API error response:', errorData)
+        console.warn('🔄 Falling back to enhanced analysis')
+        return generateFallbackResponse(articles, question, category, period)
       }
-    })
+
+      const geminiData = await geminiResponse.json()
+      console.log('📄 Gemini API response keys:', Object.keys(geminiData))
+      
+      if (!geminiData.candidates || !geminiData.candidates[0]?.content?.parts?.[0]?.text) {
+        console.error('❌ Invalid Gemini API response structure:', geminiData)
+        console.warn('🔄 Falling back to enhanced analysis')
+        return generateFallbackResponse(articles, question, category, period)
+      }
+
+      const analysisResult = geminiData.candidates[0].content.parts[0].text
+      console.log('✅ Gemini analysis successful, length:', analysisResult.length)
+      
+      
+      
+    } catch (fetchError) {
+      console.error('❌ Gemini API fetch error:', fetchError)
+      console.warn('🔄 Falling back to enhanced analysis')
+      return generateFallbackResponse(articles, question, category, period)
+    }
 
   } catch (error) {
     console.error('Error in Gemini analysis:', error)
