@@ -401,12 +401,45 @@ async function getRealNoteComTrendingData(): Promise<NoteArticleData[]> {
     allArticles.push(...graphqlData)
   }
   
-  // Method 3-5: 追加のスクレイピング（現在は無効化）
-  console.log('⚠️ Additional scraping methods are currently disabled for performance')
-  console.log(`📊 Total articles collected: ${allArticles.length}`)
+  // Method 3: 強化されたNote.comトレンドページスクレイピング
+  try {
+    const trendingData = await scrapeNoteComTrendingPages()
+    if (trendingData.length > 0) {
+      console.log(`✅ Successfully scraped ${trendingData.length} trending articles from Note.com`)
+      allArticles.push(...trendingData)
+    }
+  } catch (error) {
+    console.log('⚠️ Trending page scraping failed:', error)
+  }
   
-  if (allArticles.length > 0) {
-    return allArticles
+  // Method 4: カテゴリー別キーワード検索スクレイピング
+  try {
+    const categoryData = await scrapeNoteComByCategories()
+    if (categoryData.length > 0) {
+      console.log(`✅ Successfully scraped ${categoryData.length} category articles from Note.com`)
+      allArticles.push(...categoryData)
+    }
+  } catch (error) {
+    console.log('⚠️ Category scraping failed:', error)
+  }
+  
+  // Method 5: 人気ユーザーの最新記事スクレイピング
+  try {
+    const userArticles = await scrapePopularUsersLatestArticles()
+    if (userArticles.length > 0) {
+      console.log(`✅ Successfully scraped ${userArticles.length} user articles from Note.com`)
+      allArticles.push(...userArticles)
+    }
+  } catch (error) {
+    console.log('⚠️ User articles scraping failed:', error)
+  }
+  
+  // 重複削除とフィルタリング
+  const uniqueArticles = removeDuplicateArticles(allArticles)
+  console.log(`📊 Total unique articles collected: ${uniqueArticles.length}`)
+  
+  if (uniqueArticles.length > 0) {
+    return uniqueArticles
   }
   
   console.log('⚠️ All scraping methods failed, using verified fallback articles')
@@ -863,6 +896,14 @@ async function getTrendingArticles(limit: number = 100, sortBy: string = 'like',
   if (articles.length === 0) {
     console.log('⚠️ Using fallback data as scraping failed')
     articles = todayArticles
+  }
+
+  console.log(`📊 Total real articles available: ${articles.length}`)
+  
+  // 実記事のみを返す（デモデータは作成しない）
+  if (articles.length < limit) {
+    console.log(`⚠️ Only ${articles.length} real articles available (requested: ${limit})`)
+    console.log('💡 Consider enabling additional scraping methods for more real data')
   }
 
   let filteredArticles = [...articles]
