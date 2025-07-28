@@ -313,12 +313,15 @@ class NoteAPIClient {
   async searchArticles(
     query: string, 
     limit: number = 500, 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     sortBy: 'like' | 'comment' | 'recent' = 'like',
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     dateFilter?: 'today' | 'yesterday' | 'this_week' | 'this_month',
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     category?: string
   ): Promise<ApiResponse<NoteArticle[]>> {
-    // API v3エンドポイントを使用（sortByパラメータを追加）
-    const url = `/api/v3/searches?context=note&q=${encodeURIComponent(query)}&size=${limit}&start=0&sort=${sortBy}${dateFilter ? `&date=${dateFilter}` : ''}${category ? `&category=${encodeURIComponent(category)}` : ''}`
+    // API v3エンドポイントを使用（limitパラメータを使用）
+    const url = `/api/v3/searches?context=note&q=${encodeURIComponent(query)}&size=${limit}&start=0`
     
     const response = await this.makeRequest<any>(url)
     
@@ -393,11 +396,13 @@ class NoteAPIClient {
   // トレンド記事の取得（人気記事ランキング）- Note.com API v3対応
   async getTrendingArticles(
     limit: number = 50, 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     sortBy: 'like' | 'comment' | 'recent' = 'like',
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     dateFilter?: 'today' | 'yesterday' | 'this_week' | 'this_month'
   ): Promise<ApiResponse<NoteArticle[]>> {
-    // API v3で空のクエリを使用してトレンド記事を取得（sortByパラメータを追加）
-    const url = `/api/v3/searches?context=note&q=&size=${limit}&start=0&sort=${sortBy}${dateFilter ? `&date=${dateFilter}` : ''}`
+    // API v3で空のクエリを使用してトレンド記事を取得
+    const url = `/api/v3/searches?context=note&q=&size=${limit}&start=0`
     
     const response = await this.makeRequest<any>(url)
     

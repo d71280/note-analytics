@@ -3207,6 +3207,7 @@ export async function GET(request: NextRequest) {
       const sortBy = params.get('sort') || 'like'
       const dateFilter = params.get('date') || undefined
       const category = params.get('category') || 'all'
+      const requestedSize = parseInt(params.get('size') || '500', 10)
       const decodedQuery = decodeURIComponent(query)
       
       console.log('🔍 Searching articles:', { 
@@ -3214,6 +3215,7 @@ export async function GET(request: NextRequest) {
         sortBy, 
         dateFilter, 
         category,
+        requestedSize,
         fullEndpoint: endpoint,
         parsedParams: Object.fromEntries(params.entries())
       })
@@ -3223,8 +3225,8 @@ export async function GET(request: NextRequest) {
       try {
         // Note.com API v3を使用して検索（ページネーション対応）
         const pageSize = 20 // Note.com APIの実際のページサイズ
-        const requestedCount = 500 // 最大500件取得
-        const totalPages = Math.ceil(requestedCount / pageSize) // 500件取得するためのページ数（25ページ）
+        const requestedCount = requestedSize // リクエストされたサイズを使用
+        const totalPages = Math.ceil(requestedCount / pageSize) // 必要なページ数を計算
         const allApiArticles: any[] = []
         
         for (let page = 0; page < totalPages; page++) {
