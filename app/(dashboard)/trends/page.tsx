@@ -212,13 +212,27 @@ export default function TrendsPage() {
         }
       })
 
+      // ソート順を保証するため、再度ソート
+      const sortedArticles = [...enhancedArticles].sort((a, b) => {
+        switch (filters.sortBy) {
+          case 'like':
+            return (b.likeCount || 0) - (a.likeCount || 0)
+          case 'comment':
+            return (b.commentCount || 0) - (a.commentCount || 0)
+          case 'recent':
+            return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+          default:
+            return (b.likeCount || 0) - (a.likeCount || 0)
+        }
+      })
+
       setTrendData({
-        articles: enhancedArticles,
+        articles: sortedArticles,
         loading: false,
         error: null
       })
 
-      console.log(`✅ Successfully fetched ${enhancedArticles.length} articles`)
+      console.log(`✅ Successfully fetched and sorted ${sortedArticles.length} articles by ${filters.sortBy}`)
 
     } catch (error) {
       console.error('❌ Error fetching trend data:', error)
