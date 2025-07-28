@@ -312,7 +312,7 @@ class NoteAPIClient {
   // 記事検索 - Note.com API v3対応
   async searchArticles(
     query: string, 
-    limit: number = 100, 
+    limit: number = 500, 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     sortBy: 'engagement' | 'like' | 'comment' | 'recent' | 'trending_velocity' | 'like_ratio' = 'engagement',
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

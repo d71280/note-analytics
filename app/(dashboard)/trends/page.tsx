@@ -124,6 +124,10 @@ export default function TrendsPage() {
   
   // 検索実行フラグ
   const [hasSearched, setHasSearched] = useState(false)
+  
+  // ページネーション状態
+  const [currentPage, setCurrentPage] = useState(1)
+  const articlesPerPage = 100
 
   // データ取得関数
   const fetchTrendData = async (filters: SearchFilters) => {
@@ -150,10 +154,10 @@ export default function TrendsPage() {
     try {
       console.log('🔍 Fetching trend data with filters:', filters)
       
-      // カテゴリー検索でデータ取得（100件取得）
+      // カテゴリー検索でデータ取得（500件取得）
       const response = await noteAPI.searchArticles(
         filters.category,
-        100, // 100件を取得
+        500, // 500件を取得
         filters.sortBy,
         undefined, // dateFilterは削除
         filters.category
@@ -254,6 +258,7 @@ export default function TrendsPage() {
   // ソート順が変更されたら自動的に再検索
   useEffect(() => {
     if (hasSearched && searchFilters.category.trim()) {
+      setCurrentPage(1) // ソート変更時は1ページ目に戻る
       fetchTrendData(searchFilters)
     }
   }, [searchFilters.sortBy]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -262,6 +267,7 @@ export default function TrendsPage() {
   const handleClearData = () => {
     setTrendData({ articles: [], loading: false, error: null })
     setHasSearched(false)
+    setCurrentPage(1)
     setSearchFilters({
       category: '',
       startDate: '',
@@ -535,8 +541,12 @@ export default function TrendsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                                 <div className="space-y-3">
-                   {trendData.articles.map((article: EnhancedNoteArticle, index: number) => {
+                <div className="space-y-3">
+                  {/* 現在のページの記事のみを表示 */}
+                  {trendData.articles
+                    .slice((currentPage - 1) * articlesPerPage, currentPage * articlesPerPage)
+                    .map((article: EnhancedNoteArticle, index: number) => {
+                    const globalIndex = (currentPage - 1) * articlesPerPage + index
                     return (
                       <div key={`${article.id}-${index}`} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                         <div className="flex items-start justify-between">
@@ -545,7 +555,7 @@ export default function TrendsPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2">
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                #{index + 1}
+                                #{globalIndex + 1}
                               </span>
                               {article.category && (
                                 <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
@@ -623,6 +633,70 @@ export default function TrendsPage() {
                     </div>
                   )}
                 </div>
+                
+                {/* ページネーション */}
+                {trendData.articles.length > articlesPerPage && (
+                  <div className="mt-6 flex justify-center items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      前へ
+                    </Button>
+                    
+                    {/* ページ番号ボタン */}
+                    {(() => {
+                      const totalPages = Math.ceil(trendData.articles.length / articlesPerPage)
+                      const pages: number[] = []
+                      
+                      // 最初のページ
+                      pages.push(1)
+                      
+                      // 現在のページの周辺
+                      if (currentPage > 3) pages.push(0) // ... 表示
+                      
+                      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+                        pages.push(i)
+                      }
+                      
+                      // 最後のページ
+                      if (currentPage < totalPages - 2) pages.push(0) // ... 表示
+                      if (totalPages > 1) pages.push(totalPages)
+                      
+                      return pages.map((page, index) => {
+                        if (page === 0) {
+                          return <span key={`ellipsis-${index}`} className="px-2">…</span>
+                        }
+                        return (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(page)}
+                            className="min-w-[40px]"
+                          >
+                            {page}
+                          </Button>
+                        )
+                      })
+                    })()}
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(Math.ceil(trendData.articles.length / articlesPerPage), prev + 1))}
+                      disabled={currentPage === Math.ceil(trendData.articles.length / articlesPerPage)}
+                    >
+                      次へ
+                    </Button>
+                    
+                    <span className="ml-4 text-sm text-gray-600">
+                      {(currentPage - 1) * articlesPerPage + 1} - {Math.min(currentPage * articlesPerPage, trendData.articles.length)} / {trendData.articles.length}件
+                    </span>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

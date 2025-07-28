@@ -3216,7 +3216,8 @@ export async function GET(request: NextRequest) {
       try {
         // Note.com API v3を使用して検索（ページネーション対応）
         const pageSize = 20 // Note.com APIの実際のページサイズ
-        const totalPages = Math.ceil(100 / pageSize) // 100件取得するためのページ数
+        const requestedCount = 500 // 最大500件取得
+        const totalPages = Math.ceil(requestedCount / pageSize) // 500件取得するためのページ数（25ページ）
         const allApiArticles: any[] = []
         
         for (let page = 0; page < totalPages; page++) {
