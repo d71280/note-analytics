@@ -2287,7 +2287,8 @@ function extractArticleInfoFromSearchContext(html: string, username: string, not
   }
 }
 
-// 記事検索機能 - リアルタイムスクレイピング最優先版
+// 記事検索機能（未使用 - API v3を直接使用）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function searchArticles(query: string, limit: number = 100, sortBy: string = 'like', dateFilter?: string): Promise<NoteArticleData[]> {
   console.log(`🚀 Real-time search for: "${query}" [limit: ${limit}, sort: ${sortBy}, filter: ${dateFilter || 'none'}]`)
   
@@ -2539,6 +2540,25 @@ function categorizeArticle(article: NoteArticleData): string {
     if (matchCount > 0) {
       return category.name
     }
+  }
+  
+  return 'その他'
+}
+
+// コンテンツからカテゴリーを判定（簡易版）
+function categorizeFromContent(title: string, description?: string): string {
+  const content = `${title} ${description || ''}`.toLowerCase()
+  
+  if (content.includes('ai') || content.includes('プログラミング') || content.includes('テクノロジー')) {
+    return 'テクノロジー'
+  } else if (content.includes('ビジネス') || content.includes('起業') || content.includes('マーケティング')) {
+    return 'ビジネス'
+  } else if (content.includes('ライフスタイル') || content.includes('健康') || content.includes('読書')) {
+    return 'ライフスタイル'
+  } else if (content.includes('デザイン') || content.includes('アート') || content.includes('クリエイティブ')) {
+    return 'クリエイティブ'
+  } else if (content.includes('研究') || content.includes('学術') || content.includes('科学')) {
+    return '学術・研究'
   }
   
   return 'その他'
@@ -3181,25 +3201,116 @@ export async function GET(request: NextRequest) {
         }
       }
     } else if (endpoint.includes('/api/v2/searches/notes')) {
-      // 記事検索 - 日付・ソート・カテゴリー・エンゲージメント機能強化
+      // 記事検索 - Note.com API v3を使用
       const params = new URLSearchParams(endpoint.split('?')[1] || '')
       const query = params.get('q') || ''
-      const sortBy = params.get('sort') || 'engagement' // engagement, like, comment, recent, trending_velocity, like_ratio
-      const dateFilter = params.get('date') || undefined // today, yesterday, this_week
-      const category = params.get('category') || 'all' // all, テクノロジー, ビジネス, ライフスタイル, etc.
+      const sortBy = params.get('sort') || 'engagement'
+      const dateFilter = params.get('date') || undefined
+      const category = params.get('category') || 'all'
       const decodedQuery = decodeURIComponent(query)
       
       console.log('🔍 Searching articles:', { query: decodedQuery, sortBy, dateFilter, category })
       
-      let articles: any[]
+      let articles: any[] = []
+      
       try {
-        if (decodedQuery) {
-          // クエリありの検索（強化版）
-          console.log(`🔍 Processing search query: "${decodedQuery}"`)
-          const searchResults = await searchArticles(decodedQuery, 100, sortBy, dateFilter)
-          console.log(`📊 Search returned ${searchResults.length} articles`)
+        // Note.com API v3を使用して検索
+        const searchUrl = decodedQuery 
+          ? `https://note.com/api/v3/searches?context=note&q=${encodeURIComponent(decodedQuery)}&size=100&start=0`
+          : `https://note.com/api/v3/searches?context=note&size=100&start=0`
           
-          articles = searchResults.map(article => {
+        console.log(`🔍 Calling Note.com API v3: ${searchUrl}`)
+        
+        const response = await fetch(searchUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
+            'Referer': 'https://note.com',
+            'Origin': 'https://note.com'
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          const apiArticles = data.data?.notes?.contents || []
+          console.log(`✅ API returned ${apiArticles.length} articles`)
+          
+          // APIレスポンスを変換
+          articles = apiArticles.map((item: any) => {
+            const article = {
+              id: item.key || item.id,
+              title: item.name || item.title || '',
+              excerpt: item.description || item.highlight || '',
+              authorId: item.user?.urlname || item.user?.nickname || '',
+              publishedAt: item.publish_at || item.publishedAt || new Date().toISOString(),
+              likeCount: item.like_count || 0,
+              commentCount: item.comment_count || 0,
+              viewCount: item.view_count || Math.floor((item.like_count || 0) * 30),
+              tags: item.hashtags || [],
+              category: item.category || categorizeFromContent(item.name, item.description),
+              url: item.external_url || item.custom_domain?.host 
+                ? `https://${item.custom_domain?.host || 'note.com'}/${item.slug || item.key}`
+                : `https://note.com/${item.user?.urlname}/n/${item.key}`
+            }
+            
+            // エンゲージメント計算
+            const authorFollowers = getEstimatedFollowers(article.authorId)
+            const engagement = calculateEngagementMetrics(article, authorFollowers)
+            
+            return {
+              ...article,
+              engagement,
+              category: article.category || categorizeArticle(article)
+            }
+          })
+          
+          // ソート処理
+          if (sortBy === 'like') {
+            articles.sort((a, b) => b.likeCount - a.likeCount)
+          } else if (sortBy === 'comment') {
+            articles.sort((a, b) => b.commentCount - a.commentCount)
+          } else if (sortBy === 'recent') {
+            articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+          } else if (sortBy === 'engagement') {
+            articles.sort((a, b) => (b.engagement?.totalEngagementScore || 0) - (a.engagement?.totalEngagementScore || 0))
+          }
+          
+          // 日付フィルタリング
+          if (dateFilter) {
+            const now = new Date()
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+            const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
+            const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+            const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
+            
+            articles = articles.filter(article => {
+              const articleDate = new Date(article.publishedAt)
+              switch (dateFilter) {
+                case 'today':
+                  return articleDate >= today
+                case 'yesterday':
+                  return articleDate >= yesterday && articleDate < today
+                case 'this_week':
+                  return articleDate >= weekAgo
+                case 'this_month':
+                  return articleDate >= monthAgo
+                default:
+                  return true
+              }
+            })
+          }
+          
+          // カテゴリーフィルタリング
+          if (category && category !== 'all' && decodedQuery === category) {
+            articles = articles.filter(article => article.category === category)
+          }
+          
+        } else {
+          console.log(`❌ API request failed: ${response.status}`)
+          // フォールバックデータを使用
+          const fallbackArticles = await getTrendingArticles(100, sortBy, dateFilter)
+          articles = fallbackArticles.map(article => {
             const authorFollowers = getEstimatedFollowers(article.authorId)
             const engagement = calculateEngagementMetrics(article, authorFollowers)
             return {
@@ -3208,15 +3319,9 @@ export async function GET(request: NextRequest) {
               category: categorizeArticle(article)
             }
           })
-        } else {
-          // カテゴリー別トレンド記事取得
-          console.log(`📂 Getting category articles for: "${category}"`)
-          articles = await getTrendingArticlesByCategory(category, 100, sortBy, dateFilter)
-          console.log(`📂 Category search returned ${articles.length} articles`)
         }
         
-        // 実際のデータのみを使用（サンプルデータは使わない）
-        console.log(`📊 Found ${articles.length} real articles`)
+        console.log(`📊 Total articles after processing: ${articles.length}`)
         
       } catch (error) {
         console.error('❌ Search error:', error)
