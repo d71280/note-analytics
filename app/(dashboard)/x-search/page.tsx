@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, RefreshCw, Heart, MessageCircle, Repeat2, Loader2, CheckCircle2 } from 'lucide-react'
+import { Search, RefreshCw, Heart, MessageCircle, Repeat2, Loader2, CheckCircle2, Sparkles, Send, ArrowUpDown } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
 
 interface Tweet {
   id: string
@@ -30,6 +31,11 @@ export default function XSearchPage() {
   const [isSearching, setIsSearching] = useState(false)
   const [retweetedIds, setRetweetedIds] = useState<Set<string>>(new Set())
   const [retweetingId, setRetweetingId] = useState<string | null>(null)
+  const [selectedTweet, setSelectedTweet] = useState<Tweet | null>(null)
+  const [generatingResponse, setGeneratingResponse] = useState(false)
+  const [generatedResponse, setGeneratedResponse] = useState('')
+  const [postingResponse, setPostingResponse] = useState(false)
+  const [sortByImpressions, setSortByImpressions] = useState(true)
   const [filters, setFilters] = useState({
     minLikes: 0,
     minRetweets: 0,
@@ -104,6 +110,71 @@ export default function XSearchPage() {
       minute: '2-digit'
     })
   }
+
+  const generateResponse = async (tweet: Tweet) => {
+    setGeneratingResponse(true)
+    setSelectedTweet(tweet)
+    
+    try {
+      const response = await fetch('/api/knowledge/generate-tweet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `以下のツイートに対して、知識ベースを活用して価値のある返信を生成してください：\n\n"${tweet.text}"\n\n著者: @${tweet.author.username}`,
+          useKnowledge: true
+        })
+      })
+
+      const data = await response.json()
+      if (data.tweet) {
+        setGeneratedResponse(data.tweet)
+      }
+    } catch (error) {
+      console.error('Generate response error:', error)
+      alert('レスポンス生成に失敗しました')
+    } finally {
+      setGeneratingResponse(false)
+    }
+  }
+
+  const postResponse = async () => {
+    if (!generatedResponse || !selectedTweet) return
+    
+    setPostingResponse(true)
+    
+    try {
+      const response = await fetch('/api/x/post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: generatedResponse,
+          replyToId: selectedTweet.id
+        })
+      })
+
+      if (response.ok) {
+        alert('返信を投稿しました')
+        setGeneratedResponse('')
+        setSelectedTweet(null)
+      } else {
+        throw new Error('Post failed')
+      }
+    } catch (error) {
+      console.error('Post response error:', error)
+      alert('投稿に失敗しました')
+    } finally {
+      setPostingResponse(false)
+    }
+  }
+
+  // インプレッション数でソート
+  const sortedTweets = sortByImpressions 
+    ? [...tweets].sort((a, b) => {
+        const impressionsA = a.metrics.like_count + a.metrics.retweet_count * 2 + a.metrics.reply_count
+        const impressionsB = b.metrics.like_count + b.metrics.retweet_count * 2 + b.metrics.reply_count
+        return impressionsB - impressionsA
+      })
+    : tweets
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -197,17 +268,27 @@ export default function XSearchPage() {
             <h2 className="text-xl font-semibold">
               検索結果: {tweets.length}件
             </h2>
-            <Button
-              onClick={handleBatchRetweet}
-              variant="outline"
-              disabled={tweets.every(tweet => retweetedIds.has(tweet.id))}
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              全てリツイート
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setSortByImpressions(!sortByImpressions)}
+                variant="outline"
+                size="sm"
+              >
+                <ArrowUpDown className="mr-2 h-4 w-4" />
+                {sortByImpressions ? 'インプレッション順' : '時系列順'}
+              </Button>
+              <Button
+                onClick={handleBatchRetweet}
+                variant="outline"
+                disabled={tweets.every(tweet => retweetedIds.has(tweet.id))}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                全てリツイート
+              </Button>
+            </div>
           </div>
 
-          {tweets.map((tweet) => (
+          {sortedTweets.map((tweet) => (
             <Card key={tweet.id} className="overflow-hidden">
               <CardContent className="p-4">
                 <div className="flex justify-between items-start gap-4">
@@ -243,6 +324,11 @@ export default function XSearchPage() {
                       <span className="text-xs">
                         {formatDate(tweet.created_at)}
                       </span>
+                      {sortByImpressions && (
+                        <span className="text-xs font-semibold text-blue-600">
+                          インプレッション: {tweet.metrics.like_count + tweet.metrics.retweet_count * 2 + tweet.metrics.reply_count}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
@@ -263,6 +349,21 @@ export default function XSearchPage() {
                         <>
                           <RefreshCw className="mr-1 h-4 w-4" />
                           リツイート
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => generateResponse(tweet)}
+                      disabled={generatingResponse}
+                    >
+                      {generatingResponse && selectedTweet?.id === tweet.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Sparkles className="mr-1 h-4 w-4" />
+                          返信生成
                         </>
                       )}
                     </Button>
@@ -287,6 +388,70 @@ export default function XSearchPage() {
           <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>キーワードを入力して検索してください</p>
         </div>
+      )}
+
+      {/* 返信生成・編集・投稿セクション */}
+      {selectedTweet && generatedResponse && (
+        <Card className="mt-8 border-blue-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              生成された返信
+            </CardTitle>
+            <CardDescription>
+              @{selectedTweet.author.username} への返信
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-2">元のツイート:</p>
+              <p className="text-sm">{selectedTweet.text.substring(0, 100)}...</p>
+            </div>
+            
+            <div>
+              <Label htmlFor="response">返信内容（編集可能）</Label>
+              <Textarea
+                id="response"
+                value={generatedResponse}
+                onChange={(e) => setGeneratedResponse(e.target.value)}
+                rows={4}
+                className="mt-1"
+                maxLength={280}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {generatedResponse.length}/280文字
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={postResponse}
+                disabled={postingResponse || !generatedResponse}
+              >
+                {postingResponse ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    投稿中...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    返信を投稿
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setGeneratedResponse('')
+                  setSelectedTweet(null)
+                }}
+              >
+                キャンセル
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

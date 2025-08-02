@@ -6,9 +6,10 @@ const TWITTER_API_URL = 'https://api.twitter.com/2/tweets'
 
 export async function POST(request: NextRequest) {
   try {
-    const { text, postType } = await request.json()
+    const { text, content, postType, replyToId } = await request.json()
+    const tweetText = text || content // textまたはcontentを受け付ける
 
-    if (!text || text.length > 280) {
+    if (!tweetText || tweetText.length > 280) {
       return NextResponse.json(
         { error: 'Invalid tweet text' },
         { status: 400 }
@@ -30,10 +31,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // ツイートデータを構築
+    const tweetData: { text: string; reply?: { in_reply_to_tweet_id: string } } = { 
+      text: tweetText 
+    }
+    
+    // 返信の場合
+    if (replyToId) {
+      tweetData.reply = {
+        in_reply_to_tweet_id: replyToId
+      }
+    }
+
     // ツイートを投稿
     const tweetResponse = await axios.post(
       TWITTER_API_URL,
-      { text },
+      tweetData,
       {
         headers: {
           'Authorization': `Bearer ${config.access_token}`,
@@ -49,8 +62,9 @@ export async function POST(request: NextRequest) {
       .from('x_post_history')
       .insert({
         post_type: postType || 'manual',
-        post_content: text,
+        post_content: tweetText,
         tweet_id: tweetId,
+        reply_to_id: replyToId,
         status: 'success'
       })
 
@@ -71,13 +85,13 @@ export async function POST(request: NextRequest) {
 
     // エラー履歴を保存
     try {
-      const { text, postType } = await request.json()
       const supabase = createClient()
       await supabase
         .from('x_post_history')
         .insert({
           post_type: postType || 'manual',
-          post_content: text,
+          post_content: tweetText,
+          reply_to_id: replyToId,
           status: 'failed'
         })
     } catch {
