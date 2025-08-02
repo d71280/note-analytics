@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import axios from 'axios'
 import jwt from 'jsonwebtoken'
-import { createClient } from '@/app/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 
 const TOKEN_URL = 'https://api.twitter.com/2/oauth2/token'
 

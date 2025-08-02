@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/app/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import axios from 'axios'
 
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets'
