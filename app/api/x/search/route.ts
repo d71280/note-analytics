@@ -51,6 +51,13 @@ export async function POST(request: NextRequest) {
     }
 
     // ツイートを検索
+    console.log('X API Search Request:', {
+      url: TWITTER_SEARCH_URL,
+      query: searchQuery,
+      hasToken: !!accessToken,
+      tokenPreview: accessToken ? `${accessToken.substring(0, 10)}...` : null
+    })
+    
     const response = await axios.get(TWITTER_SEARCH_URL, {
       params: {
         query: searchQuery,
@@ -107,17 +114,40 @@ export async function POST(request: NextRequest) {
     console.error('Search error:', error)
     
     if (axios.isAxiosError(error)) {
+      console.error('X API Error Details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers
+      })
+      
       if (error.response?.status === 401) {
         return NextResponse.json(
-          { error: 'Invalid or expired access token' },
+          { 
+            error: 'Invalid or expired access token',
+            details: error.response?.data,
+            message: 'X APIの認証に失敗しました。アクセストークンを再生成する必要があります。'
+          },
           { status: 401 }
         )
       } else if (error.response?.status === 429) {
         return NextResponse.json(
-          { error: 'Rate limit exceeded' },
+          { 
+            error: 'Rate limit exceeded',
+            message: 'X APIのレート制限に達しました。しばらく待ってから再試行してください。'
+          },
           { status: 429 }
         )
       }
+      
+      return NextResponse.json(
+        { 
+          error: error.response?.data?.detail || error.response?.data?.error || 'X API error',
+          status: error.response?.status,
+          message: 'X APIからエラーが返されました。'
+        },
+        { status: error.response?.status || 500 }
+      )
     }
 
     return NextResponse.json(
