@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
     // Grok APIキーを環境変数から取得
     const grokApiKey = process.env.GROK_API_KEY
     console.log('Grok API available:', !!grokApiKey)
+    console.log('Grok API key preview:', grokApiKey ? `${grokApiKey.substring(0, 10)}...` : 'NOT_FOUND')
     
     let generatedTweet = ''
     
@@ -36,20 +37,34 @@ export async function POST(request: NextRequest) {
                 content: userPrompt
               }
             ],
-            model: 'grok-beta',
+            model: 'grok-4',
             stream: false,
-            temperature: 0.7
+            temperature: 0.7,
+            max_tokens: 200
           })
         })
         
         if (!grokResponse.ok) {
-          console.error('Grok API response error:', grokResponse.status, grokResponse.statusText)
-          throw new Error(`Grok API failed: ${grokResponse.status}`)
+          const errorText = await grokResponse.text()
+          console.error('Grok API response error:', {
+            status: grokResponse.status,
+            statusText: grokResponse.statusText,
+            headers: Object.fromEntries(grokResponse.headers.entries()),
+            body: errorText
+          })
+          throw new Error(`Grok API failed: ${grokResponse.status} - ${errorText}`)
         }
         
         const grokData = await grokResponse.json()
-        console.log('Grok API response:', grokData)
-        generatedTweet = grokData.choices?.[0]?.message?.content || '申し訳ありません。ツイートの生成に失敗しました。'
+        console.log('Grok API response:', JSON.stringify(grokData, null, 2))
+        
+        if (grokData.choices && grokData.choices[0] && grokData.choices[0].message) {
+          generatedTweet = grokData.choices[0].message.content
+          console.log('Successfully extracted tweet:', generatedTweet)
+        } else {
+          console.error('Unexpected Grok API response structure:', grokData)
+          throw new Error('Invalid response structure from Grok API')
+        }
       } catch (error) {
         console.error('Grok API error:', error)
         generatedTweet = `知識ベースを活用した返信：\n\n${userPrompt}\n\n#AI #ツイート生成`
