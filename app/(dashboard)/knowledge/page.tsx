@@ -116,7 +116,9 @@ export default function KnowledgePage() {
               })
 
               if (!response.ok) {
-                throw new Error(`Failed to upload ${file.name}`)
+                const errorData = await response.json().catch(() => ({}))
+                console.error(`Upload failed for ${file.name}:`, errorData)
+                throw new Error(`Failed to upload ${file.name}: ${errorData.error || response.statusText}`)
               }
               resolve()
             } catch (error) {
@@ -149,7 +151,15 @@ export default function KnowledgePage() {
       setTimeout(() => setUploadSuccess(false), 3000)
     } catch (error) {
       console.error('Upload error:', error)
-      alert('アップロード中にエラーが発生しました')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      
+      if (errorMessage.includes('update_updated_at_column')) {
+        alert('データベース設定エラーです。管理者に連絡してください。\n\nエラー: データベースの更新関数が見つかりません。')
+      } else if (errorMessage.includes('413') || errorMessage.includes('too large')) {
+        alert('ファイルサイズが大きすぎます。4.5MB以下のファイルを選択してください。')
+      } else {
+        alert(`アップロードエラー: ${errorMessage}`)
+      }
     } finally {
       setIsUploading(false)
     }

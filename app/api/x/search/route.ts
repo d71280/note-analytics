@@ -10,11 +10,30 @@ interface SearchParams {
   includeRetweets?: boolean
   minLikes?: number
   minRetweets?: number
+  minReplies?: number
+  language?: string
+  minImpressions?: number
+  hasMedia?: boolean
+  isVerified?: boolean
+  dateFrom?: string
+  dateTo?: string
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, includeRetweets = false, minLikes = 0, minRetweets = 0 } = await request.json() as SearchParams
+    const { 
+      query, 
+      includeRetweets = false, 
+      minLikes = 0, 
+      minRetweets = 0,
+      minReplies = 0,
+      language,
+      minImpressions = 0,
+      hasMedia = false,
+      isVerified = false,
+      dateFrom,
+      dateTo
+    } = await request.json() as SearchParams
 
     if (!query) {
       return NextResponse.json(
@@ -42,8 +61,39 @@ export async function POST(request: NextRequest) {
 
     // 検索クエリを構築
     let searchQuery = query
+    
+    // リツイート除外
     if (!includeRetweets) {
       searchQuery += ' -is:retweet'
+    }
+    
+    // 言語指定
+    if (language) {
+      searchQuery += ` lang:${language}`
+    }
+    
+    // メディア付きツイートのみ
+    if (hasMedia) {
+      searchQuery += ' has:media'
+    }
+    
+    // 認証済みアカウントのみ
+    if (isVerified) {
+      searchQuery += ' from:verified'
+    }
+    
+    // 日付範囲
+    if (dateFrom) {
+      searchQuery += ` since:${dateFrom}`
+    }
+    if (dateTo) {
+      searchQuery += ` until:${dateTo}`
+    }
+    
+    // インプレッション数による暗示的フィルタリング
+    // 高インプレッションを期待する場合は、エンゲージメントの高いツイートを優先
+    if (minImpressions > 100) {
+      searchQuery += ' min_replies:1 OR min_faves:10 OR min_retweets:1'
     }
 
     // ツイートを検索
@@ -59,7 +109,7 @@ export async function POST(request: NextRequest) {
       params: {
         query: searchQuery,
         max_results: 10, // X API v2の最小値は10
-        'tweet.fields': 'author_id,created_at,public_metrics,entities',
+        'tweet.fields': 'author_id,created_at,public_metrics,entities,context_annotations',
         'user.fields': 'name,username,profile_image_url,verified',
         'expansions': 'author_id'
       },
@@ -79,9 +129,16 @@ export async function POST(request: NextRequest) {
 
     // フィルタリングと整形
     const filteredTweets = tweets
-      .filter((tweet: { public_metrics: { like_count: number; retweet_count: number } }) => {
+      .filter((tweet: { public_metrics: { like_count: number; retweet_count: number; reply_count: number; impression_count?: number } }) => {
         const metrics = tweet.public_metrics
-        return metrics.like_count >= minLikes && metrics.retweet_count >= minRetweets
+        const impressions = metrics.impression_count || (metrics.like_count + metrics.retweet_count * 2 + metrics.reply_count)
+        
+        return (
+          metrics.like_count >= minLikes && 
+          metrics.retweet_count >= minRetweets &&
+          metrics.reply_count >= minReplies &&
+          impressions >= minImpressions
+        )
       })
       .map((tweet: { id: string; text: string; author_id: string; created_at: string; public_metrics: { like_count: number; retweet_count: number; reply_count: number; quote_count: number } }) => ({
         id: tweet.id,

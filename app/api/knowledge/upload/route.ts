@@ -18,6 +18,8 @@ function createChunks(text: string, chunkSize: number = 1000, overlap: number = 
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Upload request started')
+    
     const body = await request.json()
     console.log('Upload request received:', { 
       title: body.title, 
@@ -28,6 +30,7 @@ export async function POST(request: NextRequest) {
     const { title, content, contentType, tags, sourceUrl } = body
 
     if (!title || !content) {
+      console.error('Missing required fields:', { title: !!title, content: !!content })
       return NextResponse.json(
         { error: 'Title and content are required' },
         { status: 400 }
@@ -99,8 +102,20 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Upload error details:', {
       error: error instanceof Error ? error.message : error,
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
+      cause: error instanceof Error ? error.cause : undefined
     })
+    
+    // データベース関連のエラーを特定
+    if (error instanceof Error && error.message.includes('update_updated_at_column')) {
+      return NextResponse.json(
+        { 
+          error: 'Database configuration error. Please run database migration.',
+          details: 'Missing update_updated_at_column function'
+        },
+        { status: 500 }
+      )
+    }
     
     const errorMessage = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json(

@@ -40,7 +40,14 @@ export default function XSearchPage() {
   const [filters, setFilters] = useState({
     minLikes: 0,
     minRetweets: 0,
-    includeRetweets: false
+    minReplies: 0,
+    includeRetweets: false,
+    language: '',
+    minImpressions: 0,
+    hasMedia: false,
+    isVerified: false,
+    dateFrom: '',
+    dateTo: ''
   })
 
   const handleSearch = async () => {
@@ -252,7 +259,7 @@ export default function XSearchPage() {
               </Button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-2">
                 <Label>最小いいね数</Label>
                 <Input
@@ -278,19 +285,107 @@ export default function XSearchPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>リツイートを含む</Label>
-                <label className="flex items-center space-x-2 mt-2">
-                  <input
-                    type="checkbox"
-                    checked={filters.includeRetweets}
-                    onChange={(e) => setFilters({
-                      ...filters,
-                      includeRetweets: e.target.checked
-                    })}
-                    className="rounded"
-                  />
-                  <span className="text-sm">リツイートも表示</span>
-                </label>
+                <Label>最小返信数</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={filters.minReplies}
+                  onChange={(e) => setFilters({
+                    ...filters,
+                    minReplies: parseInt(e.target.value) || 0
+                  })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>言語</Label>
+                <select
+                  value={filters.language}
+                  onChange={(e) => setFilters({
+                    ...filters,
+                    language: e.target.value
+                  })}
+                  className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm"
+                >
+                  <option value="">すべての言語</option>
+                  <option value="ja">日本語</option>
+                  <option value="en">英語</option>
+                  <option value="ko">韓国語</option>
+                  <option value="zh">中国語</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>最小インプレッション数</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={filters.minImpressions}
+                  onChange={(e) => setFilters({
+                    ...filters,
+                    minImpressions: parseInt(e.target.value) || 0
+                  })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>日付範囲（開始）</Label>
+                <Input
+                  type="date"
+                  value={filters.dateFrom}
+                  onChange={(e) => setFilters({
+                    ...filters,
+                    dateFrom: e.target.value
+                  })}
+                />
+              </div>
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={filters.includeRetweets}
+                  onChange={(e) => setFilters({
+                    ...filters,
+                    includeRetweets: e.target.checked
+                  })}
+                  className="rounded"
+                />
+                <span className="text-sm">リツイートも表示</span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={filters.hasMedia}
+                  onChange={(e) => setFilters({
+                    ...filters,
+                    hasMedia: e.target.checked
+                  })}
+                  className="rounded"
+                />
+                <span className="text-sm">メディア付きのみ</span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={filters.isVerified}
+                  onChange={(e) => setFilters({
+                    ...filters,
+                    isVerified: e.target.checked
+                  })}
+                  className="rounded"
+                />
+                <span className="text-sm">認証済みアカウントのみ</span>
+              </label>
+              <div className="space-y-1">
+                <Label className="text-sm">日付範囲（終了）</Label>
+                <Input
+                  type="date"
+                  value={filters.dateTo}
+                  onChange={(e) => setFilters({
+                    ...filters,
+                    dateTo: e.target.value
+                  })}
+                  className="h-8 text-sm"
+                />
               </div>
             </div>
           </div>
@@ -359,11 +454,9 @@ export default function XSearchPage() {
                       <span className="text-xs">
                         {formatDate(tweet.created_at)}
                       </span>
-                      {sortByImpressions && (
-                        <span className="text-xs font-semibold text-blue-600">
-                          インプレッション: {tweet.metrics.like_count + tweet.metrics.retweet_count * 2 + tweet.metrics.reply_count}
-                        </span>
-                      )}
+                      <span className="text-xs font-semibold text-blue-600">
+                        概算インプレッション: {tweet.metrics.like_count + tweet.metrics.retweet_count * 2 + tweet.metrics.reply_count}
+                      </span>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
