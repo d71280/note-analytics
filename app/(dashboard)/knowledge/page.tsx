@@ -109,7 +109,7 @@ export default function KnowledgePage() {
                 body: JSON.stringify({
                   title: fileName,
                   content: content,
-                  contentType: file.type === 'application/pdf' ? 'pdf' : (uploadType === 'text' ? contentType : 'other'),
+                  contentType: file.type === 'application/pdf' ? 'note' : (uploadType === 'text' ? contentType : 'other'),
                   tags: tags.split(',').map(t => t.trim()).filter(t => t),
                   sourceUrl: sourceUrl || undefined
                 })
