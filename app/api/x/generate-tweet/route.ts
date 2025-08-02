@@ -10,7 +10,9 @@ interface TweetGenerationRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const { type, data, useGrok = true, prompt } = await request.json() as TweetGenerationRequest
+    const body = await request.json() as TweetGenerationRequest
+    const { type, data, prompt } = body
+    let useGrok = body.useGrok !== undefined ? body.useGrok : true
 
     let systemPrompt = ''
     let userPrompt = ''
