@@ -95,7 +95,15 @@ export default function KnowledgePage() {
             }
           }
           reader.onerror = () => reject(new Error(`Failed to read ${file.name}`))
-          reader.readAsText(file)
+          
+          // PDFファイルの場合は特別な処理
+          if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+            // PDFの場合はバイナリデータとして読み込み、base64エンコード
+            reader.readAsDataURL(file)
+          } else {
+            // テキストファイルの場合は通常通り読み込み
+            reader.readAsText(file)
+          }
         })
       })
 
@@ -258,7 +266,7 @@ export default function KnowledgePage() {
                     ref={fileInputRef}
                     id="file"
                     type="file"
-                    accept=".txt,.md,.json"
+                    accept=".txt,.md,.json,.pdf"
                     onChange={handleFileUpload}
                     multiple
                     className="mt-1"

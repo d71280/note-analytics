@@ -58,6 +58,7 @@ export default function SettingsContent() {
     fetchXApiConfig()
     fetchRetweetSettings()
     fetchGrokConfig()
+    checkEnvConfig()
   }, [])
 
   useEffect(() => {
@@ -110,6 +111,34 @@ export default function SettingsContent() {
     }
   }
 
+  const checkEnvConfig = async () => {
+    try {
+      const response = await fetch('/api/config/env')
+      if (response.ok) {
+        const data = await response.json()
+        // X APIが環境変数に設定されていて、DBに保存されていない場合
+        if (data.x.configured && !isConnected) {
+          // 環境変数から取得した値を表示（マスクされた状態）
+          setXApiConfig({
+            api_key: data.x.api_key,
+            api_secret: data.x.api_secret,
+            access_token: data.x.access_token,
+            access_token_secret: data.x.access_token_secret
+          })
+        }
+        // Grok APIが環境変数に設定されている場合
+        if (data.grok.configured && !grokConfig.api_key) {
+          setGrokConfig({
+            api_key: data.grok.api_key,
+            enabled: true
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check env config:', error)
+    }
+  }
+
   const saveXApiConfig = async () => {
     setIsSaving(true)
     try {
@@ -125,6 +154,26 @@ export default function SettingsContent() {
       }
     } catch (error) {
       console.error('Failed to save X API config:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const autoSetupFromEnv = async () => {
+    setIsSaving(true)
+    try {
+      const response = await fetch('/api/x/config/auto-setup', {
+        method: 'POST'
+      })
+
+      if (response.ok) {
+        setIsConnected(true)
+        await fetchXApiConfig()
+        await fetchGrokConfig()
+        alert('環境変数から設定を読み込み、保存しました')
+      }
+    } catch (error) {
+      console.error('Failed to auto setup:', error)
     } finally {
       setIsSaving(false)
     }
@@ -239,6 +288,31 @@ export default function SettingsContent() {
             <div className="flex items-center gap-2 text-green-600">
               <CheckCircle2 className="h-5 w-5" />
               <span>連携済み {xApiConfig.username && `(@${xApiConfig.username})`}</span>
+            </div>
+          ) : xApiConfig.api_key && xApiConfig.api_key.includes('...') ? (
+            <div className="p-4 bg-blue-50 rounded-lg space-y-3">
+              <p className="text-sm text-blue-800">
+                <strong>環境変数から設定を検出しました。</strong><br />
+                API情報が環境変数に設定されています。
+              </p>
+              <Button
+                onClick={autoSetupFromEnv}
+                disabled={isSaving}
+                variant="outline"
+                size="sm"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    設定中...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    環境変数から自動設定
+                  </>
+                )}
+              </Button>
             </div>
           ) : (
             <div className="flex items-center gap-2 text-gray-500">

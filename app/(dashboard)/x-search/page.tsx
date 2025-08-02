@@ -258,6 +258,13 @@ export default function XSearchPage() {
                 </label>
               </div>
             </div>
+            
+            <div className="p-4 bg-yellow-50 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <strong>注意:</strong> X API無料プランの制限により、検索結果は1件のみ表示されます。
+                より多くの結果を取得するには、有料プランへのアップグレードが必要です。
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

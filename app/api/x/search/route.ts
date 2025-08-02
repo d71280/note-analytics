@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const response = await axios.get(TWITTER_SEARCH_URL, {
       params: {
         query: searchQuery,
-        max_results: Math.min(maxResults, 100),
+        max_results: 1, // 無料プランの制限対策として1件のみ取得
         'tweet.fields': 'author_id,created_at,public_metrics,entities',
         'user.fields': 'name,username,profile_image_url,verified',
         'expansions': 'author_id'
