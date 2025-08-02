@@ -62,6 +62,8 @@ export default function XSearchPage() {
         console.error('Search API error:', errorData)
         if (response.status === 404) {
           alert('X API設定が見つかりません。設定ページでAPI情報を設定してください。')
+        } else if (response.status === 401) {
+          alert('X APIの認証エラーです。アクセストークンが無効または期限切れです。設定ページで再設定してください。')
         } else {
           alert(errorData.error || '検索エラーが発生しました')
         }

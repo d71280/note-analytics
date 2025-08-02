@@ -62,6 +62,18 @@ export default function KnowledgePage() {
     const files = e.target.files
     if (!files || files.length === 0) return
 
+    // ファイルサイズチェック（Vercel無料プランの制限: 4.5MB）
+    const MAX_FILE_SIZE = 4.5 * 1024 * 1024 // 4.5MB
+    const oversizedFiles = Array.from(files).filter(file => file.size > MAX_FILE_SIZE)
+    
+    if (oversizedFiles.length > 0) {
+      alert(`以下のファイルが大きすぎます（最大4.5MB）:\n${oversizedFiles.map(f => `${f.name} (${Math.round(f.size / 1024 / 1024 * 10) / 10}MB)`).join('\n')}\n\nより小さいファイルを選択するか、PDFを圧縮してください。`)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      return
+    }
+
     setIsUploading(true)
     setUploadSuccess(false)
 
@@ -295,7 +307,7 @@ export default function KnowledgePage() {
                     className="mt-1"
                   />
                   <p className="text-sm text-gray-600 mt-2">
-                    ※ 複数ファイルを一度に選択できます（各ファイル最大10MB）
+                    ※ 複数ファイルを一度に選択できます（各ファイル最大4.5MB - Vercel無料プランの制限）
                   </p>
                 </div>
               )}
@@ -448,8 +460,8 @@ export default function KnowledgePage() {
           </div>
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>アップロード制限:</strong> PostgreSQLのTEXT型を使用しているため、各コンテンツは最大1GBまで保存可能です。
-              ただし、パフォーマンスを考慮して、1つのコンテンツは10MB以下を推奨します。
+              <strong>アップロード制限:</strong> Vercel無料プランの制限により、各ファイルは最大4.5MBまでです。
+              大きなPDFファイルは、オンラインツールで圧縮してからアップロードしてください。
             </p>
           </div>
         </CardContent>
