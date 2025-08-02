@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   // セキュリティのため、マスクされた値を返す
   const xApiKey = process.env.X_API_KEY || ''
   const xApiSecret = process.env.X_API_SECRET || ''

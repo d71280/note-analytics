@@ -14,7 +14,7 @@ interface SearchParams {
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, maxResults = 10, includeRetweets = false, minLikes = 0, minRetweets = 0 } = await request.json() as SearchParams
+    const { query, includeRetweets = false, minLikes = 0, minRetweets = 0 } = await request.json() as SearchParams
 
     if (!query) {
       return NextResponse.json(
