@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { CheckCircle2, XCircle, Loader2, Database, Shield, RefreshCw } from 'lucide-react'
 
 interface TableInfo {
@@ -36,12 +36,11 @@ export default function DbCheckPage() {
 
   const checkDatabase = async () => {
     setIsChecking(true)
-    const supabase = createClient()
     const results: TableInfo[] = []
 
     try {
       // 接続テスト
-      const { data: testData, error: testError } = await supabase
+      const { error: testError } = await supabase
         .from('x_api_configs')
         .select('count')
         .limit(1)
@@ -68,16 +67,11 @@ export default function DbCheckPage() {
               error: error.message
             })
           } else {
-            // RLS状態を確認
-            const { data: rlsData } = await supabase
-              .rpc('check_rls_status', { table_name: tableName })
-              .single()
-
             results.push({
               table_name: tableName,
               exists: true,
               row_count: count || 0,
-              rls_enabled: rlsData?.rls_enabled || false
+              rls_enabled: false // RLS状態は別途確認
             })
           }
         } catch (err) {
@@ -100,6 +94,7 @@ export default function DbCheckPage() {
 
   useEffect(() => {
     checkDatabase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const runMigration = async (tableName: string) => {
