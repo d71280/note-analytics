@@ -59,16 +59,63 @@ export default function KnowledgePage() {
   }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = e.target.files
+    if (!files || files.length === 0) return
 
-    const reader = new FileReader()
-    reader.onload = async (event) => {
-      const text = event.target?.result as string
-      setContent(text)
-      setTitle(file.name.replace(/\.[^/.]+$/, '')) // 拡張子を除いたファイル名
+    setIsUploading(true)
+    setUploadSuccess(false)
+
+    try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        return new Promise<void>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = async (event) => {
+            const text = event.target?.result as string
+            const fileName = file.name.replace(/\.[^/.]+$/, '') // 拡張子を除いたファイル名
+            
+            try {
+              const response = await fetch('/api/knowledge/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  title: fileName,
+                  content: text,
+                  contentType: uploadType === 'text' ? contentType : 'other',
+                  tags: tags.split(',').map(t => t.trim()).filter(t => t),
+                  sourceUrl: sourceUrl || undefined
+                })
+              })
+
+              if (!response.ok) {
+                throw new Error(`Failed to upload ${file.name}`)
+              }
+              resolve()
+            } catch (error) {
+              reject(error)
+            }
+          }
+          reader.onerror = () => reject(new Error(`Failed to read ${file.name}`))
+          reader.readAsText(file)
+        })
+      })
+
+      await Promise.all(uploadPromises)
+      setUploadSuccess(true)
+      // フォームをクリア
+      setTitle('')
+      setContent('')
+      setTags('')
+      setSourceUrl('')
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      setTimeout(() => setUploadSuccess(false), 3000)
+    } catch (error) {
+      console.error('Upload error:', error)
+      alert('アップロード中にエラーが発生しました')
+    } finally {
+      setIsUploading(false)
     }
-    reader.readAsText(file)
   }
 
   const generateTweetFromKnowledge = async () => {
@@ -206,20 +253,19 @@ export default function KnowledgePage() {
                 </div>
               ) : (
                 <div>
-                  <Label htmlFor="file">ファイル選択</Label>
+                  <Label htmlFor="file">ファイル選択（複数選択可）</Label>
                   <Input
                     ref={fileInputRef}
                     id="file"
                     type="file"
                     accept=".txt,.md,.json"
                     onChange={handleFileUpload}
+                    multiple
                     className="mt-1"
                   />
-                  {content && (
-                    <p className="text-sm text-gray-600 mt-2">
-                      ファイルを読み込みました（{content.length}文字）
-                    </p>
-                  )}
+                  <p className="text-sm text-gray-600 mt-2">
+                    ※ 複数ファイルを一度に選択できます（各ファイル最大10MB）
+                  </p>
                 </div>
               )}
 
@@ -245,23 +291,25 @@ export default function KnowledgePage() {
                 />
               </div>
 
-              <Button
-                onClick={handleSubmit}
-                disabled={isUploading || !title || !content}
-                className="w-full"
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    アップロード中...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    知識ベースに追加
-                  </>
-                )}
-              </Button>
+              {uploadType === 'text' && (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isUploading || !title || !content}
+                  className="w-full"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      アップロード中...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      知識ベースに追加
+                    </>
+                  )}
+                </Button>
+              )}
 
               {uploadSuccess && (
                 <div className="flex items-center gap-2 text-green-600">
@@ -339,6 +387,42 @@ export default function KnowledgePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 知識ベースの活用例 */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            知識ベースの活用例
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-start gap-2">
+              <span className="text-lg">•</span>
+              <p className="text-sm">過去のブログ記事から関連情報を抽出</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-lg">•</span>
+              <p className="text-sm">動画で話した内容を要約してツイート</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-lg">•</span>
+              <p className="text-sm">あなたの文体や専門知識を反映</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-lg">•</span>
+              <p className="text-sm">一貫性のあるメッセージを発信</p>
+            </div>
+          </div>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>アップロード制限:</strong> PostgreSQLのTEXT型を使用しているため、各コンテンツは最大1GBまで保存可能です。
+              ただし、パフォーマンスを考慮して、1つのコンテンツは10MB以下を推奨します。
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 統計情報 */}
       <Card className="mt-6">

@@ -27,6 +27,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // コンテンツサイズのチェック（10MB制限）
+    const contentSize = new Blob([content]).size
+    if (contentSize > 10 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'Content size exceeds 10MB limit' },
+        { status: 400 }
+      )
+    }
+
     const supabase = createClient()
 
     // メインコンテンツを保存
