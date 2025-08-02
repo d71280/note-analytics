@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+interface KnowledgeItem {
+  title: string
+  content: string
+  content_type: string
+  tags?: string[]
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('Knowledge generate-tweet API called')
     const { prompt } = await request.json()
     console.log('Request params:', { prompt })
 
-    let knowledgeItems = []
+    let knowledgeItems: KnowledgeItem[] = []
     let knowledgeContent = ''
 
     // Supabase設定確認
@@ -33,7 +40,7 @@ export async function POST(request: NextRequest) {
           throw error
         }
 
-        knowledgeItems = data || []
+        knowledgeItems = (data as KnowledgeItem[]) || []
         console.log('Knowledge items found from Supabase:', knowledgeItems.length)
       } catch (error) {
         console.error('Supabase connection error:', error)

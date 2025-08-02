@@ -59,6 +59,7 @@ export default function SettingsContent() {
     fetchRetweetSettings()
     fetchGrokConfig()
     checkEnvConfig()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
