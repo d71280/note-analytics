@@ -18,7 +18,14 @@ function createChunks(text: string, chunkSize: number = 1000, overlap: number = 
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, content, contentType, tags, sourceUrl } = await request.json()
+    const body = await request.json()
+    console.log('Upload request received:', { 
+      title: body.title, 
+      contentLength: body.content?.length,
+      contentType: body.contentType 
+    })
+    
+    const { title, content, contentType, tags, sourceUrl } = body
 
     if (!title || !content) {
       return NextResponse.json(
@@ -26,6 +33,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+    
+    // タイトルのサニタイズ（特殊文字を除去）
+    const sanitizedTitle = title.replace(/[^\w\s\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf\u3400-\u4dbf.-]/g, ' ').trim()
 
     // コンテンツサイズのチェック（10MB制限）
     const contentSize = new Blob([content]).size
@@ -42,7 +52,7 @@ export async function POST(request: NextRequest) {
     const { data: knowledge, error: knowledgeError } = await supabase
       .from('knowledge_base')
       .insert({
-        title,
+        title: sanitizedTitle,
         content,
         content_type: contentType,
         tags,
@@ -87,10 +97,14 @@ export async function POST(request: NextRequest) {
       message: 'Content uploaded successfully'
     })
   } catch (error) {
-    console.error('Upload error:', error)
+    console.error('Upload error details:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined
+    })
+    
     const errorMessage = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json(
-      { error: errorMessage },
+      { error: `Upload failed: ${errorMessage}` },
       { status: 500 }
     )
   }

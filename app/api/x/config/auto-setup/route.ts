@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST() {
   try {
+    console.log('Auto-setup API called')
     const supabase = createClient()
     
     // 環境変数から値を取得
@@ -10,6 +11,13 @@ export async function POST() {
     const xApiSecret = process.env.X_API_SECRET
     const xAccessToken = process.env.X_ACCESS_TOKEN
     const xAccessSecret = process.env.X_ACCESS_SECRET
+    
+    console.log('Environment variables check:', {
+      hasApiKey: !!xApiKey,
+      hasApiSecret: !!xApiSecret,
+      hasAccessToken: !!xAccessToken,
+      hasAccessSecret: !!xAccessSecret
+    })
 
     if (!xApiKey || !xApiSecret || !xAccessToken || !xAccessSecret) {
       return NextResponse.json(
