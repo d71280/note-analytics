@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,7 +7,11 @@ export async function POST(request: NextRequest) {
     const { prompt, useKnowledge = true } = await request.json()
     console.log('Request params:', { prompt, useKnowledge })
 
-    const supabase = createClient()
+    // Supabaseクライアントを直接作成
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     // 知識ベースから関連コンテンツを取得
     let relevantContent: Array<{
@@ -19,22 +23,27 @@ export async function POST(request: NextRequest) {
     }> = []
     if (useKnowledge) {
       console.log('Fetching knowledge base content...')
-      // キーワードベースの検索（ベクトル検索は後で実装）
-      const searchKeywords = ['note', 'AI', '開発', 'トレンド']
-      
-      const { data: knowledgeItems, error: knowledgeError } = await supabase
-        .from('knowledge_base')
-        .select('id, title, content, content_type, tags')
-        .or(searchKeywords.map(kw => `content.ilike.%${kw}%`).join(','))
-        .limit(5)
+      try {
+        // キーワードベースの検索（ベクトル検索は後で実装）
+        const searchKeywords = ['note', 'AI', '開発', 'トレンド']
+        
+        const { data: knowledgeItems, error: knowledgeError } = await supabase
+          .from('knowledge_base')
+          .select('id, title, content, content_type, tags')
+          .or(searchKeywords.map(kw => `content.ilike.%${kw}%`).join(','))
+          .limit(5)
 
-      if (knowledgeError) {
-        console.error('Knowledge base query error:', knowledgeError)
-        // エラーがあっても続行（知識ベースなしで生成）
+        if (knowledgeError) {
+          console.error('Knowledge base query error:', knowledgeError)
+          // エラーがあっても続行（知識ベースなしで生成）
+        } else {
+          relevantContent = knowledgeItems || []
+          console.log('Found knowledge items:', relevantContent.length)
+        }
+      } catch (error) {
+        console.error('Knowledge base connection error:', error)
+        // データベース接続エラーがあっても続行
       }
-
-      relevantContent = knowledgeItems || []
-      console.log('Found knowledge items:', relevantContent.length)
     }
 
     // プロンプトを構築
@@ -61,18 +70,8 @@ ${relevantContent.map(item => `
     // AIでツイートを生成
     let generatedTweet = ''
 
-    // Grok APIが利用可能な場合
-    const { data: grokConfig, error: grokError } = await supabase
-      .from('grok_api_configs')
-      .select('api_key, enabled')
-      .single()
-    
-    if (grokError) {
-      console.log('Grok config not found, using environment variables:', grokError.message)
-    }
-
-    // Grok APIキーが利用可能かチェック（データベースまたは環境変数）
-    const grokApiKey = grokConfig?.api_key || process.env.GROK_API_KEY
+    // Grok APIキーを環境変数から直接取得
+    const grokApiKey = process.env.GROK_API_KEY
     console.log('Grok API available:', !!grokApiKey)
     
     if (grokApiKey) {
@@ -106,28 +105,33 @@ ${relevantContent.map(item => `
     }
 
     // 生成履歴を保存（テーブルが存在する場合のみ）
-    if (relevantContent.length > 0) {
-      console.log('Saving generation history...')
-      const { error: historyError } = await supabase
-        .from('knowledge_generation_history')
-        .insert({
-          prompt: userPrompt,
-          generated_content: generatedTweet,
-          used_knowledge_ids: relevantContent.map(item => item.id).filter((id): id is string => id !== undefined),
-          model: grokConfig?.enabled ? 'grok' : 'gemini'
-        })
-      
-      if (historyError) {
-        console.error('Failed to save generation history:', historyError)
-        // エラーがあっても続行
+    try {
+      if (relevantContent.length > 0) {
+        console.log('Saving generation history...')
+        const { error: historyError } = await supabase
+          .from('knowledge_generation_history')
+          .insert({
+            prompt: userPrompt,
+            generated_content: generatedTweet,
+            used_knowledge_ids: relevantContent.map(item => item.id).filter((id): id is string => id !== undefined),
+            model: grokApiKey ? 'grok' : 'fallback'
+          })
+        
+        if (historyError) {
+          console.error('Failed to save generation history:', historyError)
+          // エラーがあっても続行
+        }
       }
+    } catch (error) {
+      console.error('History save error:', error)
+      // エラーがあっても続行
     }
 
     return NextResponse.json({
       success: true,
       tweet: generatedTweet,
       usedKnowledge: relevantContent.length,
-      model: grokConfig?.enabled ? 'grok' : 'gemini'
+      model: grokApiKey ? 'grok' : 'fallback'
     })
   } catch (error) {
     console.error('Generate tweet error:', error)
