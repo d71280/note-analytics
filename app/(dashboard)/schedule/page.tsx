@@ -49,7 +49,8 @@ export default function SchedulePage() {
     contentSource: {
       useTrends: true,
       useTopArticles: false,
-      useAI: true
+      useAI: true,
+      useKnowledge: false
     }
   })
 
@@ -228,6 +229,22 @@ export default function SchedulePage() {
                       className="rounded"
                     />
                     <span className="text-sm">AI（Grok/Gemini）で文章を生成</span>
+                  </label>
+                  
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={postSchedule.contentSource.useKnowledge}
+                      onChange={(e) => setPostSchedule({
+                        ...postSchedule,
+                        contentSource: {
+                          ...postSchedule.contentSource,
+                          useKnowledge: e.target.checked
+                        }
+                      })}
+                      className="rounded"
+                    />
+                    <span className="text-sm">知識ベースを活用して生成</span>
                   </label>
                 </div>
 
