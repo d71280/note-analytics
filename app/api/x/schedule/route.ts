@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       schedulesToInsert.push({
         schedule_type: 'post',
         enabled: postSchedule.enabled,
-        time_slots: postSchedule.timeSlots.map((slot: any) => slot.time),
+        time_slots: postSchedule.timeSlots.map((slot: { time: string }) => slot.time),
         weekdays: postSchedule.weekdays,
         content_source: postSchedule.contentSource
       })
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       schedulesToInsert.push({
         schedule_type: 'retweet',
         enabled: retweetSchedule.enabled,
-        time_slots: retweetSchedule.timeSlots.map((slot: any) => slot.time),
+        time_slots: retweetSchedule.timeSlots.map((slot: { time: string }) => slot.time),
         weekdays: retweetSchedule.weekdays
       })
     }
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 次の実行時刻で予約投稿を作成
-    await createScheduledPosts(postSchedule, retweetSchedule)
+    await createScheduledPosts(postSchedule)
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -81,7 +81,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function createScheduledPosts(postSchedule: any, retweetSchedule: any) {
+interface PostSchedule {
+  enabled: boolean
+  timeSlots: { time: string }[]
+  weekdays: number[]
+  contentSource?: { useAI?: boolean }
+}
+
+async function createScheduledPosts(postSchedule: PostSchedule | null) {
   const supabase = createClient()
   const now = new Date()
   const scheduledPosts = []

@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import axios from 'axios'
 
 const TWITTER_SEARCH_URL = 'https://api.twitter.com/2/tweets/search/recent'
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const supabase = createClient()
 
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     const retweetedIds: string[] = []
-    const errors: any[] = []
+    const errors: { tweetId?: string; keyword?: string; error: string }[] = []
 
     // 各キーワードで検索
     for (const keyword of settings.search_keywords || []) {
@@ -123,19 +123,21 @@ export async function POST(request: NextRequest) {
 
             // レート制限回避のため遅延
             await new Promise(resolve => setTimeout(resolve, 2000))
-          } catch (error: any) {
-            if (error.response?.status !== 327) { // 既にリツイート済みエラーは無視
+          } catch (error) {
+            const err = error as { response?: { status?: number; data?: unknown }; message?: string }
+            if (err.response?.status !== 327) { // 既にリツイート済みエラーは無視
               errors.push({
                 tweetId: id,
-                error: error.response?.data || error.message
+                error: String(err.response?.data || err.message || 'Unknown error')
               })
             }
           }
         }
-      } catch (error: any) {
+      } catch (error) {
+        const err = error as { response?: { data?: unknown }; message?: string }
         errors.push({
           keyword,
-          error: error.response?.data || error.message
+          error: String(err.response?.data || err.message || 'Unknown error')
         })
       }
     }

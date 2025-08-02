@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Calendar, Clock, Plus, Trash2, Save, RefreshCw, TrendingUp, FileText } from 'lucide-react'
+import { Calendar, Clock, Plus, Trash2, Save, RefreshCw, FileText } from 'lucide-react'
 
 interface TimeSlot {
   id: string
@@ -23,6 +22,7 @@ interface PostSchedule {
     useTrends: boolean
     useTopArticles: boolean
     useAI: boolean
+    useKnowledge: boolean
     customPrompt?: string
   }
 }

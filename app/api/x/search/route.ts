@@ -62,18 +62,18 @@ export async function POST(request: NextRequest) {
     const users = response.data.includes?.users || []
 
     // ユーザー情報をマップ化
-    const userMap = users.reduce((acc: any, user: any) => {
+    const userMap = users.reduce((acc: Record<string, { id: string; name: string; username: string; profile_image_url?: string }>, user: { id: string; name: string; username: string; profile_image_url?: string }) => {
       acc[user.id] = user
       return acc
     }, {})
 
     // フィルタリングと整形
     const filteredTweets = tweets
-      .filter((tweet: any) => {
+      .filter((tweet: { public_metrics: { like_count: number; retweet_count: number } }) => {
         const metrics = tweet.public_metrics
         return metrics.like_count >= minLikes && metrics.retweet_count >= minRetweets
       })
-      .map((tweet: any) => ({
+      .map((tweet: { id: string; text: string; author_id: string; created_at: string; public_metrics: { like_count: number; retweet_count: number; reply_count: number; quote_count: number } }) => ({
         id: tweet.id,
         text: tweet.text,
         author: userMap[tweet.author_id] || {},

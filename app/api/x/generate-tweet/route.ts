@@ -3,7 +3,7 @@ import axios from 'axios'
 
 interface TweetGenerationRequest {
   type: 'trend' | 'article' | 'custom'
-  data: any
+  data: Record<string, unknown>
   useGrok?: boolean
   prompt?: string
 }
@@ -89,7 +89,7 @@ URL: ${data.url}
 
     // GrokがないかエラーになったらGemini APIを使用
     if (!useGrok || !generatedTweet) {
-      const { GoogleGenerativeAI } = require('@google/generative-ai')
+      const { GoogleGenerativeAI } = await import('@google/generative-ai')
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
       const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
 

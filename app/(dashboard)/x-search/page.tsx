@@ -75,7 +75,7 @@ export default function XSearchPage() {
       })
 
       if (response.ok) {
-        setRetweetedIds(new Set([...retweetedIds, tweetId]))
+        setRetweetedIds(new Set(Array.from(retweetedIds).concat(tweetId)))
       }
     } catch (error) {
       console.error('Retweet error:', error)
@@ -214,6 +214,7 @@ export default function XSearchPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       {tweet.author.profile_image_url && (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={tweet.author.profile_image_url}
                           alt={tweet.author.name}

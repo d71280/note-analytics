@@ -9,13 +9,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Brain, Upload, FileText, Video, Hash, Loader2, CheckCircle2, Sparkles } from 'lucide-react'
 
-interface KnowledgeItem {
-  title: string
-  content: string
-  contentType: string
-  tags: string[]
-  sourceUrl?: string
-}
 
 export default function KnowledgePage() {
   const [uploadType, setUploadType] = useState<'text' | 'file'>('text')

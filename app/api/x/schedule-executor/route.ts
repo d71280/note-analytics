@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import axios from 'axios'
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
               // テンプレート生成
               const topTrends = trendsData.trends?.slice(0, 3) || []
               tweetContent = `📊 本日のnoteトレンド\n\n`
-              topTrends.forEach((trend: any, index: number) => {
+              topTrends.forEach((trend: { keyword: string; count: number }, index: number) => {
                 tweetContent += `${index + 1}. ${trend.keyword} (${trend.count}件)\n`
               })
               tweetContent += `\n#note #トレンド分析`
@@ -143,18 +142,18 @@ export async function POST(request: NextRequest) {
 
         // レート制限対策
         await new Promise(resolve => setTimeout(resolve, 2000))
-      } catch (error: any) {
+      } catch (error) {
         console.error(`Failed to execute post ${post.id}:`, error)
         
         await supabase
           .from('x_scheduled_posts')
           .update({
             status: 'failed',
-            error_message: error.message
+            error_message: (error as Error).message
           })
           .eq('id', post.id)
         
-        results.push({ id: post.id, success: false, error: error.message })
+        results.push({ id: post.id, success: false, error: (error as Error).message })
       }
     }
 

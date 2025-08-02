@@ -8,14 +8,20 @@ export async function POST(request: NextRequest) {
     const supabase = createClient()
 
     // 知識ベースから関連コンテンツを取得
-    let relevantContent = []
+    let relevantContent: Array<{
+      id?: string
+      title: string
+      content: string
+      content_type: string
+      tags?: string[]
+    }> = []
     if (useKnowledge) {
       // キーワードベースの検索（ベクトル検索は後で実装）
       const searchKeywords = ['note', 'AI', '開発', 'トレンド']
       
       const { data: knowledgeItems } = await supabase
         .from('knowledge_base')
-        .select('title, content, content_type, tags')
+        .select('id, title, content, content_type, tags')
         .or(searchKeywords.map(kw => `content.ilike.%${kw}%`).join(','))
         .limit(5)
 
@@ -23,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // プロンプトを構築
-    let systemPrompt = `あなたは知識豊富なコンテンツクリエイターです。
+    const systemPrompt = `あなたは知識豊富なコンテンツクリエイターです。
 以下の知識ベースの情報を参考に、魅力的なツイートを生成してください。
 
 知識ベースの情報:
@@ -67,7 +73,7 @@ ${relevantContent.map(item => `
       generatedTweet = data.tweet
     } else {
       // Gemini APIを使用
-      const { GoogleGenerativeAI } = require('@google/generative-ai')
+      const { GoogleGenerativeAI } = await import('@google/generative-ai')
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
       const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
 
@@ -83,7 +89,7 @@ ${relevantContent.map(item => `
         .insert({
           prompt: userPrompt,
           generated_content: generatedTweet,
-          used_knowledge_ids: relevantContent.map(item => item.id),
+          used_knowledge_ids: relevantContent.map(item => item.id).filter((id): id is string => id !== undefined),
           model: grokConfig?.enabled ? 'grok' : 'gemini'
         })
     }
