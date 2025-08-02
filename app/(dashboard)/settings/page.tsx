@@ -1,147 +1,239 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { User, Bell, Shield, Palette } from 'lucide-react'
+import { CheckCircle2, XCircle, Twitter, Loader2, Save, Trash2 } from 'lucide-react'
 
-export default function SettingsPage() {
-  return (
-    <div>
-      <h1 className="mb-8 text-3xl font-bold text-gray-900">設定</h1>
-      
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              <CardTitle>プロフィール設定</CardTitle>
-            </div>
-            <CardDescription>
-              あなたの基本情報を設定します
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="name">表示名</Label>
-              <Input id="name" placeholder="あなたの名前" />
-            </div>
-            <div>
-              <Label htmlFor="note-username">Note ユーザー名</Label>
-              <Input id="note-username" placeholder="@username" />
-            </div>
-            <div>
-              <Label htmlFor="bio">自己紹介</Label>
-              <Textarea
-                id="bio"
-                placeholder="簡単な自己紹介を入力..."
-                rows={3}
-              />
-            </div>
-            <Button>プロフィールを更新</Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              <CardTitle>通知設定</CardTitle>
-            </div>
-            <CardDescription>
-              通知の受け取り方法を設定します
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>トレンド通知</Label>
-                <p className="text-sm text-gray-600">新しいトレンド記事の通知を受け取る</p>
-              </div>
-              <Switch />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>分析完了通知</Label>
-                <p className="text-sm text-gray-600">記事分析が完了したときに通知</p>
-              </div>
-              <Switch />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>週次レポート</Label>
-                <p className="text-sm text-gray-600">毎週のトレンドレポートを受け取る</p>
-              </div>
-              <Switch />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Palette className="h-5 w-5" />
-              <CardTitle>表示設定</CardTitle>
-            </div>
-            <CardDescription>
-              アプリケーションの表示をカスタマイズ
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>ダークモード</Label>
-                <p className="text-sm text-gray-600">暗い背景色を使用</p>
-              </div>
-              <Switch />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>コンパクト表示</Label>
-                <p className="text-sm text-gray-600">情報を密に表示</p>
-              </div>
-              <Switch />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              <CardTitle>プライバシー設定</CardTitle>
-            </div>
-            <CardDescription>
-              データの取り扱いについて設定します
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>分析履歴の保存</Label>
-                <p className="text-sm text-gray-600">記事分析の履歴を保存する</p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>匿名統計の提供</Label>
-                <p className="text-sm text-gray-600">サービス改善のための匿名データ提供</p>
-              </div>
-              <Switch />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  )
+interface XApiConfig {
+  api_key: string
+  api_secret: string
+  access_token: string
+  access_token_secret: string
+  username?: string
 }
 
-function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export default function SettingsPage() {
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [config, setConfig] = useState<XApiConfig>({
+    api_key: '',
+    api_secret: '',
+    access_token: '',
+    access_token_secret: '',
+  })
+  const [hasConfig, setHasConfig] = useState(false)
+  const searchParams = useSearchParams()
+  
+  const success = searchParams.get('success')
+  const error = searchParams.get('error')
+
+  useEffect(() => {
+    fetchConfig()
+  }, [])
+
+  const fetchConfig = async () => {
+    try {
+      const response = await fetch('/api/x/config')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.config) {
+          setConfig(data.config)
+          setHasConfig(true)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch config:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      const response = await fetch('/api/x/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      })
+      
+      if (response.ok) {
+        setHasConfig(true)
+        window.location.href = '/settings?success=config_saved'
+      } else {
+        window.location.href = '/settings?error=save_failed'
+      }
+    } catch (error) {
+      console.error('Save error:', error)
+      window.location.href = '/settings?error=save_failed'
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('本当にX API設定を削除しますか？')) return
+    
+    try {
+      const response = await fetch('/api/x/config', {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        setConfig({
+          api_key: '',
+          api_secret: '',
+          access_token: '',
+          access_token_secret: '',
+        })
+        setHasConfig(false)
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error('Delete error:', error)
+    }
+  }
+
   return (
-    <textarea
-      {...props}
-      className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-    />
+    <div className="container mx-auto py-8 px-4">
+      <h1 className="text-3xl font-bold mb-8">X API設定</h1>
+
+      {success && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <p className="text-green-800">
+            {success === 'config_saved' && 'X API設定が保存されました'}
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <p className="text-red-800">
+            {error === 'save_failed' && '設定の保存に失敗しました'}
+          </p>
+        </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Twitter className="h-5 w-5" />
+            X（Twitter）API設定
+          </CardTitle>
+          <CardDescription>
+            X API v2の認証情報を設定して、自動投稿機能を有効にします
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="api_key">API Key</Label>
+                  <Input
+                    id="api_key"
+                    type="password"
+                    value={config.api_key}
+                    onChange={(e) => setConfig({ ...config, api_key: e.target.value })}
+                    placeholder="API Keyを入力"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="api_secret">API Secret</Label>
+                  <Input
+                    id="api_secret"
+                    type="password"
+                    value={config.api_secret}
+                    onChange={(e) => setConfig({ ...config, api_secret: e.target.value })}
+                    placeholder="API Secretを入力"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="access_token">Access Token</Label>
+                  <Input
+                    id="access_token"
+                    type="password"
+                    value={config.access_token}
+                    onChange={(e) => setConfig({ ...config, access_token: e.target.value })}
+                    placeholder="Access Tokenを入力"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="access_token_secret">Access Token Secret</Label>
+                  <Input
+                    id="access_token_secret"
+                    type="password"
+                    value={config.access_token_secret}
+                    onChange={(e) => setConfig({ ...config, access_token_secret: e.target.value })}
+                    placeholder="Access Token Secretを入力"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving || !config.api_key || !config.api_secret || !config.access_token || !config.access_token_secret}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      保存中...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      設定を保存
+                    </>
+                  )}
+                </Button>
+                
+                {hasConfig && (
+                  <Button
+                    variant="destructive"
+                    onClick={handleDelete}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    設定を削除
+                  </Button>
+                )}
+              </div>
+
+              {hasConfig && (
+                <div className="pt-6 border-t">
+                  <h3 className="font-medium mb-2">自動投稿設定</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    トレンド分析の結果を定期的にXに投稿します
+                  </p>
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2">
+                      <input type="checkbox" className="rounded" />
+                      <span className="text-sm">毎日のトレンドサマリーを投稿</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input type="checkbox" className="rounded" />
+                      <span className="text-sm">注目記事の分析結果を投稿</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
 }

@@ -1,26 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import axios from 'axios'
-import jwt from 'jsonwebtoken'
 
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets'
 
 export async function POST(request: NextRequest) {
-  const sessionToken = request.cookies.get('x_session')?.value
-  
-  if (!sessionToken) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    )
-  }
-
   try {
-    const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET!) as {
-      userId: string
-      username: string
-    }
-
     const { text, postType } = await request.json()
 
     if (!text || text.length > 280) {
@@ -32,25 +17,26 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient()
     
-    const { data: account, error: fetchError } = await supabase
-      .from('x_accounts')
-      .select('access_token, refresh_token')
-      .eq('user_id', decoded.userId)
+    // API設定を取得
+    const { data: config, error: fetchError } = await supabase
+      .from('x_api_configs')
+      .select('access_token')
       .single()
 
-    if (fetchError || !account) {
+    if (fetchError || !config) {
       return NextResponse.json(
-        { error: 'Account not found' },
+        { error: 'X API configuration not found' },
         { status: 404 }
       )
     }
 
+    // ツイートを投稿
     const tweetResponse = await axios.post(
       TWITTER_API_URL,
       { text },
       {
         headers: {
-          'Authorization': `Bearer ${account.access_token}`,
+          'Authorization': `Bearer ${config.access_token}`,
           'Content-Type': 'application/json'
         }
       }
@@ -58,10 +44,10 @@ export async function POST(request: NextRequest) {
 
     const { data: { id: tweetId } } = tweetResponse
 
+    // 投稿履歴を保存
     await supabase
       .from('x_post_history')
       .insert({
-        x_account_id: decoded.userId,
         post_type: postType || 'manual',
         post_content: text,
         tweet_id: tweetId,
@@ -71,16 +57,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       tweetId,
-      url: `https://twitter.com/${decoded.username}/status/${tweetId}`
+      url: `https://twitter.com/i/web/status/${tweetId}`
     })
   } catch (error) {
     console.error('Tweet error:', error)
     
     if (axios.isAxiosError(error) && error.response?.status === 401) {
       return NextResponse.json(
-        { error: 'Token expired. Please reconnect your account.' },
+        { error: 'Invalid or expired access token. Please update your API configuration.' },
         { status: 401 }
       )
+    }
+
+    // エラー履歴を保存
+    try {
+      const { text, postType } = await request.json()
+      const supabase = createClient()
+      await supabase
+        .from('x_post_history')
+        .insert({
+          post_type: postType || 'manual',
+          post_content: text,
+          status: 'failed'
+        })
+    } catch (e) {
+      // エラー履歴の保存に失敗しても無視
     }
 
     return NextResponse.json(
