@@ -70,17 +70,34 @@ export default function KnowledgePage() {
         return new Promise<void>((resolve, reject) => {
           const reader = new FileReader()
           reader.onload = async (event) => {
-            const text = event.target?.result as string
+            let content = event.target?.result as string
             const fileName = file.name.replace(/\.[^/.]+$/, '') // 拡張子を除いたファイル名
             
             try {
+              // PDFファイルの場合、テキストを抽出
+              if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                const pdfResponse = await fetch('/api/knowledge/process-pdf', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    content: content,
+                    fileName: file.name
+                  })
+                })
+                
+                if (pdfResponse.ok) {
+                  const pdfData = await pdfResponse.json()
+                  content = pdfData.text
+                }
+              }
+              
               const response = await fetch('/api/knowledge/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   title: fileName,
-                  content: text,
-                  contentType: uploadType === 'text' ? contentType : 'other',
+                  content: content,
+                  contentType: file.type === 'application/pdf' ? 'pdf' : (uploadType === 'text' ? contentType : 'other'),
                   tags: tags.split(',').map(t => t.trim()).filter(t => t),
                   sourceUrl: sourceUrl || undefined
                 })
@@ -230,6 +247,12 @@ export default function KnowledgePage() {
                       <div className="flex items-center gap-2">
                         {contentTypeIcons.other}
                         その他
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="pdf">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        PDFドキュメント
                       </div>
                     </SelectItem>
                   </SelectContent>
