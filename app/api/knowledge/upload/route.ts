@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     if (knowledgeError) {
       console.error('Knowledge base error:', knowledgeError)
       return NextResponse.json(
-        { error: 'Failed to save content' },
+        { error: `Failed to save content: ${knowledgeError.message}` },
         { status: 500 }
       )
     }
@@ -88,8 +88,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Upload error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     )
   }

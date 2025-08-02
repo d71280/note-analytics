@@ -57,6 +57,17 @@ export default function XSearchPage() {
         })
       })
 
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Search API error:', errorData)
+        if (response.status === 404) {
+          alert('X API設定が見つかりません。設定ページでAPI情報を設定してください。')
+        } else {
+          alert(errorData.error || '検索エラーが発生しました')
+        }
+        return
+      }
+      
       const data = await response.json()
       if (data.tweets) {
         setTweets(data.tweets)

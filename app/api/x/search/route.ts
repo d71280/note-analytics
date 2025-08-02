@@ -31,9 +31,15 @@ export async function POST(request: NextRequest) {
       .select('access_token')
       .single()
 
-    if (fetchError || !config) {
+    // データベースに設定がない場合は環境変数から取得
+    let accessToken = config?.access_token
+    if (!accessToken && process.env.X_ACCESS_TOKEN) {
+      accessToken = process.env.X_ACCESS_TOKEN
+    }
+
+    if (!accessToken) {
       return NextResponse.json(
-        { error: 'X API configuration not found' },
+        { error: 'X API configuration not found. Please set up X API in settings.' },
         { status: 404 }
       )
     }
@@ -54,7 +60,7 @@ export async function POST(request: NextRequest) {
         'expansions': 'author_id'
       },
       headers: {
-        'Authorization': `Bearer ${config.access_token}`
+        'Authorization': `Bearer ${accessToken}`
       }
     })
 
