@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const supabase = createClient()
     
     // API設定を取得
-    const { data: config, error: fetchError } = await supabase
+    const { data: config } = await supabase
       .from('x_api_configs')
       .select('access_token')
       .single()
