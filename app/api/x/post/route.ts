@@ -90,18 +90,20 @@ export async function POST(request: NextRequest) {
     }
 
     // エラー履歴を保存
-    try {
-      const supabase = createClient()
-      await supabase
-        .from('x_post_history')
-        .insert({
-          post_type: postType || 'manual',
-          post_content: tweetText,
-          reply_to_id: replyToId,
-          status: 'failed'
-        })
-    } catch {
-      // エラー履歴の保存に失敗しても無視
+    if (tweetText) {
+      try {
+        const supabase = createClient()
+        await supabase
+          .from('x_post_history')
+          .insert({
+            post_type: postType || 'manual',
+            post_content: tweetText,
+            reply_to_id: replyToId,
+            status: 'failed'
+          })
+      } catch {
+        // エラー履歴の保存に失敗しても無視
+      }
     }
 
     return NextResponse.json(
