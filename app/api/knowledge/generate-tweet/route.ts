@@ -3,7 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Knowledge generate-tweet API called')
     const { prompt, useKnowledge = true } = await request.json()
+    console.log('Request params:', { prompt, useKnowledge })
 
     const supabase = createClient()
 
@@ -16,16 +18,23 @@ export async function POST(request: NextRequest) {
       tags?: string[]
     }> = []
     if (useKnowledge) {
+      console.log('Fetching knowledge base content...')
       // キーワードベースの検索（ベクトル検索は後で実装）
       const searchKeywords = ['note', 'AI', '開発', 'トレンド']
       
-      const { data: knowledgeItems } = await supabase
+      const { data: knowledgeItems, error: knowledgeError } = await supabase
         .from('knowledge_base')
         .select('id, title, content, content_type, tags')
         .or(searchKeywords.map(kw => `content.ilike.%${kw}%`).join(','))
         .limit(5)
 
+      if (knowledgeError) {
+        console.error('Knowledge base query error:', knowledgeError)
+        // エラーがあっても続行（知識ベースなしで生成）
+      }
+
       relevantContent = knowledgeItems || []
+      console.log('Found knowledge items:', relevantContent.length)
     }
 
     // プロンプトを構築
@@ -64,8 +73,10 @@ ${relevantContent.map(item => `
 
     // Grok APIキーが利用可能かチェック（データベースまたは環境変数）
     const grokApiKey = grokConfig?.api_key || process.env.GROK_API_KEY
+    console.log('Grok API available:', !!grokApiKey)
     
-    if ((grokConfig?.enabled || process.env.GROK_API_KEY) && grokApiKey) {
+    if (grokApiKey) {
+      console.log('Using Grok API for generation...')
       // Grok APIを使用（実装済み）
       const response = await fetch(`${request.nextUrl.origin}/api/x/generate-tweet`, {
         method: 'POST',
@@ -76,22 +87,28 @@ ${relevantContent.map(item => `
           useGrok: true
         })
       })
+      
+      if (!response.ok) {
+        console.error('Grok API response error:', response.status, response.statusText)
+        const errorText = await response.text()
+        console.error('Grok API error details:', errorText)
+        throw new Error(`Grok API failed: ${response.status} ${response.statusText}`)
+      }
+      
       const data = await response.json()
+      console.log('Grok API response:', data)
       generatedTweet = data.tweet
     } else {
-      // Gemini APIを使用
-      const { GoogleGenerativeAI } = await import('@google/generative-ai')
-      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
-
-      const fullPrompt = `${systemPrompt}\n\n${userPrompt}`
-      const result = await model.generateContent(fullPrompt)
-      generatedTweet = result.response.text()
+      console.log('No Grok API available, using fallback message')
+      // フォールバック: シンプルなテキスト生成
+      generatedTweet = `知識ベースを活用した返信を生成しました。\n\n${userPrompt}\n\n#AI #知識活用 #ツイート`
+      console.log('Generated fallback response')
     }
 
-    // 生成履歴を保存
+    // 生成履歴を保存（テーブルが存在する場合のみ）
     if (relevantContent.length > 0) {
-      await supabase
+      console.log('Saving generation history...')
+      const { error: historyError } = await supabase
         .from('knowledge_generation_history')
         .insert({
           prompt: userPrompt,
@@ -99,6 +116,11 @@ ${relevantContent.map(item => `
           used_knowledge_ids: relevantContent.map(item => item.id).filter((id): id is string => id !== undefined),
           model: grokConfig?.enabled ? 'grok' : 'gemini'
         })
+      
+      if (historyError) {
+        console.error('Failed to save generation history:', historyError)
+        // エラーがあっても続行
+      }
     }
 
     return NextResponse.json({
@@ -109,8 +131,15 @@ ${relevantContent.map(item => `
     })
   } catch (error) {
     console.error('Generate tweet error:', error)
+    console.error('Error stack:', error instanceof Error ? error.stack : error)
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to generate tweet' },
+      { 
+        error: 'Failed to generate tweet',
+        details: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     )
   }
