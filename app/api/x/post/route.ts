@@ -5,9 +5,15 @@ import axios from 'axios'
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets'
 
 export async function POST(request: NextRequest) {
+  let tweetText = ''
+  let postType = 'manual'
+  let replyToId = undefined
+  
   try {
-    const { text, content, postType, replyToId } = await request.json()
-    const tweetText = text || content // textまたはcontentを受け付ける
+    const body = await request.json()
+    tweetText = body.text || body.content // textまたはcontentを受け付ける
+    postType = body.postType || 'manual'
+    replyToId = body.replyToId
 
     if (!tweetText || tweetText.length > 280) {
       return NextResponse.json(
