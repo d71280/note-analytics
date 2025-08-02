@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, RefreshCw, Heart, MessageCircle, Repeat2, Loader2, CheckCircle2, Sparkles, Send, ArrowUpDown } from 'lucide-react'
+import { Search, RefreshCw, Heart, MessageCircle, Repeat2, Loader2, CheckCircle2, Sparkles, Send, ArrowUpDown, AlertCircle, Settings } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
+import Link from 'next/link'
 
 interface Tweet {
   id: string
@@ -63,7 +64,9 @@ export default function XSearchPage() {
         if (response.status === 404) {
           alert('X API設定が見つかりません。設定ページでAPI情報を設定してください。')
         } else if (response.status === 401) {
-          alert('X APIの認証エラーです。アクセストークンが無効または期限切れです。設定ページで再設定してください。')
+          if (confirm('X APIの認証エラーです。アクセストークンが無効または期限切れです。\n\n設定ページに移動して再設定しますか？')) {
+            window.location.href = '/settings?tab=x'
+          }
         } else {
           alert(errorData.error || '検索エラーが発生しました')
         }
@@ -192,6 +195,25 @@ export default function XSearchPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">Xキーワード検索 & リポスト</h1>
+
+      {/* API設定の確認を促すメッセージ */}
+      <Card className="mb-6 border-yellow-200 bg-yellow-50">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-yellow-800">
+                <strong>X API設定の確認：</strong>
+                検索機能を使用するには、有効なX APIの設定が必要です。
+              </p>
+              <Link href="/settings?tab=x" className="inline-flex items-center gap-1 mt-2 text-sm text-yellow-700 hover:text-yellow-900 underline">
+                <Settings className="h-4 w-4" />
+                設定ページでX APIを設定する
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="mb-8">
         <CardHeader>
