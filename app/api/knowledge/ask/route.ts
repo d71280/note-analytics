@@ -13,7 +13,11 @@ export async function POST(request: NextRequest) {
     }
 
     let context = ''
-    let usedKnowledgeItems: any[] = []
+    interface KnowledgeItem {
+      title: string
+      content_type: string
+    }
+    let usedKnowledgeItems: KnowledgeItem[] = []
 
     if (useKnowledgeBase) {
       const supabase = createClient()
