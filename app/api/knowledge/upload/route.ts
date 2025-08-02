@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         content_type: contentType,
         tags,
         source_url: sourceUrl,
-        created_date: new Date().toISOString()
+        created_at: new Date().toISOString()
       })
       .select()
       .single()
