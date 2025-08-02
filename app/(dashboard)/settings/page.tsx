@@ -478,6 +478,14 @@ export default function SettingsPage() {
                   />
                 </div>
 
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    <strong>⚠️ X API制限について</strong><br />
+                    無料プラン（Basic tier）では1日の投稿・リツイート上限が17件です。
+                    自動リツイートは1日10件以下に設定することを推奨します。
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <Label>検索キーワード</Label>
                   <div className="flex gap-2">

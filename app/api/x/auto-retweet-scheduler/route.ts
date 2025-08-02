@@ -90,7 +90,9 @@ export async function POST(request: NextRequest) {
             .eq('auto_retweet', true)
             .gte('created_at', new Date().toISOString().split('T')[0])
 
-          if (todayCount && todayCount >= (settings.max_retweets_per_day || 10)) {
+          // X API Basic tierの制限チェック（1日17件）
+          if (todayCount && todayCount >= Math.min(settings.max_retweets_per_day || 10, 17)) {
+            console.log('Daily retweet limit reached')
             break
           }
 
