@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Tweet error:', error)
     
-    if (error instanceof Error && 'response' in error && (error as any).response?.status === 401) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
       return NextResponse.json(
         { error: 'Token expired. Please reconnect your account.' },
         { status: 401 }
