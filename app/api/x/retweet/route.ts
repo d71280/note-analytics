@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       ? `https://api.twitter.com/2/users/me/retweets`
       : `https://api.twitter.com/2/users/me/retweets/${tweetId}`
 
-    const response = await axios({
+    await axios({
       method: action === 'retweet' ? 'POST' : 'DELETE',
       url,
       data: action === 'retweet' ? { tweet_id: tweetId } : undefined,

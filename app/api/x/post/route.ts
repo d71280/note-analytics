@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
           post_content: text,
           status: 'failed'
         })
-    } catch (e) {
+    } catch {
       // エラー履歴の保存に失敗しても無視
     }
 
