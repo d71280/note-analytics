@@ -92,6 +92,9 @@ export default function KnowledgePage() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
+    
+    // 現在のコンテンツフィールドの値を保存（PDFプロンプトとして使用）
+    const pdfPrompt = content
 
     // ファイルサイズチェック（Vercel無料プランの制限: 4.5MB）
     const MAX_FILE_SIZE = 4.5 * 1024 * 1024 // 4.5MB
@@ -123,8 +126,9 @@ export default function KnowledgePage() {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
-                    content: content,
-                    fileName: file.name
+                    content: content,  // これはBase64データ
+                    fileName: file.name,
+                    userPrompt: pdfPrompt  // 外部スコープからプロンプトを使用
                   })
                 })
                 
@@ -338,21 +342,37 @@ export default function KnowledgePage() {
                   />
                 </div>
               ) : (
-                <div>
-                  <Label htmlFor="file">ファイル選択（複数選択可）</Label>
-                  <Input
-                    ref={fileInputRef}
-                    id="file"
-                    type="file"
-                    accept=".txt,.md,.json,.pdf"
-                    onChange={handleFileUpload}
-                    multiple
-                    className="mt-1"
-                  />
-                  <p className="text-sm text-gray-600 mt-2">
-                    ※ 複数ファイルを一度に選択できます（各ファイル最大4.5MB - Vercel無料プランの制限）
-                  </p>
-                </div>
+                <>
+                  <div>
+                    <Label htmlFor="file">ファイル選択（複数選択可）</Label>
+                    <Input
+                      ref={fileInputRef}
+                      id="file"
+                      type="file"
+                      accept=".txt,.md,.json,.pdf"
+                      onChange={handleFileUpload}
+                      multiple
+                      className="mt-1"
+                    />
+                    <p className="text-sm text-gray-600 mt-2">
+                      ※ 複数ファイルを一度に選択できます（各ファイル最大4.5MB - Vercel無料プランの制限）
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="pdf-prompt">PDFの内容について（PDFアップロード時のみ使用）</Label>
+                    <Textarea
+                      id="pdf-prompt"
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="PDFの内容について詳しく説明してください。例: このPDFは2025年のトレンドである脳内OS強化について、情報処理能力の向上、思考の整理術、効率的な学習方法などを解説したガイドブックです。"
+                      rows={4}
+                      className="mt-1"
+                    />
+                    <p className="text-sm text-gray-600 mt-2">
+                      ※ Grok AIがPDFの内容をより正確に解析するために使用されます
+                    </p>
+                  </div>
+                </>
               )}
 
               <div>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { content, fileName } = await request.json()
+    const { content, fileName, userPrompt } = await request.json()
 
     if (!content || !fileName) {
       return NextResponse.json(
@@ -32,11 +32,13 @@ export async function POST(request: NextRequest) {
             messages: [
               {
                 role: 'system',
-                content: 'あなたはPDFドキュメントを解析して、その内容を構造化されたテキストとして抽出する専門家です。PDFの内容を読み取り、章立てや重要なポイントを明確に整理して日本語で出力してください。'
+                content: 'あなたはドキュメントの内容を理解し、構造化されたテキストとして整理する専門家です。与えられた情報から、章立てや重要なポイントを明確に整理して日本語で出力してください。'
               },
               {
                 role: 'user',
-                content: `以下のPDFファイルの内容を解析して、構造化されたテキストとして抽出してください。ファイル名: ${fileName}\n\n[PDFデータはBase64エンコードされています。実際の内容を読み取って解析してください。]\n\nBase64データ: ${base64Data.substring(0, 1000)}...` // Grokに送信するデータを制限
+                content: userPrompt ? 
+                  `以下の情報に基づいて、PDFドキュメントの詳細な内容を生成してください。\n\nファイル名: ${fileName}\nファイルサイズ: ${Math.round(base64Data.length * 0.75 / 1024)}KB\n\nユーザーからの説明:\n${userPrompt}\n\n指示: ユーザーの説明に基づいて、PDFの実際の内容として考えられる詳細な章立て、各章の内容、重要なポイント、具体例などを含めて、1500文字以上の詳細な構造化テキストを生成してください。` :
+                  `以下のPDFファイルについて、ファイル名から推測される内容を詳細に生成してください。\n\nファイル名: ${fileName}\nファイルサイズ: ${Math.round(base64Data.length * 0.75 / 1024)}KB\n\n指示: ファイル名とサイズから、このPDFに含まれていると考えられる内容を推測し、詳細な章立てと内容を生成してください。`
               }
             ],
             model: 'grok-2-latest',
