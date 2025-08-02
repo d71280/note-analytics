@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { CheckCircle2, XCircle, Twitter, Loader2, Save, Trash2, RefreshCw } from 'lucide-react'
+import { CheckCircle2, XCircle, Twitter, Loader2, Save, Trash2, RefreshCw, Sparkles, Eye } from 'lucide-react'
 
 interface XApiConfig {
   api_key: string
@@ -23,6 +23,11 @@ interface RetweetSettings {
   min_likes: number
   min_retweets: number
   retweet_note_mentions: boolean
+}
+
+interface GrokConfig {
+  api_key: string
+  enabled: boolean
 }
 
 export default function SettingsPage() {
@@ -42,7 +47,13 @@ export default function SettingsPage() {
     min_retweets: 0,
     retweet_note_mentions: false
   })
+  const [grokConfig, setGrokConfig] = useState<GrokConfig>({
+    api_key: '',
+    enabled: false
+  })
   const [keywordInput, setKeywordInput] = useState('')
+  const [previewTweet, setPreviewTweet] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
   const searchParams = useSearchParams()
   
   const success = searchParams.get('success')
@@ -51,6 +62,7 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchConfig()
     fetchRetweetSettings()
+    fetchGrokConfig()
   }, [])
 
   const fetchConfig = async () => {
@@ -81,6 +93,20 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch retweet settings:', error)
+    }
+  }
+
+  const fetchGrokConfig = async () => {
+    try {
+      const response = await fetch('/api/grok/config')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.config) {
+          setGrokConfig(data.config)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch Grok config:', error)
     }
   }
 
@@ -120,6 +146,22 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Save retweet settings error:', error)
+    }
+  }
+
+  const handleSaveGrokConfig = async () => {
+    try {
+      const response = await fetch('/api/grok/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(grokConfig)
+      })
+      
+      if (response.ok) {
+        window.location.href = '/settings?success=grok_config_saved'
+      }
+    } catch (error) {
+      console.error('Save Grok config error:', error)
     }
   }
 
@@ -163,6 +205,33 @@ export default function SettingsPage() {
     })
   }
 
+  const generateSampleTweet = async () => {
+    setIsGenerating(true)
+    try {
+      const response = await fetch('/api/x/generate-tweet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'trend',
+          data: {
+            keywords: ['AI', 'プログラミング', 'Web開発'],
+            topArticle: 'AIを活用した開発効率化の手法'
+          },
+          useGrok: grokConfig.enabled
+        })
+      })
+      
+      const data = await response.json()
+      if (data.tweet) {
+        setPreviewTweet(data.tweet)
+      }
+    } catch (error) {
+      console.error('Generate tweet error:', error)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   return (
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">X API設定</h1>
@@ -173,6 +242,7 @@ export default function SettingsPage() {
           <p className="text-green-800">
             {success === 'config_saved' && 'X API設定が保存されました'}
             {success === 'retweet_settings_saved' && 'リツイート設定が保存されました'}
+            {success === 'grok_config_saved' && 'Grok API設定が保存されました'}
           </p>
         </div>
       )}
@@ -299,6 +369,88 @@ export default function SettingsPage() {
                 )}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Grok AI設定
+            </CardTitle>
+            <CardDescription>
+              Grok APIを使用してAIによる魅力的なツイートを自動生成します
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="grok-enabled">Grok APIを有効化</Label>
+                <Switch
+                  id="grok-enabled"
+                  checked={grokConfig.enabled}
+                  onCheckedChange={(checked) => 
+                    setGrokConfig({ ...grokConfig, enabled: checked })
+                  }
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="grok_api_key">Grok API Key</Label>
+                <Input
+                  id="grok_api_key"
+                  type="password"
+                  value={grokConfig.api_key}
+                  onChange={(e) => setGrokConfig({ ...grokConfig, api_key: e.target.value })}
+                  placeholder="Grok API Keyを入力"
+                  disabled={!grokConfig.enabled}
+                />
+              </div>
+
+              <div className="pt-4 border-t">
+                <h4 className="font-medium mb-2">ツイート生成プレビュー</h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  AIがどのようなツイートを生成するか確認できます
+                </p>
+                
+                {previewTweet && (
+                  <div className="p-4 bg-gray-50 rounded-lg mb-4">
+                    <p className="text-sm whitespace-pre-wrap">{previewTweet}</p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      文字数: {previewTweet.length}/280
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={generateSampleTweet}
+                    disabled={isGenerating}
+                    variant="outline"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        生成中...
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="mr-2 h-4 w-4" />
+                        サンプル生成
+                      </>
+                    )}
+                  </Button>
+
+                  <Button 
+                    onClick={handleSaveGrokConfig}
+                    disabled={!grokConfig.enabled || !grokConfig.api_key}
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Grok設定を保存
+                  </Button>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
