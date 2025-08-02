@@ -73,10 +73,10 @@ export async function POST(request: NextRequest) {
       tweetId,
       url: `https://twitter.com/${decoded.username}/status/${tweetId}`
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Tweet error:', error)
     
-    if (error.response?.status === 401) {
+    if (error instanceof Error && 'response' in error && (error as any).response?.status === 401) {
       return NextResponse.json(
         { error: 'Token expired. Please reconnect your account.' },
         { status: 401 }
