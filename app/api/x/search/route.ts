@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import axios from 'axios'
 
-const TWITTER_SEARCH_URL = 'https://api.twitter.com/2/tweets/search/recent'
+const TWITTER_SEARCH_URL = 'https://api.x.com/2/tweets/search/recent'
 
 interface SearchParams {
   query: string
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const response = await axios.get(TWITTER_SEARCH_URL, {
       params: {
         query: searchQuery,
-        max_results: 1, // 無料プランの制限対策として1件のみ取得
+        max_results: 10, // X API v2の最小値は10
         'tweet.fields': 'author_id,created_at,public_metrics,entities',
         'user.fields': 'name,username,profile_image_url,verified',
         'expansions': 'author_id'
