@@ -37,7 +37,6 @@ export default function XSearchPage() {
   const [generatedResponse, setGeneratedResponse] = useState('')
   const [postingResponse, setPostingResponse] = useState(false)
   const [sortByImpressions, setSortByImpressions] = useState(true)
-  const [useMockData, setUseMockData] = useState(true) // X API制限回避のためデフォルトでモック使用
   const [filters, setFilters] = useState({
     minLikes: 0,
     minRetweets: 0,
@@ -49,8 +48,7 @@ export default function XSearchPage() {
 
     setIsSearching(true)
     try {
-      const endpoint = useMockData ? '/api/x/search-mock' : '/api/x/search'
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/x/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -294,33 +292,6 @@ export default function XSearchPage() {
                   <span className="text-sm">リツイートも表示</span>
                 </label>
               </div>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium text-blue-800">モックデータ使用</p>
-                  <p className="text-xs text-blue-600">X API制限回避のためサンプルデータを表示</p>
-                </div>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={useMockData}
-                    onChange={(e) => setUseMockData(e.target.checked)}
-                    className="rounded"
-                  />
-                  <span className="text-sm text-blue-800">有効</span>
-                </label>
-              </div>
-              
-              {!useMockData && (
-                <div className="p-4 bg-red-50 rounded-lg">
-                  <p className="text-sm text-red-800">
-                    <strong>警告:</strong> X API無料プランは月450リクエストの制限があります。
-                    実際のAPIを使用すると制限にすぐ達する可能性があります。
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </CardContent>

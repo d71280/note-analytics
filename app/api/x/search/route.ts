@@ -25,21 +25,17 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient()
     
-    // API設定を取得
-    const { data: config } = await supabase
-      .from('x_api_configs')
-      .select('access_token')
-      .single()
-
-    // データベースに設定がない場合は環境変数から取得
-    let accessToken = config?.access_token
-    if (!accessToken && process.env.X_ACCESS_TOKEN) {
-      accessToken = process.env.X_ACCESS_TOKEN
-    }
-
-    if (!accessToken) {
+    // X API認証情報を取得
+    const bearerToken = process.env.X_BEARER_TOKEN
+    const accessToken = process.env.X_ACCESS_TOKEN
+    const apiKey = process.env.X_API_KEY
+    
+    // 利用可能な認証方法を確認
+    const authToken = bearerToken || accessToken || apiKey
+    
+    if (!authToken) {
       return NextResponse.json(
-        { error: 'X API configuration not found. Please set up X API in settings.' },
+        { error: 'X API authentication not found. Please set X_BEARER_TOKEN, X_ACCESS_TOKEN, or X_API_KEY in environment variables.' },
         { status: 404 }
       )
     }
@@ -54,8 +50,9 @@ export async function POST(request: NextRequest) {
     console.log('X API Search Request:', {
       url: TWITTER_SEARCH_URL,
       query: searchQuery,
-      hasToken: !!accessToken,
-      tokenPreview: accessToken ? `${accessToken.substring(0, 10)}...` : null
+      hasToken: !!authToken,
+      tokenType: bearerToken ? 'Bearer' : accessToken ? 'Access' : 'API Key',
+      tokenPreview: authToken ? `${authToken.substring(0, 10)}...` : null
     })
     
     const response = await axios.get(TWITTER_SEARCH_URL, {
@@ -67,7 +64,7 @@ export async function POST(request: NextRequest) {
         'expansions': 'author_id'
       },
       headers: {
-        'Authorization': `Bearer ${accessToken}`
+        'Authorization': `Bearer ${authToken}`
       }
     })
 
