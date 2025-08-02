@@ -7,25 +7,64 @@ export async function POST(request: NextRequest) {
     const { prompt } = await request.json()
     console.log('Request params:', { prompt })
 
-    // Supabaseから知識ベースのコンテンツを取得
-    const supabase = createClient()
-    console.log('Fetching knowledge base content...')
-    
-    const { data: knowledgeItems, error } = await supabase
-      .from('knowledge_base')
-      .select('title, content, content_type, tags')
-      .order('created_at', { ascending: false })
-      .limit(5) // 最新5件を取得
+    let knowledgeItems = []
+    let knowledgeContent = ''
 
-    if (error) {
-      console.error('Knowledge base fetch error:', error)
+    // Supabase設定確認
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    console.log('Supabase URL configured:', !!supabaseUrl && !supabaseUrl.includes('your_supabase'))
+    console.log('Supabase Key configured:', !!supabaseKey && !supabaseKey.includes('your_supabase'))
+
+    if (supabaseUrl && supabaseKey && !supabaseUrl.includes('your_supabase') && !supabaseKey.includes('your_supabase')) {
+      // 実際のSupabaseから知識ベースのコンテンツを取得
+      try {
+        const supabase = createClient()
+        console.log('Fetching knowledge base content from Supabase...')
+        
+        const { data, error } = await supabase
+          .from('knowledge_base')
+          .select('title, content, content_type, tags')
+          .order('created_at', { ascending: false })
+          .limit(5) // 最新5件を取得
+
+        if (error) {
+          console.error('Knowledge base fetch error:', error)
+          throw error
+        }
+
+        knowledgeItems = data || []
+        console.log('Knowledge items found from Supabase:', knowledgeItems.length)
+      } catch (error) {
+        console.error('Supabase connection error:', error)
+        knowledgeItems = []
+      }
     }
 
-    const knowledgeContent = knowledgeItems && knowledgeItems.length > 0 
+    // Supabaseから取得できない場合はモックデータを使用
+    if (knowledgeItems.length === 0) {
+      console.log('Using mock knowledge base data...')
+      knowledgeItems = [
+        {
+          title: 'コンテンツ-脳内OS強化 指南書',
+          content: '2025年のトレンドとして注目される「脳内OS強化」について詳しく解説。情報処理能力の向上、思考の整理術、効率的な学習方法などを網羅的に説明。現代社会において必要なスキルを身につけるための実践的なガイドブック。',
+          content_type: 'note',
+          tags: ['脳内OS', 'スキルアップ', '学習', 'トレンド', '自己啓発']
+        },
+        {
+          title: 'AI活用による生産性向上術',
+          content: 'ChatGPTやGrokなどのAIツールを効果的に活用して、日常業務の生産性を大幅に向上させる方法について詳細に解説。プロンプトエンジニアリング、業務自動化、創作活動でのAI活用などの実践的なテクニックを紹介。',
+          content_type: 'blog',
+          tags: ['AI', 'ChatGPT', 'Grok', '生産性', '業務効率化']
+        }
+      ]
+    }
+
+    knowledgeContent = knowledgeItems.length > 0 
       ? knowledgeItems.map(item => `タイトル: ${item.title}\nタイプ: ${item.content_type}\nコンテンツ: ${item.content}\nタグ: ${item.tags?.join(', ') || 'なし'}`).join('\n\n---\n\n')
       : 'まだ知識ベースにコンテンツが登録されていません。'
 
-    console.log('Knowledge items found:', knowledgeItems?.length || 0)
+    console.log('Final knowledge items count:', knowledgeItems.length)
     console.log('Knowledge content preview:', knowledgeContent.substring(0, 200) + '...')
 
     // プロンプトに知識ベースの内容を含める
