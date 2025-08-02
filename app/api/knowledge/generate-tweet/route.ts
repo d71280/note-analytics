@@ -18,25 +18,38 @@ export async function POST(request: NextRequest) {
     if (grokApiKey) {
       console.log('Using Grok API for generation...')
       try {
-        // Grok APIを使用
-        const response = await fetch(`${request.nextUrl.origin}/api/x/generate-tweet`, {
+        // Grok APIを直接呼び出し
+        const grokResponse = await fetch('https://api.x.ai/v1/chat/completions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Authorization': `Bearer ${grokApiKey}`,
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify({
-            type: 'custom',
-            prompt: userPrompt,
-            useGrok: true
+            messages: [
+              {
+                role: 'system',
+                content: 'あなたは魅力的で価値のあるツイートを生成する専門家です。280文字以内で、読者に価値を提供する内容を生成してください。'
+              },
+              {
+                role: 'user',
+                content: userPrompt
+              }
+            ],
+            model: 'grok-beta',
+            stream: false,
+            temperature: 0.7
           })
         })
         
-        if (!response.ok) {
-          console.error('Grok API response error:', response.status, response.statusText)
-          throw new Error(`Grok API failed: ${response.status}`)
+        if (!grokResponse.ok) {
+          console.error('Grok API response error:', grokResponse.status, grokResponse.statusText)
+          throw new Error(`Grok API failed: ${grokResponse.status}`)
         }
         
-        const data = await response.json()
-        console.log('Grok API response:', data)
-        generatedTweet = data.tweet || '申し訳ありません。ツイートの生成に失敗しました。'
+        const grokData = await grokResponse.json()
+        console.log('Grok API response:', grokData)
+        generatedTweet = grokData.choices?.[0]?.message?.content || '申し訳ありません。ツイートの生成に失敗しました。'
       } catch (error) {
         console.error('Grok API error:', error)
         generatedTweet = `知識ベースを活用した返信：\n\n${userPrompt}\n\n#AI #ツイート生成`
