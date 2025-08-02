@@ -63,7 +63,7 @@ URL: ${data.url}
         const response = await axios.post(
           process.env.GROK_API_URL || 'https://api.x.ai/v1/chat/completions',
           {
-            model: 'grok-4',
+            model: 'grok-2-latest',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }

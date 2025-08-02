@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
                 content: userPrompt
               }
             ],
-            model: 'grok-4',
+            model: 'grok-2-latest',
             stream: false,
             temperature: 0.7,
             max_tokens: 200
@@ -59,8 +59,14 @@ export async function POST(request: NextRequest) {
         console.log('Grok API response:', JSON.stringify(grokData, null, 2))
         
         if (grokData.choices && grokData.choices[0] && grokData.choices[0].message) {
-          generatedTweet = grokData.choices[0].message.content
+          generatedTweet = grokData.choices[0].message.content || ''
           console.log('Successfully extracted tweet:', generatedTweet)
+          
+          // 空のレスポンスの場合はエラーとして扱う
+          if (!generatedTweet.trim()) {
+            console.warn('Grok returned empty content, using fallback')
+            throw new Error('Grok returned empty content')
+          }
         } else {
           console.error('Unexpected Grok API response structure:', grokData)
           throw new Error('Invalid response structure from Grok API')
