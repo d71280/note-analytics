@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     const response = await axios.get(TWITTER_SEARCH_URL, {
       params: {
         query: searchQuery,
-        max_results: 10, // X API v2の最小値は10
+        max_results: 10, // X API v2の最小値は10（後でコードで1件に制限）
         'tweet.fields': 'author_id,created_at,public_metrics,entities,context_annotations',
         'user.fields': 'name,username,profile_image_url,verified',
         'expansions': 'author_id'
@@ -148,6 +148,7 @@ export async function POST(request: NextRequest) {
         metrics: tweet.public_metrics,
         url: `https://twitter.com/i/web/status/${tweet.id}`
       }))
+      .slice(0, 1) // API制限回避のため1件のみ表示
 
     // 検索履歴を保存
     await supabase

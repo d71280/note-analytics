@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Brain, Upload, FileText, Video, Hash, Loader2, CheckCircle2, Sparkles } from 'lucide-react'
 
 
+interface KnowledgeItem {
+  id: string
+  title: string
+  content_type: string
+  tags: string[]
+  created_at: string
+  source_url?: string
+}
+
 export default function KnowledgePage() {
   const [uploadType, setUploadType] = useState<'text' | 'file'>('text')
   const [contentType, setContentType] = useState('blog')
@@ -17,11 +26,33 @@ export default function KnowledgePage() {
   const [content, setContent] = useState('')
   const [tags, setTags] = useState('')
   const [sourceUrl, setSourceUrl] = useState('')
+  const [knowledgeList, setKnowledgeList] = useState<KnowledgeItem[]>([])
+  const [isLoadingList, setIsLoadingList] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [generatedTweet, setGeneratedTweet] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 知識ベースのリストを取得
+  const fetchKnowledgeList = async () => {
+    setIsLoadingList(true)
+    try {
+      const response = await fetch('/api/knowledge/list')
+      if (response.ok) {
+        const data = await response.json()
+        setKnowledgeList(data.items || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch knowledge list:', error)
+    } finally {
+      setIsLoadingList(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchKnowledgeList()
+  }, [])
 
   const handleSubmit = async () => {
     if (!title || !content) return
@@ -149,6 +180,8 @@ export default function KnowledgePage() {
         fileInputRef.current.value = ''
       }
       setTimeout(() => setUploadSuccess(false), 3000)
+      // リストを再取得
+      await fetchKnowledgeList()
     } catch (error) {
       console.error('Upload error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -501,6 +534,79 @@ export default function KnowledgePage() {
               <p className="text-sm text-gray-600">過去のツイート</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* 知識ベースのアップロード済みファイル一覧 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            アップロード済みファイル
+          </CardTitle>
+          <CardDescription>
+            知識ベースに保存されているコンテンツの一覧
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingList ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              読み込み中...
+            </div>
+          ) : knowledgeList.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>まだファイルがアップロードされていません</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {knowledgeList.map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-semibold text-sm">{item.title}</h3>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        item.content_type === 'blog' ? 'bg-blue-100 text-blue-800' :
+                        item.content_type === 'note' ? 'bg-green-100 text-green-800' :
+                        item.content_type === 'video_transcript' ? 'bg-purple-100 text-purple-800' :
+                        item.content_type === 'tweet' ? 'bg-cyan-100 text-cyan-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {item.content_type === 'blog' ? 'ブログ' :
+                         item.content_type === 'note' ? 'ノート・PDF' :
+                         item.content_type === 'video_transcript' ? '動画' :
+                         item.content_type === 'tweet' ? 'ツイート' : 'その他'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <span>{new Date(item.created_at).toLocaleString('ja-JP')}</span>
+                      {item.tags && item.tags.length > 0 && (
+                        <div className="flex gap-1">
+                          {item.tags.slice(0, 3).map((tag, index) => (
+                            <span key={index} className="px-2 py-1 bg-gray-100 rounded text-xs">
+                              #{tag}
+                            </span>
+                          ))}
+                          {item.tags.length > 3 && <span>+{item.tags.length - 3}</span>}
+                        </div>
+                      )}
+                      {item.source_url && (
+                        <a 
+                          href={item.source_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:underline"
+                        >
+                          ソース
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

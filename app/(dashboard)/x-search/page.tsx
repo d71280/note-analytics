@@ -462,7 +462,26 @@ export default function XSearchPage() {
                   <div className="flex flex-col gap-2">
                     <Button
                       size="sm"
-                      variant={retweetedIds.has(tweet.id) ? "secondary" : "default"}
+                      variant="default"
+                      onClick={() => generateResponse(tweet)}
+                      disabled={generatingResponse}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {generatingResponse && selectedTweet?.id === tweet.id ? (
+                        <>
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                          生成中...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-1 h-4 w-4" />
+                          返信を生成
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={retweetedIds.has(tweet.id) ? "secondary" : "outline"}
                       onClick={() => handleRetweet(tweet.id)}
                       disabled={retweetingId === tweet.id || retweetedIds.has(tweet.id)}
                     >
@@ -471,27 +490,12 @@ export default function XSearchPage() {
                       ) : retweetedIds.has(tweet.id) ? (
                         <>
                           <CheckCircle2 className="mr-1 h-4 w-4" />
-                          済み
+                          リポスト済み
                         </>
                       ) : (
                         <>
                           <RefreshCw className="mr-1 h-4 w-4" />
-                          リツイート
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => generateResponse(tweet)}
-                      disabled={generatingResponse}
-                    >
-                      {generatingResponse && selectedTweet?.id === tweet.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Sparkles className="mr-1 h-4 w-4" />
-                          返信生成
+                          そのままリポスト
                         </>
                       )}
                     </Button>
@@ -518,43 +522,81 @@ export default function XSearchPage() {
         </div>
       )}
 
-      {/* 返信生成・編集・投稿セクション */}
+      {/* 知識ベース活用返信生成・編集・投稿セクション */}
       {selectedTweet && generatedResponse && (
-        <Card className="mt-8 border-blue-200">
+        <Card className="mt-8 border-blue-200 bg-blue-50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5" />
-              生成された返信
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              知識ベース活用返信
             </CardTitle>
             <CardDescription>
-              @{selectedTweet.author.username} への返信
+              <span className="text-blue-700">
+                @{selectedTweet.author.username} への返信（知識ベースから生成）
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2">元のツイート:</p>
-              <p className="text-sm">{selectedTweet.text.substring(0, 100)}...</p>
+            <div className="p-4 bg-white rounded-lg border border-blue-200">
+              <div className="flex items-start gap-3 mb-3">
+                {selectedTweet.author.profile_image_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={selectedTweet.author.profile_image_url}
+                    alt={selectedTweet.author.name}
+                    className="w-8 h-8 rounded-full"
+                  />
+                )}
+                <div className="flex-1">
+                  <p className="text-sm font-semibold">{selectedTweet.author.name}</p>
+                  <p className="text-sm text-gray-600">@{selectedTweet.author.username}</p>
+                </div>
+              </div>
+              <p className="text-sm leading-relaxed">{selectedTweet.text}</p>
+              <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                <span className="flex items-center gap-1">
+                  <Heart className="h-3 w-3" />
+                  {selectedTweet.metrics.like_count}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Repeat2 className="h-3 w-3" />
+                  {selectedTweet.metrics.retweet_count}
+                </span>
+                <span className="flex items-center gap-1">
+                  <MessageCircle className="h-3 w-3" />
+                  {selectedTweet.metrics.reply_count}
+                </span>
+              </div>
             </div>
             
             <div>
-              <Label htmlFor="response">返信内容（編集可能）</Label>
+              <Label htmlFor="response" className="text-blue-800 font-semibold">
+                🧠 知識ベース活用返信（編集可能）
+              </Label>
               <Textarea
                 id="response"
                 value={generatedResponse}
                 onChange={(e) => setGeneratedResponse(e.target.value)}
-                rows={4}
-                className="mt-1"
+                rows={6}
+                className="mt-2 border-blue-300 focus:border-blue-500"
                 maxLength={280}
+                placeholder="知識ベースを活用した返信を生成しています..."
               />
-              <p className="text-xs text-gray-500 mt-1">
-                {generatedResponse.length}/280文字
-              </p>
+              <div className="flex justify-between items-center mt-2">
+                <p className="text-xs text-blue-600">
+                  💡 あなたの知識ベースから関連情報を自動抽出して作成
+                </p>
+                <p className="text-xs text-gray-500">
+                  {generatedResponse.length}/280文字
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-2">
               <Button
                 onClick={postResponse}
                 disabled={postingResponse || !generatedResponse}
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 {postingResponse ? (
                   <>
@@ -570,10 +612,29 @@ export default function XSearchPage() {
               </Button>
               <Button
                 variant="outline"
+                onClick={() => generateResponse(selectedTweet)}
+                disabled={generatingResponse}
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                {generatingResponse ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    再生成中...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    再生成
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => {
                   setGeneratedResponse('')
                   setSelectedTweet(null)
                 }}
+                className="border-gray-300"
               >
                 キャンセル
               </Button>

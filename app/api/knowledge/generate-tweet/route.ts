@@ -53,12 +53,19 @@ ${relevantContent.map(item => `
     let generatedTweet = ''
 
     // Grok APIが利用可能な場合
-    const { data: grokConfig } = await supabase
+    const { data: grokConfig, error: grokError } = await supabase
       .from('grok_api_configs')
       .select('api_key, enabled')
       .single()
+    
+    if (grokError) {
+      console.log('Grok config not found, using environment variables:', grokError.message)
+    }
 
-    if (grokConfig?.enabled && grokConfig.api_key) {
+    // Grok APIキーが利用可能かチェック（データベースまたは環境変数）
+    const grokApiKey = grokConfig?.api_key || process.env.GROK_API_KEY
+    
+    if ((grokConfig?.enabled || process.env.GROK_API_KEY) && grokApiKey) {
       // Grok APIを使用（実装済み）
       const response = await fetch(`${request.nextUrl.origin}/api/x/generate-tweet`, {
         method: 'POST',
