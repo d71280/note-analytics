@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Brain, Upload, FileText, Video, Hash, Loader2, CheckCircle2, Sparkles } from 'lucide-react'
+import { Brain, Upload, FileText, Video, Hash, Loader2, CheckCircle2, Sparkles, ChevronDown, ChevronUp, Eye } from 'lucide-react'
 
 
 interface KnowledgeItem {
   id: string
   title: string
+  content: string
   content_type: string
   tags: string[]
   created_at: string
@@ -32,6 +33,7 @@ export default function KnowledgePage() {
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [generatedTweet, setGeneratedTweet] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 知識ベースのリストを取得
@@ -582,47 +584,88 @@ export default function KnowledgePage() {
           ) : (
             <div className="space-y-3">
               {knowledgeList.map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-sm">{item.title}</h3>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        item.content_type === 'blog' ? 'bg-blue-100 text-blue-800' :
-                        item.content_type === 'note' ? 'bg-green-100 text-green-800' :
-                        item.content_type === 'video_transcript' ? 'bg-purple-100 text-purple-800' :
-                        item.content_type === 'tweet' ? 'bg-cyan-100 text-cyan-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {item.content_type === 'blog' ? 'ブログ' :
-                         item.content_type === 'note' ? 'ノート・PDF' :
-                         item.content_type === 'video_transcript' ? '動画' :
-                         item.content_type === 'tweet' ? 'ツイート' : 'その他'}
-                      </span>
+                <div key={item.id} className="border rounded-lg overflow-hidden">
+                  <div 
+                    className="flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => {
+                      const newExpanded = new Set(expandedItems)
+                      if (newExpanded.has(item.id)) {
+                        newExpanded.delete(item.id)
+                      } else {
+                        newExpanded.add(item.id)
+                      }
+                      setExpandedItems(newExpanded)
+                    }}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-semibold text-sm">{item.title}</h3>
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          item.content_type === 'blog' ? 'bg-blue-100 text-blue-800' :
+                          item.content_type === 'note' ? 'bg-green-100 text-green-800' :
+                          item.content_type === 'video_transcript' ? 'bg-purple-100 text-purple-800' :
+                          item.content_type === 'tweet' ? 'bg-cyan-100 text-cyan-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {item.content_type === 'blog' ? 'ブログ' :
+                           item.content_type === 'note' ? 'ノート・PDF' :
+                           item.content_type === 'video_transcript' ? '動画' :
+                           item.content_type === 'tweet' ? 'ツイート' : 'その他'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <span>{new Date(item.created_at).toLocaleString('ja-JP')}</span>
+                        {item.tags && item.tags.length > 0 && (
+                          <div className="flex gap-1">
+                            {item.tags.slice(0, 3).map((tag, index) => (
+                              <span key={index} className="px-2 py-1 bg-gray-100 rounded text-xs">
+                                #{tag}
+                              </span>
+                            ))}
+                            {item.tags.length > 3 && <span>+{item.tags.length - 3}</span>}
+                          </div>
+                        )}
+                        {item.source_url && (
+                          <a 
+                            href={item.source_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            ソース
+                          </a>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <span>{new Date(item.created_at).toLocaleString('ja-JP')}</span>
-                      {item.tags && item.tags.length > 0 && (
-                        <div className="flex gap-1">
-                          {item.tags.slice(0, 3).map((tag, index) => (
-                            <span key={index} className="px-2 py-1 bg-gray-100 rounded text-xs">
-                              #{tag}
-                            </span>
-                          ))}
-                          {item.tags.length > 3 && <span>+{item.tags.length - 3}</span>}
-                        </div>
-                      )}
-                      {item.source_url && (
-                        <a 
-                          href={item.source_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-500 hover:underline"
-                        >
-                          ソース
-                        </a>
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-4 w-4 text-gray-400" />
+                      {expandedItems.has(item.id) ? (
+                        <ChevronUp className="h-5 w-5 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-500" />
                       )}
                     </div>
                   </div>
+                  {expandedItems.has(item.id) && (
+                    <div className="border-t bg-gray-50 p-4">
+                      <div className="prose prose-sm max-w-none">
+                        <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto bg-white p-4 rounded-md border">
+                          {item.content || '内容が読み込まれていません'}
+                        </div>
+                      </div>
+                      {item.tags && item.tags.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1">
+                          <span className="text-xs text-gray-500 mr-2">タグ:</span>
+                          {item.tags.map((tag, index) => (
+                            <span key={index} className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

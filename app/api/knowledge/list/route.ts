@@ -8,7 +8,7 @@ export async function GET() {
     // 知識ベースのリストを取得（最新順）
     const { data: items, error } = await supabase
       .from('knowledge_base')
-      .select('id, title, content_type, tags, created_at, source_url')
+      .select('id, title, content, content_type, tags, created_at, source_url')
       .order('created_at', { ascending: false })
       .limit(50) // 最新50件まで
 
