@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Brain, Upload, FileText, Video, Hash, Loader2, CheckCircle2, Sparkles, ChevronDown, ChevronUp, Eye } from 'lucide-react'
+import { Brain, Upload, FileText, Video, Hash, Loader2, CheckCircle2, Sparkles, ChevronDown, ChevronUp, Eye, Trash2 } from 'lucide-react'
 
 
 interface KnowledgeItem {
@@ -36,6 +36,7 @@ export default function KnowledgePage() {
   const [generatedTweet, setGeneratedTweet] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const [deletingItems, setDeletingItems] = useState<Set<string>>(new Set())
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 知識ベースのリストを取得
@@ -57,6 +58,45 @@ export default function KnowledgePage() {
   useEffect(() => {
     fetchKnowledgeList()
   }, [])
+
+  // アイテムを削除
+  const handleDelete = async (id: string) => {
+    if (!confirm('このアイテムを削除してもよろしいですか？')) {
+      return
+    }
+
+    setDeletingItems(prev => new Set(prev).add(id))
+
+    try {
+      const response = await fetch('/api/knowledge/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+
+      if (response.ok) {
+        // リストを再取得
+        await fetchKnowledgeList()
+        // 展開状態から削除
+        setExpandedItems(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(id)
+          return newSet
+        })
+      } else {
+        alert('削除に失敗しました')
+      }
+    } catch (error) {
+      console.error('Delete error:', error)
+      alert('削除中にエラーが発生しました')
+    } finally {
+      setDeletingItems(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(id)
+        return newSet
+      })
+    }
+  }
 
   const handleSubmit = async () => {
     if (!title || !content) return
@@ -663,6 +703,22 @@ export default function KnowledgePage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(item.id)
+                        }}
+                        disabled={deletingItems.has(item.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        {deletingItems.has(item.id) ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
                       <Eye className="h-4 w-4 text-gray-400" />
                       {expandedItems.has(item.id) ? (
                         <ChevronUp className="h-5 w-5 text-gray-500" />

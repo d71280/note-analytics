@@ -16,8 +16,8 @@ export async function extractTextFromPDF(file: File): Promise<string> {
     const pdfjsLib = await import('pdfjs-dist')
     console.log('[PDF-Processor] pdfjs-dist読み込み完了')
     
-    // ワーカーの設定
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
+    // ワーカーの設定（CDNから読み込み）
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
     console.log('[PDF-Processor] ワーカー設定完了')
     
     const arrayBuffer = await file.arrayBuffer()
