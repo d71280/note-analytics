@@ -42,3 +42,4 @@ DROP TRIGGER IF EXISTS update_x_search_history_updated_at ON x_search_history;
 CREATE TRIGGER update_x_search_history_updated_at
     BEFORE UPDATE ON x_search_history
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    

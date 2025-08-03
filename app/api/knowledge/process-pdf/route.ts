@@ -14,6 +14,12 @@ export async function POST(request: NextRequest) {
     // PDFのbase64データを処理
     const base64Data = content.replace(/^data:application\/pdf;base64,/, '')
     
+    // PDFからテキストを抽出
+    let extractedText = ''
+    
+    // 現在は実際のPDFテキスト抽出はスキップし、Grok AIを使用
+    // TODO: 将来的にPDFテキスト抽出ライブラリを追加
+    
     // Grok APIキーを確認
     const grokApiKey = process.env.GROK_API_KEY
     
@@ -36,9 +42,18 @@ export async function POST(request: NextRequest) {
               },
               {
                 role: 'user',
-                content: userPrompt ? 
-                  `以下の情報に基づいて、PDFドキュメントの詳細な内容を生成してください。\n\nファイル名: ${fileName}\nファイルサイズ: ${Math.round(base64Data.length * 0.75 / 1024)}KB\n\nユーザーからの説明:\n${userPrompt}\n\n指示: ユーザーの説明に基づいて、PDFの実際の内容として考えられる詳細な章立て、各章の内容、重要なポイント、具体例などを含めて、1500文字以上の詳細な構造化テキストを生成してください。` :
-                  `以下のPDFファイルについて、ファイル名から推測される内容を詳細に生成してください。\n\nファイル名: ${fileName}\nファイルサイズ: ${Math.round(base64Data.length * 0.75 / 1024)}KB\n\n指示: ファイル名とサイズから、このPDFに含まれていると考えられる内容を推測し、詳細な章立てと内容を生成してください。`
+                content: [
+                  {
+                    type: 'text',
+                    text: `以下のPDFファイルの内容を分析して、構造化された要約を作成してください。\n\nファイル名: ${fileName}\n${userPrompt ? `\nユーザーからの追加情報:\n${userPrompt}\n` : ''}\n指示: PDFの内容を詳細に分析し、主要なトピック、章立て、重要なポイントを整理して、日本語で構造化された要約を作成してください。`
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: content // PDFのbase64データを直接送信
+                    }
+                  }
+                ]
               }
             ],
             model: 'grok-2-latest',
@@ -55,15 +70,15 @@ export async function POST(request: NextRequest) {
             const extractedContent = grokData.choices[0].message.content
             console.log('Grok successfully analyzed PDF')
             
-            // Grokが抽出したコンテンツにメタ情報を追加
-            let extractedText = `PDFファイル: ${fileName}\n\n`
-            extractedText += `=== Grok AIによる内容解析 ===\n\n`
+            // コンテンツにメタ情報を追加
+            extractedText = `PDFファイル: ${fileName}\n\n`
+            extractedText += `=== Grok AIによるPDF内容解析 ===\n\n`
             extractedText += extractedContent
             extractedText += `\n\n=== ファイル情報 ===\n`
             extractedText += `ファイル名: ${fileName}\n`
             extractedText += `ファイルサイズ: ${Math.round(base64Data.length * 0.75 / 1024)}KB\n`
             extractedText += `処理日時: ${new Date().toLocaleString('ja-JP')}\n`
-            extractedText += `解析方法: Grok AI`
+            extractedText += `解析方法: Grok AI PDF直接解析`
             
             return NextResponse.json({ 
               success: true,
@@ -81,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Grokが使えない場合のフォールバック処理
-    let extractedText = `PDFファイル: ${fileName}\n\n`
+    extractedText = `PDFファイル: ${fileName}\n\n`
     
     // ファイル名に基づいて適切なコンテンツを生成
     if (fileName.includes('脳内OS強化') || fileName.includes('コンテンツ')) {
