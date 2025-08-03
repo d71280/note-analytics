@@ -35,6 +35,8 @@ export async function POST(request: NextRequest) {
     if (openaiApiKey) {
       try {
         console.log('OpenAI API Key exists:', !!openaiApiKey)
+        console.log('OpenAI Key length:', openaiApiKey.length)
+        console.log('OpenAI Key prefix:', openaiApiKey.substring(0, 10) + '...')
         console.log('Sending PDF to OpenAI GPT-4 Vision for analysis...')
         
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
