@@ -12,35 +12,52 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const supabase = createClient()
+    console.log('Deleting knowledge base item with ID:', id)
     
-    // まず関連するchunksを削除
-    const { error: chunksError } = await supabase
+    const supabase = await createClient()
+    
+    // まず関連するchunksを削除（存在する場合）
+    const { data: chunks, error: chunksError } = await supabase
       .from('knowledge_chunks')
       .delete()
-      .eq('knowledge_base_id', id)
+      .eq('knowledge_id', id)  // 正しいカラム名に修正
+      .select()
     
-    if (chunksError) {
+    if (chunksError && chunksError.code !== 'PGRST116') { // PGRST116は「行が見つかりません」エラー
       console.error('Failed to delete chunks:', chunksError)
       return NextResponse.json(
-        { error: 'Failed to delete related chunks' },
+        { error: 'Failed to delete related chunks', details: chunksError.message },
         { status: 500 }
       )
     }
     
+    console.log('Deleted chunks:', chunks?.length || 0)
+    
     // 次にknowledge_baseレコードを削除
-    const { error: baseError } = await supabase
+    const { data: deletedBase, error: baseError } = await supabase
       .from('knowledge_base')
       .delete()
       .eq('id', id)
+      .select()
+      .single()
     
     if (baseError) {
       console.error('Failed to delete knowledge base:', baseError)
       return NextResponse.json(
-        { error: 'Failed to delete knowledge base item' },
+        { error: 'Failed to delete knowledge base item', details: baseError.message },
         { status: 500 }
       )
     }
+    
+    if (!deletedBase) {
+      console.error('No record found with ID:', id)
+      return NextResponse.json(
+        { error: 'Knowledge base item not found' },
+        { status: 404 }
+      )
+    }
+    
+    console.log('Successfully deleted knowledge base item:', deletedBase.title)
 
     return NextResponse.json({
       success: true,
