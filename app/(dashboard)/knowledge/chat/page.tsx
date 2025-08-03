@@ -177,12 +177,12 @@ export default function KnowledgeChatPage() {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
+                  if (e.key === 'Enter' && e.shiftKey) {
                     e.preventDefault()
                     sendMessage()
                   }
                 }}
-                placeholder="知識ベースについて質問してください..."
+                placeholder="知識ベースについて質問してください... (Shift+Enterで送信)"
                 rows={3}
                 disabled={isLoading}
               />

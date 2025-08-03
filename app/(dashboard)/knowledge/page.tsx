@@ -173,7 +173,8 @@ export default function KnowledgePage() {
                   console.log('ファイルサイズ:', file.size)
                   const extractedText = await extractTextFromPDF(file)
                   console.log('抽出されたテキストの長さ:', extractedText?.length || 0)
-                  console.log('抽出されたテキストの最初の100文字:', extractedText?.substring(0, 100))
+                  // デバッグ用：全文を確認したい場合はコメントを外してください
+                  // console.log('抽出されたテキスト全文:', extractedText)
                   
                   if (extractedText) {
                     // 抽出したテキストをサーバーに送信して整形
