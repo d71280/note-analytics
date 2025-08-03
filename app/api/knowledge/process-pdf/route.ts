@@ -206,33 +206,14 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Grokが使えない場合のフォールバック処理
-    extractedText = `PDFファイル: ${fileName}\n\n`
-    
-    // ファイル名に基づいて適切なコンテンツを生成
-    if (fileName.includes('脳内OS強化') || fileName.includes('コンテンツ')) {
-      extractedText += `=== ページ 1 ===
-# 2025年1月 コンテンツ-脳内OS強化 指南書
-
-## はじめに
-現代社会において、情報処理能力の向上は必須のスキルとなっています。本指南書では、あなたの「脳内OS」を強化し、効率的な思考プロセスを構築する方法を詳しく解説します。
-
-[以下、フォールバックコンテンツ...]`
-    } else {
-      extractedText += `[このPDFファイルは知識ベースに保存されました。Grok APIが利用できないため、詳細な解析はできませんでした。]\n\n`
-    }
-    
-    extractedText += `\n\n=== ファイル情報 ===\n`
-    extractedText += `ファイル名: ${fileName}\n`
-    extractedText += `ファイルサイズ: ${Math.round(base64Data.length * 0.75 / 1024)}KB\n`
-    extractedText += `処理日時: ${new Date().toLocaleString('ja-JP')}`
+    // APIが利用できない場合
+    console.error('Both OpenAI and Grok APIs failed or not configured')
     
     return NextResponse.json({ 
-      success: true,
-      text: extractedText,
-      fileName: fileName,
-      analyzedBy: 'fallback'
-    })
+      success: false,
+      error: 'PDF processing failed. Both OpenAI and Grok APIs are not available.',
+      fileName: fileName
+    }, { status: 500 })
   } catch (error) {
     console.error('PDF processing error:', error)
     return NextResponse.json(

@@ -129,7 +129,11 @@ export default function KnowledgePage() {
                 try {
                   // クライアントサイドでPDFテキストを抽出
                   console.log('クライアントサイドでPDFを処理中...')
+                  console.log('ファイル名:', file.name)
+                  console.log('ファイルサイズ:', file.size)
                   const extractedText = await extractTextFromPDF(file)
+                  console.log('抽出されたテキストの長さ:', extractedText?.length || 0)
+                  console.log('抽出されたテキストの最初の100文字:', extractedText?.substring(0, 100))
                   
                   if (extractedText) {
                     // 抽出したテキストをサーバーに送信して整形
