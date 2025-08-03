@@ -20,9 +20,86 @@ export async function POST(request: NextRequest) {
     // 現在は実際のPDFテキスト抽出はスキップし、Grok AIを使用
     // TODO: 将来的にPDFテキスト抽出ライブラリを追加
     
-    // Grok APIキーを確認
+    // APIキーを確認
     const grokApiKey = process.env.GROK_API_KEY
+    const openaiApiKey = process.env.OPENAI_API_KEY
     
+    // OpenAI APIを優先的に使用
+    if (openaiApiKey) {
+      try {
+        console.log('Sending PDF to OpenAI GPT-4 Vision for analysis...')
+        
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4-vision-preview',
+            messages: [
+              {
+                role: 'system',
+                content: 'あなたはPDFドキュメントの内容を理解し、構造化されたテキストとして整理する専門家です。PDFの全てのテキスト内容を正確に抽出し、章立てや重要なポイントを明確に整理して日本語で出力してください。'
+              },
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: `以下のPDFファイルの全ての内容を抽出し、構造化された形式で出力してください。\n\nファイル名: ${fileName}\n${userPrompt ? `\nユーザーからの追加情報:\n${userPrompt}\n` : ''}\n指示:\n1. PDFの全てのテキスト内容を正確に抽出してください\n2. 省略せずに全文を含めてください\n3. 元の構造を保持しながら、読みやすい形式に整理してください\n4. 章立て、見出し、箇条書きなどの構造を明確にしてください`
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: content,
+                      detail: 'high' // 高解像度で解析
+                    }
+                  }
+                ]
+              }
+            ],
+            max_tokens: 4000,
+            temperature: 0.1
+          })
+        })
+
+        if (openaiResponse.ok) {
+          const openaiData = await openaiResponse.json()
+          
+          if (openaiData.choices && openaiData.choices[0] && openaiData.choices[0].message) {
+            const extractedContent = openaiData.choices[0].message.content
+            console.log('OpenAI successfully analyzed PDF')
+            
+            // コンテンツにメタ情報を追加
+            extractedText = `PDFファイル: ${fileName}\n\n`
+            extractedText += `=== OpenAI GPT-4 VisionによるPDF内容抽出 ===\n\n`
+            extractedText += extractedContent
+            extractedText += `\n\n=== ファイル情報 ===\n`
+            extractedText += `ファイル名: ${fileName}\n`
+            extractedText += `ファイルサイズ: ${Math.round(base64Data.length * 0.75 / 1024)}KB\n`
+            extractedText += `処理日時: ${new Date().toLocaleString('ja-JP')}\n`
+            extractedText += `解析方法: OpenAI GPT-4 Vision`
+            
+            return NextResponse.json({ 
+              success: true,
+              text: extractedText,
+              fileName: fileName,
+              analyzedBy: 'openai'
+            })
+          }
+        } else {
+          const errorData = await openaiResponse.json()
+          console.error('OpenAI API error response:', errorData)
+        }
+        
+        console.log('OpenAI analysis failed, trying Grok...')
+      } catch (openaiError) {
+        console.error('OpenAI API error:', openaiError)
+      }
+    }
+    
+    // OpenAIが失敗した場合はGrokを試す
     if (grokApiKey) {
       try {
         console.log('Sending PDF to Grok for analysis...')
