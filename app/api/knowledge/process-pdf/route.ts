@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { content, fileName, userPrompt } = await request.json()
+    const { content, fileName, userPrompt, isExtractedText } = await request.json()
 
     if (!content || !fileName) {
       return NextResponse.json(
@@ -18,14 +18,31 @@ export async function POST(request: NextRequest) {
       openAIKeyLength: process.env.OPENAI_API_KEY?.length || 0
     })
 
-    // PDFのbase64データを処理
+    // 既にテキストが抽出されている場合
+    if (isExtractedText) {
+      console.log('PDFテキストが既に抽出されています。文字数:', content.length)
+      
+      // 抽出されたテキストを整形
+      let formattedText = `PDFファイル: ${fileName}\n\n`
+      formattedText += `=== 抽出された内容 ===\n\n`
+      formattedText += content
+      formattedText += `\n\n=== ファイル情報 ===\n`
+      formattedText += `ファイル名: ${fileName}\n`
+      formattedText += `抽出文字数: ${content.length}文字\n`
+      formattedText += `処理日時: ${new Date().toLocaleString('ja-JP')}\n`
+      formattedText += `解析方法: クライアントサイドPDF.js`
+      
+      return NextResponse.json({
+        success: true,
+        text: formattedText,
+        fileName: fileName,
+        analyzedBy: 'client-side-pdfjs'
+      })
+    }
+    
+    // 以前の処理（base64データの場合）
     const base64Data = content.replace(/^data:application\/pdf;base64,/, '')
-    
-    // PDFからテキストを抽出
     let extractedText = ''
-    
-    // 現在は実際のPDFテキスト抽出はスキップし、Grok AIを使用
-    // TODO: 将来的にPDFテキスト抽出ライブラリを追加
     
     // APIキーを確認
     const grokApiKey = process.env.GROK_API_KEY

@@ -1,5 +1,7 @@
 'use client'
 
+import { extractTextFromPDF } from '@/lib/pdf-processor'
+
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -124,19 +126,37 @@ export default function KnowledgePage() {
             try {
               // PDFファイルの場合、テキストを抽出
               if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-                const pdfResponse = await fetch('/api/knowledge/process-pdf', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    content: content,  // これはBase64データ
-                    fileName: file.name,
-                    userPrompt: pdfPrompt  // 外部スコープからプロンプトを使用
-                  })
-                })
-                
-                if (pdfResponse.ok) {
-                  const pdfData = await pdfResponse.json()
-                  content = pdfData.text
+                try {
+                  // クライアントサイドでPDFテキストを抽出
+                  console.log('クライアントサイドでPDFを処理中...')
+                  const extractedText = await extractTextFromPDF(file)
+                  
+                  if (extractedText) {
+                    // 抽出したテキストをサーバーに送信して整形
+                    const pdfResponse = await fetch('/api/knowledge/process-pdf', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        content: extractedText,  // 抽出したテキスト
+                        fileName: file.name,
+                        userPrompt: pdfPrompt,
+                        isExtractedText: true  // テキスト抽出済みフラグ
+                      })
+                    })
+                    
+                    if (pdfResponse.ok) {
+                      const pdfData = await pdfResponse.json()
+                      content = pdfData.text
+                    } else {
+                      // サーバー処理が失敗した場合は抽出したテキストをそのまま使用
+                      content = `PDFファイル: ${file.name}\n\n=== 抽出されたテキスト ===\n\n${extractedText}`
+                    }
+                  }
+                } catch (pdfError) {
+                  console.error('PDF処理エラー:', pdfError)
+                  alert('PDFの読み込みに失敗しました。ファイルが破損している可能性があります。')
+                  reject(pdfError)
+                  return
                 }
               }
               
