@@ -11,6 +11,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 環境変数の確認（デバッグ用）
+    console.log('Environment check:', {
+      hasOpenAI: !!process.env.OPENAI_API_KEY,
+      hasGrok: !!process.env.GROK_API_KEY,
+      openAIKeyLength: process.env.OPENAI_API_KEY?.length || 0
+    })
+
     // PDFのbase64データを処理
     const base64Data = content.replace(/^data:application\/pdf;base64,/, '')
     
@@ -27,6 +34,7 @@ export async function POST(request: NextRequest) {
     // OpenAI APIを優先的に使用
     if (openaiApiKey) {
       try {
+        console.log('OpenAI API Key exists:', !!openaiApiKey)
         console.log('Sending PDF to OpenAI GPT-4 Vision for analysis...')
         
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -36,7 +44,7 @@ export async function POST(request: NextRequest) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            model: 'gpt-4-vision-preview',
+            model: 'gpt-4o-mini',
             messages: [
               {
                 role: 'system',
@@ -89,13 +97,20 @@ export async function POST(request: NextRequest) {
             })
           }
         } else {
-          const errorData = await openaiResponse.json()
-          console.error('OpenAI API error response:', errorData)
+          const errorText = await openaiResponse.text()
+          console.error('OpenAI API error response:', openaiResponse.status, errorText)
+          try {
+            const errorData = JSON.parse(errorText)
+            console.error('Error details:', errorData)
+          } catch {
+            console.error('Error text:', errorText)
+          }
         }
         
         console.log('OpenAI analysis failed, trying Grok...')
       } catch (openaiError) {
         console.error('OpenAI API error:', openaiError)
+        console.error('Error details:', openaiError instanceof Error ? openaiError.message : String(openaiError))
       }
     }
     
