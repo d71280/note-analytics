@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Sparkles, Loader2, Plus, Clock, Send, X, RefreshCw, Grip, Check, Twitter, FileText, Globe } from 'lucide-react'
+import { Sparkles, Loader2, Plus, Clock, Send, X, Grip, Check, Twitter, FileText, Globe } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 
 interface GeneratedContent {
@@ -135,7 +135,7 @@ export default function ContentGenerationPage() {
     )
   }
   
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: { destination: { index: number } | null, source: { index: number } }) => {
     if (!result.destination) return
     
     const items = Array.from(generatedContents)
@@ -239,7 +239,7 @@ export default function ContentGenerationPage() {
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">コンテンツ生成&配信</h1>
       
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'x' | 'note' | 'wordpress')}>
         <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="x" className="flex items-center gap-2">
             <Twitter className="h-4 w-4" />
