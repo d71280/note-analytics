@@ -6,9 +6,9 @@ export async function POST() {
     console.log('Auto-setup API called')
     const supabase = createClient()
     
-    // 環境変数から値を取得
+    // 環境変数から値を取得（X_API_KEY_SECRETもサポート）
     const xApiKey = process.env.X_API_KEY
-    const xApiSecret = process.env.X_API_SECRET
+    const xApiSecret = process.env.X_API_SECRET || process.env.X_API_KEY_SECRET
     const xAccessToken = process.env.X_ACCESS_TOKEN
     const xAccessSecret = process.env.X_ACCESS_SECRET
     

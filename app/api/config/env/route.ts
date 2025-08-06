@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 export async function GET() {
   // セキュリティのため、マスクされた値を返す
   const xApiKey = process.env.X_API_KEY || ''
-  const xApiSecret = process.env.X_API_SECRET || ''
+  const xApiSecret = process.env.X_API_SECRET || process.env.X_API_KEY_SECRET || ''
   const xAccessToken = process.env.X_ACCESS_TOKEN || ''
   const xAccessSecret = process.env.X_ACCESS_SECRET || ''
   const grokApiKey = process.env.GROK_API_KEY || ''
