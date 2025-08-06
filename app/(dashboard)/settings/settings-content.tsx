@@ -72,13 +72,18 @@ export default function SettingsContent() {
 
   const fetchXApiConfig = async () => {
     try {
-      const response = await fetch('/api/x/config')
+      const response = await fetch('/api/x/config', {
+        credentials: 'include'
+      })
       if (response.ok) {
         const data = await response.json()
         if (data.config) {
           setXApiConfig(data.config)
           setIsConnected(true)
         }
+      } else if (response.status === 401) {
+        // 認証エラーの場合は設定なしとして扱う
+        setIsConnected(false)
       }
     } catch (error) {
       console.error('Failed to fetch X API config:', error)
@@ -87,7 +92,9 @@ export default function SettingsContent() {
 
   const fetchRetweetSettings = async () => {
     try {
-      const response = await fetch('/api/x/retweet-settings')
+      const response = await fetch('/api/x/retweet-settings', {
+        credentials: 'include'
+      })
       if (response.ok) {
         const data = await response.json()
         if (data.settings) {
@@ -101,7 +108,9 @@ export default function SettingsContent() {
 
   const fetchGrokConfig = async () => {
     try {
-      const response = await fetch('/api/x/grok-config')
+      const response = await fetch('/api/x/grok-config', {
+        credentials: 'include'
+      })
       if (response.ok) {
         const data = await response.json()
         if (data.config) {
@@ -115,7 +124,9 @@ export default function SettingsContent() {
 
   const checkEnvConfig = async () => {
     try {
-      const response = await fetch('/api/config/env')
+      const response = await fetch('/api/config/env', {
+        credentials: 'include'
+      })
       if (response.ok) {
         const data = await response.json()
         // X APIが環境変数に設定されていて、DBに保存されていない場合
@@ -147,7 +158,8 @@ export default function SettingsContent() {
       const response = await fetch('/api/x/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(xApiConfig)
+        body: JSON.stringify(xApiConfig),
+        credentials: 'include'
       })
 
       if (response.ok) {
@@ -169,7 +181,8 @@ export default function SettingsContent() {
     setIsSaving(true)
     try {
       const response = await fetch('/api/x/config/auto-setup', {
-        method: 'POST'
+        method: 'POST',
+        credentials: 'include'
       })
 
       if (response.ok) {
@@ -195,7 +208,8 @@ export default function SettingsContent() {
       const response = await fetch('/api/x/retweet-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(retweetSettings)
+        body: JSON.stringify(retweetSettings),
+        credentials: 'include'
       })
 
       if (response.ok) {
@@ -214,7 +228,8 @@ export default function SettingsContent() {
       const response = await fetch('/api/x/grok-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(grokConfig)
+        body: JSON.stringify(grokConfig),
+        credentials: 'include'
       })
 
       if (response.ok) {
@@ -232,7 +247,8 @@ export default function SettingsContent() {
 
     try {
       const response = await fetch('/api/x/config', {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       })
 
       if (response.ok) {
@@ -269,7 +285,8 @@ export default function SettingsContent() {
   const runAutoRetweet = async () => {
     try {
       const response = await fetch('/api/x/auto-retweet-scheduler', {
-        method: 'POST'
+        method: 'POST',
+        credentials: 'include'
       })
 
       if (response.ok) {
@@ -285,7 +302,8 @@ export default function SettingsContent() {
     setIsTesting(true)
     try {
       const response = await fetch('/api/x/test-connection', {
-        method: 'POST'
+        method: 'POST',
+        credentials: 'include'
       })
       
       const data = await response.json()
