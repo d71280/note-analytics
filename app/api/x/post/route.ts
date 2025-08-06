@@ -24,11 +24,13 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient()
     
-    // API設定を取得
-    const { data: config, error: fetchError } = await supabase
+    // API設定を取得（まずユーザーIDフィルタなしで試す）
+    const { data: configs, error: fetchError } = await supabase
       .from('x_api_configs')
       .select('access_token')
-      .single()
+      .limit(1)
+    
+    const config = configs?.[0]
 
     if (fetchError || !config) {
       return NextResponse.json(
