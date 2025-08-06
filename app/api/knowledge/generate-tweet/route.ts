@@ -11,8 +11,8 @@ interface KnowledgeItem {
 export async function POST(request: NextRequest) {
   try {
     console.log('Knowledge generate-tweet API called')
-    const { prompt } = await request.json()
-    console.log('Request params:', { prompt })
+    const { prompt, platform = 'x', maxLength = 280 } = await request.json()
+    console.log('Request params:', { prompt, platform, maxLength })
 
     let knowledgeItems: KnowledgeItem[] = []
     let knowledgeContent = ''
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
           .from('knowledge_base')
           .select('title, content, content_type, tags')
           .order('created_at', { ascending: false })
-          .limit(5) // 最新5件を取得
+          .limit(10) // 最新10件を取得
 
         if (error) {
           console.error('Knowledge base fetch error:', error)
@@ -100,7 +100,11 @@ export async function POST(request: NextRequest) {
             messages: [
               {
                 role: 'system',
-                content: 'あなたは魅力的で価値のあるツイートを生成する専門家です。280文字以内で、読者に価値を提供する内容を生成してください。'
+                content: platform === 'x' 
+                  ? `あなたは魅力的で価値のあるツイートを生成する専門家です。${maxLength}文字以内で、読者に価値を提供する内容を生成してください。`
+                  : platform === 'note'
+                  ? `あなたはNoteの記事要約や導入文を生成する専門家です。${maxLength}文字以内で、読者の興味を引く魅力的な内容を生成してください。`
+                  : `あなたはSEOを意識したブログ記事の抜粋を生成する専門家です。${maxLength}文字以内で、読者を引き込む内容を生成してください。`
               },
               {
                 role: 'user',
