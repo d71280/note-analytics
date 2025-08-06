@@ -153,6 +153,10 @@ export default function SettingsContent() {
       if (response.ok) {
         setIsConnected(true)
         await fetchXApiConfig()
+        alert('X API設定を保存しました')
+      } else {
+        const data = await response.json()
+        alert(`保存に失敗しました: ${data.error}`)
       }
     } catch (error) {
       console.error('Failed to save X API config:', error)

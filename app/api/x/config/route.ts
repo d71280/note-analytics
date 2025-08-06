@@ -7,7 +7,7 @@ export async function GET() {
     
     const { data, error } = await supabase
       .from('x_api_configs')
-      .select('api_key, api_secret, access_token, access_token_secret, username')
+      .select('api_key, api_key_secret, access_token, access_token_secret, username')
       .single()
 
     if (error || !data) {
@@ -17,7 +17,7 @@ export async function GET() {
     // APIキーの一部をマスク
     const maskedConfig = {
       api_key: maskString(data.api_key),
-      api_secret: maskString(data.api_secret),
+      api_secret: maskString(data.api_key_secret),
       access_token: maskString(data.access_token),
       access_token_secret: maskString(data.access_token_secret),
       username: data.username
@@ -73,8 +73,9 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Save config error:', error)
+      console.error('Error details:', error.message, error.code)
       return NextResponse.json(
-        { error: 'Failed to save configuration' },
+        { error: `Failed to save configuration: ${error.message}` },
         { status: 500 }
       )
     }

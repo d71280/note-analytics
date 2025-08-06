@@ -17,6 +17,7 @@ const navigation = [
   { name: 'DB状態確認', href: '/admin/db-check', icon: Database },
   { name: 'X API確認', href: '/admin/x-api-check', icon: Twitter },
   { name: 'X デバッグ', href: '/admin/x-debug', icon: Bug },
+  { name: 'テーブル作成', href: '/admin/setup-tables', icon: Database },
 ]
 
 export function Sidebar() {
