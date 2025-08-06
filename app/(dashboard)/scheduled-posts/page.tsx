@@ -65,7 +65,9 @@ export default function ScheduledPostsPage() {
 
   const fetchScheduledPosts = async () => {
     try {
-      const response = await fetch('/api/x/schedule')
+      const response = await fetch('/api/x/schedule', {
+        credentials: 'include'
+      })
       if (response.ok) {
         const data = await response.json()
         setPosts(data || [])
@@ -118,7 +120,8 @@ export default function ScheduledPostsPage() {
 
     try {
       const response = await fetch(`/api/x/scheduled-posts/delete?id=${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       })
 
       if (response.ok) {
@@ -148,7 +151,8 @@ export default function ScheduledPostsPage() {
       const response = await fetch('/api/x/scheduled-posts/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids, status: 'failed' })
+        body: JSON.stringify({ ids, status: 'failed' }),
+        credentials: 'include'
       })
 
       if (response.ok) {
