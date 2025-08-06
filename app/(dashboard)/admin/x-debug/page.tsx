@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertCircle, CheckCircle, RefreshCw, Twitter, Bug } from 'lucide-react'
+import { AlertCircle, RefreshCw, Twitter, Bug } from 'lucide-react'
 
 interface DebugInfo {
   configs: Array<{
@@ -22,7 +22,7 @@ export default function XDebugPage() {
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [postResult, setPostResult] = useState<any>(null)
+  const [postResult, setPostResult] = useState<{ status: number | string; ok: boolean; data: Record<string, unknown> } | null>(null)
 
   useEffect(() => {
     fetchDebugInfo()
@@ -69,7 +69,7 @@ export default function XDebugPage() {
       setPostResult({
         status: 'error',
         ok: false,
-        data: { error: error.message }
+        data: { error: (error as Error).message }
       })
     }
   }

@@ -19,7 +19,7 @@ export async function GET() {
     }
     
     // 現在のユーザーを取得
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
     
     return NextResponse.json({
       configs: configs?.map(config => ({
