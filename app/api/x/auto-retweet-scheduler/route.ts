@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getXApiConfig } from '@/lib/x-api/config'
 import axios from 'axios'
 
 const TWITTER_SEARCH_URL = 'https://api.twitter.com/2/tweets/search/recent'
@@ -22,15 +23,13 @@ export async function POST() {
     }
 
     // API設定を取得
-    const { data: config, error: configError } = await supabase
-      .from('x_api_configs')
-      .select('access_token')
-      .single()
-
-    if (configError || !config) {
+    let config
+    try {
+      config = getXApiConfig()
+    } catch (error) {
       return NextResponse.json(
-        { error: 'X API configuration not found' },
-        { status: 404 }
+        { error: 'X API credentials not configured. Please set environment variables.' },
+        { status: 500 }
       )
     }
 
@@ -55,7 +54,7 @@ export async function POST() {
             'tweet.fields': 'author_id,created_at,public_metrics'
           },
           headers: {
-            'Authorization': `Bearer ${config.access_token}`
+            'Authorization': `Bearer ${config.bearer_token}`
           }
         })
 
@@ -103,7 +102,7 @@ export async function POST() {
               { tweet_id: id },
               {
                 headers: {
-                  'Authorization': `Bearer ${config.access_token}`,
+                  'Authorization': `Bearer ${config.bearer_token}`,
                   'Content-Type': 'application/json'
                 }
               }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getXApiConfig } from '@/lib/x-api/config'
 import axios from 'axios'
 
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets'
@@ -22,20 +23,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createClient()
-    
-    // API設定を取得（まずユーザーIDフィルタなしで試す）
-    const { data: configs, error: fetchError } = await supabase
-      .from('x_api_configs')
-      .select('access_token')
-      .limit(1)
-    
-    const config = configs?.[0]
-
-    if (fetchError || !config) {
+    // 環境変数からX API設定を取得
+    let config
+    try {
+      config = getXApiConfig()
+    } catch (error) {
       return NextResponse.json(
-        { error: 'X API configuration not found' },
-        { status: 404 }
+        { error: 'X API credentials not configured. Please set environment variables.' },
+        { status: 500 }
       )
     }
 
@@ -65,16 +60,21 @@ export async function POST(request: NextRequest) {
 
     const { data: { id: tweetId } } = tweetResponse
 
-    // 投稿履歴を保存
-    await supabase
-      .from('x_post_history')
-      .insert({
-        post_type: postType || 'manual',
-        post_content: tweetText,
-        tweet_id: tweetId,
-        reply_to_id: replyToId,
-        status: 'success'
-      })
+    // 投稿履歴を保存（オプション）
+    try {
+      const supabase = createClient()
+      await supabase
+        .from('x_post_history')
+        .insert({
+          post_type: postType || 'manual',
+          post_content: tweetText,
+          tweet_id: tweetId,
+          reply_to_id: replyToId,
+          status: 'success'
+        })
+    } catch {
+      // 履歴の保存に失敗しても無視
+    }
 
     return NextResponse.json({ 
       success: true, 
@@ -86,12 +86,12 @@ export async function POST(request: NextRequest) {
     
     if (axios.isAxiosError(error) && error.response?.status === 401) {
       return NextResponse.json(
-        { error: 'Invalid or expired access token. Please update your API configuration.' },
+        { error: 'Invalid or expired access token. Please check your environment variables.' },
         { status: 401 }
       )
     }
 
-    // エラー履歴を保存
+    // エラー履歴を保存（オプション）
     if (tweetText) {
       try {
         const supabase = createClient()

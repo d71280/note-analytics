@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getXApiConfig } from '@/lib/x-api/config'
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,13 +39,11 @@ export async function POST(request: NextRequest) {
     // ツイートを投稿
     try {
       // X APIの設定を取得
-      const { data: settings } = await supabase
-        .from('x_api_configs')
-        .select('*')
-        .single()
-      
-      if (!settings) {
-        throw new Error('X API settings not found')
+      let config
+      try {
+        config = getXApiConfig()
+      } catch (error) {
+        throw new Error('X API credentials not configured. Please set environment variables.')
       }
       
       // X APIでツイートを投稿
