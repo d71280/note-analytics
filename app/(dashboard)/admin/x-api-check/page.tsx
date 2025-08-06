@@ -60,7 +60,7 @@ export default function XApiCheckPage() {
       } else {
         alert(`X API接続テスト失敗: ${data.error}`)
       }
-    } catch (error) {
+    } catch {
       alert('接続テストに失敗しました')
     }
   }
