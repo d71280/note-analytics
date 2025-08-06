@@ -8,10 +8,8 @@ export async function GET() {
     // 認証チェック
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not authenticated' },
-        { status: 401 }
-      )
+      // 認証されていない場合は空の設定を返す（401エラーではなく）
+      return NextResponse.json({ config: null })
     }
     
     const { data, error } = await supabase
