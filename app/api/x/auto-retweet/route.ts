@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
             })
 
           retweetedIds.push(id)
-        } catch {
+        } catch (error) {
           console.error(`Failed to retweet ${id}:`, error)
         }
       }
