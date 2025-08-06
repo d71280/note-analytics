@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { CheckCircle2, XCircle, Twitter, Loader2, Save, Trash2, RefreshCw, Sparkles, Eye } from 'lucide-react'
+import { CheckCircle2, XCircle, Twitter, Loader2, Save, Trash2, RefreshCw, Sparkles, Eye, TestTube } from 'lucide-react'
 
 interface XApiConfig {
   api_key: string
@@ -53,6 +53,7 @@ export default function SettingsContent() {
   const [isSaving, setIsSaving] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
   const [showKeys, setShowKeys] = useState(false)
+  const [isTesting, setIsTesting] = useState(false)
 
   useEffect(() => {
     fetchXApiConfig()
@@ -272,6 +273,27 @@ export default function SettingsContent() {
     }
   }
 
+  const testXConnection = async () => {
+    setIsTesting(true)
+    try {
+      const response = await fetch('/api/x/test-connection', {
+        method: 'POST'
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        alert(`X API接続テスト成功！\nユーザー: @${data.user.username || data.user.name}`)
+      } else {
+        alert(`X API接続テスト失敗: ${data.error}`)
+      }
+    } catch (error) {
+      alert('接続テストに失敗しました')
+    } finally {
+      setIsTesting(false)
+    }
+  }
+
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
       <Card id="x-settings">
@@ -386,10 +408,25 @@ export default function SettingsContent() {
               )}
             </Button>
             {isConnected && (
-              <Button variant="destructive" onClick={disconnectX}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                連携解除
-              </Button>
+              <>
+                <Button variant="outline" onClick={testXConnection} disabled={isTesting}>
+                  {isTesting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      テスト中...
+                    </>
+                  ) : (
+                    <>
+                      <TestTube className="mr-2 h-4 w-4" />
+                      接続テスト
+                    </>
+                  )}
+                </Button>
+                <Button variant="destructive" onClick={disconnectX}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  連携解除
+                </Button>
+              </>
             )}
           </div>
 

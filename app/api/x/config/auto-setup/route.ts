@@ -32,15 +32,26 @@ export async function POST() {
       .select('*')
       .single()
 
+    // 現在のユーザーを取得
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not authenticated' },
+        { status: 401 }
+      )
+    }
+
     if (existing) {
       // 更新
       const { error } = await supabase
         .from('x_api_configs')
         .update({
           api_key: xApiKey,
-          api_secret: xApiSecret,
+          api_key_secret: xApiSecret,
           access_token: xAccessToken,
           access_token_secret: xAccessSecret,
+          bearer_token: xAccessToken,
+          user_id: user.id,
           updated_at: new Date().toISOString()
         })
         .eq('id', existing.id)
@@ -53,10 +64,12 @@ export async function POST() {
       const { error } = await supabase
         .from('x_api_configs')
         .insert({
+          user_id: user.id,
           api_key: xApiKey,
-          api_secret: xApiSecret,
+          api_key_secret: xApiSecret,
           access_token: xAccessToken,
-          access_token_secret: xAccessSecret
+          access_token_secret: xAccessSecret,
+          bearer_token: xAccessToken
         })
 
       if (error) {

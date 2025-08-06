@@ -43,18 +43,32 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createClient()
+    
+    // 現在のユーザーを取得
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not authenticated' },
+        { status: 401 }
+      )
+    }
 
     // 既存の設定を削除
     await supabase.from('x_api_configs').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+
+    // bearer_tokenを生成（Twitter API v2では通常access_tokenがbearer_tokenとして使用される）
+    const bearer_token = access_token
 
     // 新しい設定を保存
     const { error } = await supabase
       .from('x_api_configs')
       .insert({
+        user_id: user.id,
         api_key,
-        api_secret,
+        api_key_secret: api_secret,
         access_token,
-        access_token_secret
+        access_token_secret,
+        bearer_token
       })
 
     if (error) {
