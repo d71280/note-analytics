@@ -65,11 +65,12 @@ export default function ContentGenerationPage() {
   const [isScheduling, setIsScheduling] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
   const [platformConfig, setPlatformConfig] = useState(defaultPlatformConfig)
+  const [generateCount, setGenerateCount] = useState(5)
   
   const generateContents = async () => {
     setIsGenerating(true)
     try {
-      const contentsToGenerate = 5
+      const contentsToGenerate = generateCount
       const newContents: GeneratedContent[] = []
       const config = platformConfig[activeTab]
       
@@ -282,22 +283,42 @@ export default function ContentGenerationPage() {
                     className="mt-2"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="maxLength">文字数制限</Label>
-                  <Input
-                    id="maxLength"
-                    type="number"
-                    value={config.maxLength}
-                    onChange={(e) => updateMaxLength(activeTab, parseInt(e.target.value) || 100)}
-                    min="50"
-                    max="5000"
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {activeTab === 'x' ? '推奨: 280文字' : 
-                     activeTab === 'note' ? '推奨: 500-2000文字' : 
-                     '推奨: 150-1000文字'}
-                  </p>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="maxLength">文字数制限</Label>
+                    <Input
+                      id="maxLength"
+                      type="number"
+                      value={config.maxLength}
+                      onChange={(e) => updateMaxLength(activeTab, parseInt(e.target.value) || 100)}
+                      min="50"
+                      max="5000"
+                      className="mt-2"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {activeTab === 'x' ? '推奨: 280文字' : 
+                       activeTab === 'note' ? '推奨: 500-2000文字' : 
+                       '推奨: 150-1000文字'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="generateCount">生成件数</Label>
+                    <Select
+                      value={generateCount.toString()}
+                      onValueChange={(value) => setGenerateCount(parseInt(value))}
+                    >
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1件</SelectItem>
+                        <SelectItem value="3">3件</SelectItem>
+                        <SelectItem value="5">5件</SelectItem>
+                        <SelectItem value="10">10件</SelectItem>
+                        <SelectItem value="20">20件</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
               
@@ -314,7 +335,7 @@ export default function ContentGenerationPage() {
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    5件のコンテンツを生成
+                    {generateCount}件のコンテンツを生成
                   </>
                 )}
               </Button>
