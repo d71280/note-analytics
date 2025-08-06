@@ -126,7 +126,7 @@ export async function GET() {
       total: stats?.length || 0
     })
     
-  } catch {
+  } catch (error) {
     console.error('Get queue stats error:', error)
     return NextResponse.json(
       { error: 'Failed to get queue stats' },
