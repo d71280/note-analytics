@@ -33,7 +33,6 @@ export default function KnowledgePage() {
   })
   const [tagInput, setTagInput] = useState('')
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
 
   useEffect(() => {
     fetchKnowledgeItems()
@@ -129,7 +128,6 @@ export default function KnowledgePage() {
     if (!file) return
 
     setIsUploading(true)
-    setUploadProgress(0)
 
     try {
       const formData = new FormData()
@@ -157,7 +155,6 @@ export default function KnowledgePage() {
       alert('ファイルのアップロードに失敗しました')
     } finally {
       setIsUploading(false)
-      setUploadProgress(0)
     }
   }
 
