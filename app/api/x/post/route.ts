@@ -28,9 +28,10 @@ export async function POST(request: NextRequest) {
     try {
       config = getXApiConfig()
     } catch (error) {
-      console.error('X API config error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('X API config error:', errorMessage)
       return NextResponse.json(
-        { error: 'X API credentials not configured. Please set environment variables.' },
+        { error: errorMessage },
         { status: 500 }
       )
     }

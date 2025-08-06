@@ -5,8 +5,14 @@ export function getXApiConfig() {
   const accessToken = process.env.X_ACCESS_TOKEN
   const accessTokenSecret = process.env.X_ACCESS_SECRET
   
-  if (!apiKey || !apiSecret || !accessToken || !accessTokenSecret) {
-    throw new Error('X API credentials not configured in environment variables')
+  const missing = []
+  if (!apiKey) missing.push('X_API_KEY')
+  if (!apiSecret) missing.push('X_API_SECRET or X_API_KEY_SECRET')
+  if (!accessToken) missing.push('X_ACCESS_TOKEN')
+  if (!accessTokenSecret) missing.push('X_ACCESS_SECRET')
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing environment variables: ${missing.join(', ')}`)
   }
   
   return {
