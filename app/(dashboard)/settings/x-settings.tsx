@@ -65,7 +65,7 @@ export default function XSettings() {
           message: `接続失敗: ${data.error}`
         })
       }
-    } catch (error) {
+    } catch {
       setTestResult({
         success: false,
         message: '接続テストに失敗しました'
