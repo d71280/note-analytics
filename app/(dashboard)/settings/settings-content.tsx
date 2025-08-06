@@ -316,37 +316,37 @@ export default function SettingsContent() {
               <CheckCircle2 className="h-5 w-5" />
               <span>連携済み {xApiConfig.username && `(@${xApiConfig.username})`}</span>
             </div>
-          ) : xApiConfig.api_key && xApiConfig.api_key.includes('...') ? (
-            <div className="p-4 bg-blue-50 rounded-lg space-y-3">
-              <p className="text-sm text-blue-800">
-                <strong>環境変数から設定を検出しました。</strong><br />
-                API情報が環境変数に設定されています。
-              </p>
-              <Button
-                onClick={autoSetupFromEnv}
-                disabled={isSaving}
-                variant="outline"
-                size="sm"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    設定中...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    環境変数から自動設定
-                  </>
-                )}
-              </Button>
-            </div>
           ) : (
             <div className="flex items-center gap-2 text-gray-500">
               <XCircle className="h-5 w-5" />
               <span>未連携</span>
             </div>
           )}
+
+          <div className="p-4 bg-blue-50 rounded-lg space-y-3">
+            <p className="text-sm text-blue-800">
+              <strong>環境変数から設定を読み込む</strong><br />
+              Vercelに設定された環境変数から自動的にX API設定を読み込みます。
+            </p>
+            <Button
+              onClick={autoSetupFromEnv}
+              disabled={isSaving}
+              variant="outline"
+              size="sm"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  設定中...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  環境変数から自動設定
+                </>
+              )}
+            </Button>
+          </div>
 
           <div className="space-y-2">
             <Label>API Key</Label>
