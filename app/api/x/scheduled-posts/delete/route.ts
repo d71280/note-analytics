@@ -17,7 +17,7 @@ export async function DELETE(request: NextRequest) {
     
     // スケジュール投稿を削除
     const { error } = await supabase
-      .from('x_scheduled_posts')
+      .from('tweet_queue')
       .delete()
       .eq('id', id)
     
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     
     // 条件に基づいて削除
     let query = supabase
-      .from('x_scheduled_posts')
+      .from('tweet_queue')
       .delete()
       .in('id', ids)
     
