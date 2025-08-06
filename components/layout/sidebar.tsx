@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FileText, TrendingUp, Settings, Share2, Search, Calendar, Database, Brain, ListOrdered, Twitter, Bug } from 'lucide-react'
+import { FileText, TrendingUp, Settings, Share2, Search, Calendar, Database, Brain, ListOrdered, Twitter, Bug, Key } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -18,6 +18,7 @@ const navigation = [
   { name: 'X API確認', href: '/admin/x-api-check', icon: Twitter },
   { name: 'X デバッグ', href: '/admin/x-debug', icon: Bug },
   { name: 'テーブル作成', href: '/admin/setup-tables', icon: Database },
+  { name: '環境変数確認', href: '/admin/env-debug', icon: Key },
 ]
 
 export function Sidebar() {
