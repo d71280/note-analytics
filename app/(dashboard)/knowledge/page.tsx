@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Brain, Plus, Edit, Trash2, Save, X as XIcon, FileText, Loader2 } from 'lucide-react'
+import { Brain, Plus, Edit, Trash2, Save, X as XIcon, FileText, Loader2, Upload } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
 interface KnowledgeItem {
@@ -32,6 +32,8 @@ export default function KnowledgePage() {
     tags: []
   })
   const [tagInput, setTagInput] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   useEffect(() => {
     fetchKnowledgeItems()
@@ -122,6 +124,43 @@ export default function KnowledgePage() {
     setFormData({ ...formData, tags })
   }
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    setUploadProgress(0)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      // PDFの場合は専用のAPIを使用
+      const endpoint = file.type === 'application/pdf' 
+        ? '/api/knowledge/process-pdf'
+        : '/api/knowledge/upload'
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        body: formData
+      })
+
+      if (response.ok) {
+        await fetchKnowledgeItems()
+        alert(`ファイル「${file.name}」を知識ベースに追加しました`)
+      } else {
+        const error = await response.json()
+        alert(`アップロードに失敗しました: ${error.message || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      alert('ファイルのアップロードに失敗しました')
+    } finally {
+      setIsUploading(false)
+      setUploadProgress(0)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-8 px-4 flex items-center justify-center min-h-screen">
@@ -142,13 +181,14 @@ export default function KnowledgePage() {
             コンテンツ生成に使用する知識を管理します
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              新規追加
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openCreateDialog} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                新規追加
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
@@ -231,6 +271,36 @@ export default function KnowledgePage() {
             </div>
           </DialogContent>
         </Dialog>
+        
+        <div className="relative">
+          <input
+            type="file"
+            id="file-upload"
+            className="hidden"
+            onChange={handleFileUpload}
+            accept=".pdf,.txt,.md,.doc,.docx"
+            disabled={isUploading}
+          />
+          <Button
+            onClick={() => document.getElementById('file-upload')?.click()}
+            variant="outline"
+            disabled={isUploading}
+            className="flex items-center gap-2"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                アップロード中...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" />
+                ファイルアップロード
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
       </div>
 
       {knowledgeItems.length === 0 ? (
