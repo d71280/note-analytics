@@ -5,6 +5,15 @@ export async function GET() {
   try {
     const supabase = createClient()
     
+    // 認証チェック
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not authenticated' },
+        { status: 401 }
+      )
+    }
+    
     const { data, error } = await supabase
       .from('x_api_configs')
       .select('api_key, api_key_secret, access_token, access_token_secret, username')
