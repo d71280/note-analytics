@@ -54,6 +54,7 @@ export default function ScheduledPostsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isPosting, setIsPosting] = useState<string | null>(null)
+  const [isDeletingFailed, setIsDeletingFailed] = useState(false)
 
   useEffect(() => {
     fetchScheduledPosts()
@@ -116,10 +117,8 @@ export default function ScheduledPostsPage() {
     if (!confirm('この投稿を削除してもよろしいですか？')) return
 
     try {
-      const response = await fetch('/api/x/schedule/delete', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
+      const response = await fetch(`/api/x/scheduled-posts/delete?id=${id}`, {
+        method: 'DELETE'
       })
 
       if (response.ok) {
@@ -130,6 +129,39 @@ export default function ScheduledPostsPage() {
     } catch (error) {
       console.error('Failed to delete post:', error)
       alert('削除に失敗しました')
+    }
+  }
+
+  const handleDeleteFailedPosts = async () => {
+    if (!confirm('失敗したすべての投稿を削除してもよろしいですか？')) return
+
+    setIsDeletingFailed(true)
+    try {
+      const failedPosts = posts.filter(p => p.status === 'failed')
+      const ids = failedPosts.map(p => p.id)
+      
+      if (ids.length === 0) {
+        alert('削除する投稿がありません')
+        return
+      }
+
+      const response = await fetch('/api/x/scheduled-posts/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, status: 'failed' })
+      })
+
+      if (response.ok) {
+        await fetchScheduledPosts()
+        alert(`${ids.length}件の失敗した投稿を削除しました`)
+      } else {
+        alert('削除に失敗しました')
+      }
+    } catch (error) {
+      console.error('Failed to delete failed posts:', error)
+      alert('削除に失敗しました')
+    } finally {
+      setIsDeletingFailed(false)
     }
   }
 
@@ -205,13 +237,36 @@ export default function ScheduledPostsPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Calendar className="h-8 w-8" />
-          スケジュール投稿管理
-        </h1>
-        <p className="text-gray-600 mt-2">
-          予約されている投稿の編集・削除ができます
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Calendar className="h-8 w-8" />
+              スケジュール投稿管理
+            </h1>
+            <p className="text-gray-600 mt-2">
+              予約されている投稿の編集・削除ができます
+            </p>
+          </div>
+          {posts.some(p => p.status === 'failed') && (
+            <Button
+              onClick={handleDeleteFailedPosts}
+              variant="destructive"
+              disabled={isDeletingFailed}
+            >
+              {isDeletingFailed ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  削除中...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  失敗した投稿をすべて削除
+                </>
+              )}
+            </Button>
+          )}
+        </div>
       </div>
 
       {posts.length === 0 ? (
