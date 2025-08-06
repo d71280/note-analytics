@@ -21,16 +21,32 @@ export async function POST() {
 
     if (!xApiKey || !xApiSecret || !xAccessToken || !xAccessSecret) {
       return NextResponse.json(
-        { error: 'X API credentials not found in environment variables' },
+        { 
+          error: 'X API credentials not found in environment variables',
+          details: {
+            hasApiKey: !!xApiKey,
+            hasApiSecret: !!xApiSecret,
+            hasAccessToken: !!xAccessToken,
+            hasAccessSecret: !!xAccessSecret
+          }
+        },
         { status: 400 }
       )
     }
 
     // 既存の設定を確認
-    const { data: existing } = await supabase
+    const { data: existing, error: selectError } = await supabase
       .from('x_api_configs')
       .select('*')
       .single()
+    
+    // テーブルが存在しない場合のエラーチェック
+    if (selectError && selectError.code === '42P01') {
+      return NextResponse.json({ 
+        error: 'x_api_configs table does not exist. Please create the table first.',
+        hint: 'Go to /admin/setup-tables to create the required tables.'
+      }, { status: 500 })
+    }
 
     // 現在のユーザーを取得
     const { data: { user } } = await supabase.auth.getUser()
@@ -57,7 +73,8 @@ export async function POST() {
         .eq('id', existing.id)
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        console.error('Update error:', error)
+        return NextResponse.json({ error: `Failed to update config: ${error.message}` }, { status: 500 })
       }
     } else {
       // 新規作成
@@ -73,7 +90,8 @@ export async function POST() {
         })
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        console.error('Update error:', error)
+        return NextResponse.json({ error: `Failed to update config: ${error.message}` }, { status: 500 })
       }
     }
 
@@ -108,7 +126,7 @@ export async function POST() {
   } catch (error) {
     console.error('Auto setup error:', error)
     return NextResponse.json(
-      { error: 'Failed to auto setup API configurations' },
+      { error: `Failed to auto setup API configurations: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     )
   }

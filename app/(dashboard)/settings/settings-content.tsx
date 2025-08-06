@@ -177,6 +177,10 @@ export default function SettingsContent() {
         await fetchXApiConfig()
         await fetchGrokConfig()
         alert('環境変数から設定を読み込み、保存しました')
+      } else {
+        const data = await response.json()
+        console.error('Auto setup failed:', data)
+        alert(`環境変数からの設定に失敗しました: ${data.error}`)
       }
     } catch (error) {
       console.error('Failed to auto setup:', error)
