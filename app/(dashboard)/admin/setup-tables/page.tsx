@@ -25,7 +25,7 @@ export default function SetupTablesPage() {
       } else {
         setResult({ error: data.error || '予期しないエラーが発生しました' })
       }
-    } catch (error) {
+    } catch {
       setResult({ error: 'テーブル作成に失敗しました' })
     } finally {
       setIsCreating(false)
