@@ -146,7 +146,7 @@ export default function ScheduledPostsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content: post.content
+          text: post.content
         })
       })
 

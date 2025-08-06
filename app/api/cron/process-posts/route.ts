@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
         if (post.platform === 'x') {
           // X APIの設定を取得
           const { data: settings } = await supabase
-            .from('x_api_settings')
+            .from('x_api_configs')
             .select('*')
             .single()
           

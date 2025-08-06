@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     try {
       // X APIの設定を取得
       const { data: settings } = await supabase
-        .from('x_api_settings')
+        .from('x_api_configs')
         .select('*')
         .single()
       
