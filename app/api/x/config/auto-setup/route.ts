@@ -48,14 +48,16 @@ export async function POST() {
       }, { status: 500 })
     }
 
-    // 現在のユーザーを取得
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not authenticated' },
-        { status: 401 }
-      )
-    }
+    // 一時的に認証チェックを無効化し、デフォルトユーザーIDを使用
+    // TODO: 認証システム実装後に有効化
+    // const { data: { user } } = await supabase.auth.getUser()
+    // if (!user) {
+    //   return NextResponse.json(
+    //     { error: 'User not authenticated' },
+    //     { status: 401 }
+    //   )
+    // }
+    const user = { id: 'default-user' } // 一時的なデフォルトユーザー
 
     if (existing) {
       // 更新

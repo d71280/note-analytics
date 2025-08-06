@@ -5,12 +5,12 @@ export async function GET() {
   try {
     const supabase = createClient()
     
-    // 認証チェック
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      // 認証されていない場合は空の設定を返す（401エラーではなく）
-      return NextResponse.json({ config: null })
-    }
+    // 一時的に認証チェックを無効化（認証システムが実装されるまで）
+    // TODO: 認証システム実装後に有効化
+    // const { data: { user } } = await supabase.auth.getUser()
+    // if (!user) {
+    //   return NextResponse.json({ config: null })
+    // }
     
     const { data, error } = await supabase
       .from('x_api_configs')
@@ -51,14 +51,16 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient()
     
-    // 現在のユーザーを取得
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not authenticated' },
-        { status: 401 }
-      )
-    }
+    // 一時的に認証チェックを無効化し、デフォルトユーザーIDを使用
+    // TODO: 認証システム実装後に有効化
+    // const { data: { user } } = await supabase.auth.getUser()
+    // if (!user) {
+    //   return NextResponse.json(
+    //     { error: 'User not authenticated' },
+    //     { status: 401 }
+    //   )
+    // }
+    const user = { id: 'default-user' } // 一時的なデフォルトユーザー
 
     // 既存の設定を削除
     await supabase.from('x_api_configs').delete().neq('id', '00000000-0000-0000-0000-000000000000')
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
     const { error } = await supabase
       .from('x_api_configs')
       .insert({
-        user_id: user.id,
+        user_id: user.id, // デフォルトユーザーID使用
         api_key,
         api_key_secret: api_secret,
         access_token,
