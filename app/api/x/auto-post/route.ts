@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     let config
     try {
       config = getXApiConfig()
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: 'X API credentials not configured. Please set environment variables.' },
         { status: 500 }

@@ -39,10 +39,9 @@ export async function POST(request: NextRequest) {
     // ツイートを投稿
     try {
       // X APIの設定を取得
-      let config
       try {
-        config = getXApiConfig()
-      } catch (error) {
+        getXApiConfig()
+      } catch {
         throw new Error('X API credentials not configured. Please set environment variables.')
       }
       
@@ -127,7 +126,7 @@ export async function GET() {
       total: stats?.length || 0
     })
     
-  } catch (error) {
+  } catch {
     console.error('Get queue stats error:', error)
     return NextResponse.json(
       { error: 'Failed to get queue stats' },

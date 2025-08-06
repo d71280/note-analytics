@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     let config
     try {
       config = getXApiConfig()
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: 'X API credentials not configured. Please set environment variables.' },
         { status: 500 }
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
             })
 
           retweetedIds.push(id)
-        } catch (error) {
+        } catch {
           console.error(`Failed to retweet ${id}:`, error)
         }
       }
