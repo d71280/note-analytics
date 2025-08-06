@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FileText, TrendingUp, Settings, Share2, Search, Calendar, Brain, Database } from 'lucide-react'
+import { FileText, TrendingUp, Settings, Share2, Search, Calendar, Database } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -10,7 +10,6 @@ const navigation = [
   { name: 'トレンド', href: '/trends', icon: TrendingUp },
   { name: 'コンテンツ生成&配信', href: '/x-search', icon: Search },
   { name: 'スケジュール', href: '/schedule', icon: Calendar },
-  { name: '知識ベース', href: '/knowledge', icon: Brain },
   { name: 'X連携設定', href: '/settings', icon: Share2 },
   { name: 'データ管理', href: '/admin', icon: Settings },
   { name: 'DB状態確認', href: '/admin/db-check', icon: Database },
