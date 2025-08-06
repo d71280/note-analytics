@@ -12,5 +12,11 @@
         "Cache-Control": "no-cache"
       }
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/process-posts",
+      "schedule": "*/5 * * * *"
+    }
   ]
 }

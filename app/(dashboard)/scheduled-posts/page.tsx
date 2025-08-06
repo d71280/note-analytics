@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { Calendar, Clock, Edit, Trash2, Save, X as XIcon, Twitter, FileText, Globe, Loader2 } from 'lucide-react'
+import { Calendar, Clock, Edit, Trash2, Save, X as XIcon, Twitter, FileText, Globe, Loader2, Send } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -53,6 +53,7 @@ export default function ScheduledPostsPage() {
   const [editContent, setEditContent] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isPosting, setIsPosting] = useState<string | null>(null)
 
   useEffect(() => {
     fetchScheduledPosts()
@@ -129,6 +130,49 @@ export default function ScheduledPostsPage() {
     } catch (error) {
       console.error('Failed to delete post:', error)
       alert('削除に失敗しました')
+    }
+  }
+
+  const handlePostNow = async (post: ScheduledPost) => {
+    setIsPosting(post.id)
+    
+    try {
+      // プラットフォームに応じたAPIを呼び出す
+      const endpoint = post.platform === 'x' ? '/api/x/post' : 
+                      post.platform === 'note' ? '/api/note/post' : 
+                      '/api/wordpress/post'
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: post.content
+        })
+      })
+
+      if (response.ok) {
+        // 投稿成功したらステータスを更新
+        await fetch('/api/x/schedule/update-status', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: post.id,
+            status: 'posted',
+            posted_at: new Date().toISOString()
+          })
+        })
+        
+        await fetchScheduledPosts()
+        alert('投稿しました！')
+      } else {
+        const error = await response.json()
+        alert(`投稿に失敗しました: ${error.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Failed to post:', error)
+      alert('投稿に失敗しました')
+    } finally {
+      setIsPosting(null)
     }
   }
 
@@ -214,6 +258,19 @@ export default function ScheduledPostsPage() {
                           </div>
                           {post.status === 'pending' && (
                             <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handlePostNow(post)}
+                                disabled={isPosting === post.id}
+                                className="text-blue-600 hover:text-blue-700"
+                              >
+                                {isPosting === post.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Send className="h-4 w-4" />
+                                )}
+                              </Button>
                               <Button
                                 size="sm"
                                 variant="ghost"
