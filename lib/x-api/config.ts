@@ -6,35 +6,38 @@ export function getXApiConfig() {
   const accessTokenSecret = process.env.X_ACCESS_SECRET
   const bearerToken = process.env.X_BEARER_TOKEN
   
-  // Bearer token認証（X API v2推奨）
+  // OAuth 1.0a認証を優先（ツイート投稿に必須）
+  if (apiKey && apiSecret && accessToken && accessTokenSecret) {
+    return {
+      api_key: apiKey as string,
+      api_key_secret: apiSecret as string,
+      access_token: accessToken as string,
+      access_token_secret: accessTokenSecret as string,
+      bearer_token: bearerToken,
+      auth_method: 'oauth1' as const
+    }
+  }
+  
+  // Bearer tokenのみ（読み取り専用）
   if (bearerToken) {
     return {
-      api_key: apiKey,
-      api_key_secret: apiSecret,
-      access_token: accessToken,
-      access_token_secret: accessTokenSecret,
+      api_key: '',
+      api_key_secret: '',
+      access_token: '',
+      access_token_secret: '',
       bearer_token: bearerToken,
       auth_method: 'bearer' as const
     }
   }
   
-  // OAuth 1.0a認証（フォールバック）
+  // どちらの認証情報もない場合
   const missing = []
   if (!apiKey) missing.push('X_API_KEY')
   if (!apiSecret) missing.push('X_API_SECRET or X_API_KEY_SECRET')
   if (!accessToken) missing.push('X_ACCESS_TOKEN')
   if (!accessTokenSecret) missing.push('X_ACCESS_SECRET')
   
-  if (missing.length > 0) {
-    throw new Error(`Missing environment variables: ${missing.join(', ')}. For better compatibility, consider using X_BEARER_TOKEN instead.`)
-  }
   
-  return {
-    api_key: apiKey as string,
-    api_key_secret: apiSecret as string,
-    access_token: accessToken as string,
-    access_token_secret: accessTokenSecret as string,
-    bearer_token: undefined,
-    auth_method: 'oauth1' as const
-  }
+  throw new Error(`X API認証情報が設定されていません。ツイート投稿には以下が必要です: ${missing.join(', ')}`)
+}
 }

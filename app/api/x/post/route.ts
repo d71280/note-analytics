@@ -52,32 +52,10 @@ export async function POST(request: NextRequest) {
 
     let tweetResponse
 
-    // Bearer token認証を使用（X API v2推奨）
-    if (config.auth_method === 'bearer' && config.bearer_token) {
-      console.log('Using Bearer token authentication for X API v2')
-      tweetResponse = await axios.post(
-        TWITTER_API_URL,
-        tweetData,
-        {
-          headers: {
-            'Authorization': `Bearer ${config.bearer_token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-    } else {
-      // OAuth 1.0a署名を生成（フォールバック）
-      console.log('Using OAuth 1.0a authentication (fallback)')
-      
-      if (!config.api_key || !config.api_key_secret || !config.access_token || !config.access_token_secret) {
-        return NextResponse.json(
-          { 
-            error: 'OAuth credentials not properly configured',
-            suggestion: 'Please set X_BEARER_TOKEN for easier authentication'
-          },
-          { status: 500 }
-        )
-      }
+    // ツイート投稿はOAuth 1.0aが必須（Bearer Tokenはサポートされていない）
+    // X API v2の/2/tweetsエンドポイントはユーザーコンテキストが必要
+    if (config.api_key && config.api_key_secret && config.access_token && config.access_token_secret) {
+      console.log('Using OAuth 1.0a authentication for tweet posting')
       
       const oauth = new OAuth({
         consumer: {
@@ -114,6 +92,16 @@ export async function POST(request: NextRequest) {
             'Content-Type': 'application/json'
           }
         }
+      )
+    } else {
+      // OAuth 1.0a認証情報が不足
+      return NextResponse.json(
+        { 
+          error: 'ツイート投稿にはOAuth 1.0a認証が必要です',
+          details: 'X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRETの4つすべてを設定してください',
+          note: 'Bearer Tokenはツイート投稿をサポートしていません（読み取り専用）'
+        },
+        { status: 401 }
       )
     }
 
