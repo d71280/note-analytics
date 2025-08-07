@@ -11,14 +11,14 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // ファイルサイズチェック（10MB制限）
-    const maxSize = 10 * 1024 * 1024 // 10MB
+    // ファイルサイズチェック（5MB制限 - OpenAI APIの制限）
+    const maxSize = 5 * 1024 * 1024 // 5MB
     if (content.length > maxSize) {
       return NextResponse.json(
         { 
           error: 'PDFファイルが大きすぎます',
           details: `ファイルサイズ: ${Math.round(content.length / 1024 / 1024)}MB`,
-          hint: '10MB以下のPDFファイルをアップロードしてください'
+          hint: '5MB以下のPDFファイルをアップロードしてください。大きなPDFは分割するか、テキストのみを抽出してください。'
         },
         { status: 400 }
       )
@@ -104,8 +104,11 @@ export async function POST(request: NextRequest) {
           })
         })
 
+        console.log('OpenAI API response status:', openaiResponse.status)
+        
         if (openaiResponse.ok) {
           const openaiData = await openaiResponse.json()
+          console.log('OpenAI response data:', JSON.stringify(openaiData).substring(0, 200))
           
           if (openaiData.choices && openaiData.choices[0] && openaiData.choices[0].message) {
             const extractedContent = openaiData.choices[0].message.content
