@@ -5,8 +5,8 @@ import OAuth from 'oauth-1.0a'
 import crypto from 'crypto'
 import axios from 'axios'
 
-// v1.1 APIを使用（v2はツイート投稿のOAuth署名に問題があるため）
-const TWITTER_API_URL = 'https://api.twitter.com/1.1/statuses/update.json'
+// X API v2を使用（Free tierではv1.1にアクセスできない）
+const TWITTER_API_URL = 'https://api.twitter.com/2/tweets'
 
 export async function POST(request: NextRequest) {
   let tweetText = ''
@@ -53,14 +53,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ツイートデータを構築（v1.1 API形式）
-    const tweetData: { status: string; in_reply_to_status_id?: string } = { 
-      status: tweetText 
+    // ツイートデータを構築（v2 API形式）
+    const tweetData: { text: string; reply?: { in_reply_to_tweet_id: string } } = { 
+      text: tweetText 
     }
     
     // 返信の場合
     if (replyToId) {
-      tweetData.in_reply_to_status_id = replyToId
+      tweetData.reply = { in_reply_to_tweet_id: replyToId }
     }
 
     let tweetResponse
@@ -89,27 +89,19 @@ export async function POST(request: NextRequest) {
         secret: config.access_token_secret as string,
       }
 
-      // URLSearchParamsでデータをエンコード（v1.1 API形式）
-      const formData = new URLSearchParams()
-      formData.append('status', tweetData.status)
-      if (tweetData.in_reply_to_status_id) {
-        formData.append('in_reply_to_status_id', tweetData.in_reply_to_status_id)
-      }
-
       const requestData = {
         url: TWITTER_API_URL,
         method: 'POST',
-        data: Object.fromEntries(formData.entries()),
       }
 
-      // ツイートを投稿
+      // ツイートを投稿（v2 API形式）
       tweetResponse = await axios.post(
         TWITTER_API_URL,
-        formData.toString(),
+        tweetData,
         {
           headers: {
             ...oauth.toHeader(oauth.authorize(requestData, token)),
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/json'
           }
         }
       )
@@ -125,9 +117,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // v1.1 APIのレスポンス形式
+    // v2 APIのレスポンス形式
     const { data } = tweetResponse
-    const tweetId = data.id_str || data.id
+    const tweetId = data.data?.id
 
     // 投稿履歴を保存（オプション）
     try {
@@ -171,6 +163,18 @@ export async function POST(request: NextRequest) {
           { status: 401 }
         )
       } else if (error.response?.status === 403) {
+        // エラーコード453の場合（Free tier制限）
+        if (error.response?.data?.errors?.[0]?.code === 453) {
+          return NextResponse.json(
+            { 
+              error: 'Free tierの制限', 
+              details: error.response?.data,
+              message: 'Free tierではX API v1.1へのアクセスが制限されています。',
+              suggestion: 'X API v2を使用しています。権限設定を確認してください。'
+            },
+            { status: 403 }
+          )
+        }
         return NextResponse.json(
           { 
             error: 'Forbidden - Access denied', 
