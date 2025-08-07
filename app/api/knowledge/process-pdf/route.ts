@@ -10,6 +10,19 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+    
+    // ファイルサイズチェック（10MB制限）
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (content.length > maxSize) {
+      return NextResponse.json(
+        { 
+          error: 'PDFファイルが大きすぎます',
+          details: `ファイルサイズ: ${Math.round(content.length / 1024 / 1024)}MB`,
+          hint: '10MB以下のPDFファイルをアップロードしてください'
+        },
+        { status: 400 }
+      )
+    }
 
     // 環境変数の確認（デバッグ用）
     console.log('Environment check:', {
@@ -216,8 +229,14 @@ export async function POST(request: NextRequest) {
     }, { status: 500 })
   } catch (error) {
     console.error('PDF processing error:', error)
+    console.error('Error details:', error instanceof Error ? error.stack : error)
+    
     return NextResponse.json(
-      { error: 'Failed to process PDF' },
+      { 
+        error: 'Failed to process PDF',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        hint: 'PDFファイルが大きすぎる可能性があります。または、API設定を確認してください。'
+      },
       { status: 500 }
     )
   }
