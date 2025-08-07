@@ -5,7 +5,8 @@ import OAuth from 'oauth-1.0a'
 import crypto from 'crypto'
 import axios from 'axios'
 
-const TWITTER_API_URL = 'https://api.twitter.com/2/tweets'
+// v1.1 APIを使用（v2はツイート投稿のOAuth署名に問題があるため）
+const TWITTER_API_URL = 'https://api.twitter.com/1.1/statuses/update.json'
 
 export async function POST(request: NextRequest) {
   let tweetText = ''
@@ -38,16 +39,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ツイートデータを構築
-    const tweetData: { text: string; reply?: { in_reply_to_tweet_id: string } } = { 
-      text: tweetText 
+    // ツイートデータを構築（v1.1 API形式）
+    const tweetData: { status: string; in_reply_to_status_id?: string } = { 
+      status: tweetText 
     }
     
     // 返信の場合
     if (replyToId) {
-      tweetData.reply = {
-        in_reply_to_tweet_id: replyToId
-      }
+      tweetData.in_reply_to_status_id = replyToId
     }
 
     let tweetResponse
@@ -76,20 +75,27 @@ export async function POST(request: NextRequest) {
         secret: config.access_token_secret as string,
       }
 
+      // URLSearchParamsでデータをエンコード（v1.1 API形式）
+      const formData = new URLSearchParams()
+      formData.append('status', tweetData.status)
+      if (tweetData.in_reply_to_status_id) {
+        formData.append('in_reply_to_status_id', tweetData.in_reply_to_status_id)
+      }
+
       const requestData = {
         url: TWITTER_API_URL,
         method: 'POST',
-        data: tweetData,
+        data: Object.fromEntries(formData.entries()),
       }
 
       // ツイートを投稿
       tweetResponse = await axios.post(
         TWITTER_API_URL,
-        tweetData,
+        formData.toString(),
         {
           headers: {
             ...oauth.toHeader(oauth.authorize(requestData, token)),
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/x-www-form-urlencoded'
           }
         }
       )
@@ -105,7 +111,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: { id: tweetId } } = tweetResponse
+    // v1.1 APIのレスポンス形式
+    const { data } = tweetResponse
+    const tweetId = data.id_str || data.id
 
     // 投稿履歴を保存（オプション）
     try {
@@ -126,7 +134,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       tweetId,
-      url: `https://twitter.com/i/web/status/${tweetId}`
+      url: `https://twitter.com/user/status/${tweetId}`
     })
   } catch (error) {
     console.error('Tweet error:', error)
