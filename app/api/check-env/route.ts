@@ -10,13 +10,7 @@ export async function GET() {
     hasGeminiKey: !!process.env.GEMINI_API_KEY,
     hasXApiKey: !!process.env.X_API_KEY,
     hasXBearerToken: !!process.env.X_BEARER_TOKEN,
-    hasGrokKey: !!process.env.GROK_API_KEY,
-    hasOpenAIKey: !!process.env.OPENAI_API_KEY,
-    openAIKeyLength: process.env.OPENAI_API_KEY?.length || 0,
-    // 最初の数文字だけ表示（デバッグ用）
-    openAIKeyPrefix: process.env.OPENAI_API_KEY ? 
-      process.env.OPENAI_API_KEY.substring(0, 10) + '...' : 
-      'NOT SET'
+    hasGrokKey: !!process.env.GROK_API_KEY
   }
 
   return NextResponse.json({
