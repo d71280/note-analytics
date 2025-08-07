@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
     // OAuth 1.0a設定
     const oauth = new OAuth({
       consumer: {
-        key: config.api_key,
-        secret: config.api_key_secret
+        key: config.api_key as string,
+        secret: config.api_key_secret as string
       },
       signature_method: 'HMAC-SHA1',
       hash_function(base_string, key) {
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
     })
 
     const token = {
-      key: config.access_token,
-      secret: config.access_token_secret,
+      key: config.access_token as string,
+      secret: config.access_token_secret as string,
     }
 
     // まず認証をテスト

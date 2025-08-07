@@ -68,10 +68,21 @@ export async function POST(request: NextRequest) {
     } else {
       // OAuth 1.0a署名を生成（フォールバック）
       console.log('Using OAuth 1.0a authentication (fallback)')
+      
+      if (!config.api_key || !config.api_key_secret || !config.access_token || !config.access_token_secret) {
+        return NextResponse.json(
+          { 
+            error: 'OAuth credentials not properly configured',
+            suggestion: 'Please set X_BEARER_TOKEN for easier authentication'
+          },
+          { status: 500 }
+        )
+      }
+      
       const oauth = new OAuth({
         consumer: {
-          key: config.api_key,
-          secret: config.api_key_secret
+          key: config.api_key as string,
+          secret: config.api_key_secret as string
         },
         signature_method: 'HMAC-SHA1',
         hash_function(base_string, key) {
@@ -83,8 +94,8 @@ export async function POST(request: NextRequest) {
       })
 
       const token = {
-        key: config.access_token,
-        secret: config.access_token_secret,
+        key: config.access_token as string,
+        secret: config.access_token_secret as string,
       }
 
       const requestData = {
