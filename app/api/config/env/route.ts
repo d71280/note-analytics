@@ -12,6 +12,7 @@ export async function GET() {
   // API情報が設定されているかチェック
   const hasXConfig = !!(xApiKey && xApiSecret && xAccessToken && xAccessSecret)
   const hasGrokConfig = !!grokApiKey
+  const hasBearerToken = !!xBearerToken
 
   return NextResponse.json({
     x: {
@@ -20,7 +21,8 @@ export async function GET() {
       api_key: hasXConfig && xApiKey ? `${xApiKey.substring(0, 4)}...${xApiKey.slice(-4)}` : '',
       api_secret: hasXConfig && xApiSecret ? `${xApiSecret.substring(0, 4)}...${xApiSecret.slice(-4)}` : '',
       access_token: hasXConfig && xAccessToken ? `${xAccessToken.substring(0, 4)}...${xAccessToken.slice(-4)}` : '',
-      access_token_secret: hasXConfig && xAccessSecret ? `${xAccessSecret.substring(0, 4)}...${xAccessSecret.slice(-4)}` : ''
+      access_token_secret: hasXConfig && xAccessSecret ? `${xAccessSecret.substring(0, 4)}...${xAccessSecret.slice(-4)}` : '',
+      bearer_token: hasBearerToken && xBearerToken ? `${xBearerToken.substring(0, 4)}...${xBearerToken.slice(-4)}` : ''
     },
     grok: {
       configured: hasGrokConfig,
