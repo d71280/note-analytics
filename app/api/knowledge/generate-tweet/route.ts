@@ -191,15 +191,26 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         console.error('Grok API error:', error)
-        generatedTweet = `知識ベースを活用した返信：\n\n${userPrompt}\n\n#AI #ツイート生成`
+        // エラーの場合は空文字列を返す
+        return NextResponse.json(
+          { 
+            error: 'AI生成に失敗しました',
+            details: error instanceof Error ? error.message : 'Unknown error'
+          },
+          { status: 500 }
+        )
       }
     } else {
-      console.log('No Grok API available, using fallback')
-      // フォールバック: シンプルなテキスト生成
-      generatedTweet = `知識ベースを活用した返信：\n\n${userPrompt}\n\n#AI #知識活用 #ツイート`
+      console.log('No Grok API available')
+      // Grok APIが設定されていない場合はエラーを返す
+      return NextResponse.json(
+        { 
+          error: 'Grok APIが設定されていません',
+          details: 'GROK_API_KEYを環境変数に設定してください'
+        },
+        { status: 500 }
+      )
     }
-
-    console.log('Generated tweet:', generatedTweet)
 
     return NextResponse.json({
       success: true,
