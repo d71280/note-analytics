@@ -50,43 +50,61 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // OAuth 1.0a署名を生成
-    const oauth = new OAuth({
-      consumer: {
-        key: config.api_key,
-        secret: config.api_key_secret
-      },
-      signature_method: 'HMAC-SHA1',
-      hash_function(base_string, key) {
-        return crypto
-          .createHmac('sha1', key)
-          .update(base_string)
-          .digest('base64')
-      },
-    })
+    let tweetResponse
 
-    const token = {
-      key: config.access_token,
-      secret: config.access_token_secret,
-    }
-
-    const requestData = {
-      url: TWITTER_API_URL,
-      method: 'POST',
-      data: tweetData,
-    }
-
-    // ツイートを投稿
-    const tweetResponse = await axios.post(
-      TWITTER_API_URL,
-      tweetData,
-      {
-        headers: {
-          ...oauth.toHeader(oauth.authorize(requestData, token)),
-          'Content-Type': 'application/json'
+    // Bearer token認証を使用（X API v2推奨）
+    if (config.auth_method === 'bearer' && config.bearer_token) {
+      console.log('Using Bearer token authentication for X API v2')
+      tweetResponse = await axios.post(
+        TWITTER_API_URL,
+        tweetData,
+        {
+          headers: {
+            'Authorization': `Bearer ${config.bearer_token}`,
+            'Content-Type': 'application/json'
+          }
         }
+      )
+    } else {
+      // OAuth 1.0a署名を生成（フォールバック）
+      console.log('Using OAuth 1.0a authentication (fallback)')
+      const oauth = new OAuth({
+        consumer: {
+          key: config.api_key,
+          secret: config.api_key_secret
+        },
+        signature_method: 'HMAC-SHA1',
+        hash_function(base_string, key) {
+          return crypto
+            .createHmac('sha1', key)
+            .update(base_string)
+            .digest('base64')
+        },
+      })
+
+      const token = {
+        key: config.access_token,
+        secret: config.access_token_secret,
       }
-    )
+
+      const requestData = {
+        url: TWITTER_API_URL,
+        method: 'POST',
+        data: tweetData,
+      }
+
+      // ツイートを投稿
+      tweetResponse = await axios.post(
+        TWITTER_API_URL,
+        tweetData,
+        {
+          headers: {
+            ...oauth.toHeader(oauth.authorize(requestData, token)),
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+    }
 
     const { data: { id: tweetId } } = tweetResponse
 
@@ -114,10 +132,40 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Tweet error:', error)
     
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
+    if (axios.isAxiosError(error)) {
+      console.error('X API Error Details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers
+      })
+      
+      if (error.response?.status === 401) {
+        return NextResponse.json(
+          { 
+            error: 'Invalid or expired access token', 
+            details: error.response?.data,
+            message: 'X API認証に失敗しました。Bearer token (X_BEARER_TOKEN) を設定するか、Access token (X_ACCESS_TOKEN/X_ACCESS_SECRET) を再生成してください。' 
+          },
+          { status: 401 }
+        )
+      } else if (error.response?.status === 429) {
+        return NextResponse.json(
+          { 
+            error: 'Rate limit exceeded',
+            message: 'X APIのレート制限に達しました。しばらく待ってから再試行してください。'
+          },
+          { status: 429 }
+        )
+      }
+      
       return NextResponse.json(
-        { error: 'Invalid or expired access token. Please check your environment variables.' },
-        { status: 401 }
+        { 
+          error: error.response?.data?.detail || error.response?.data?.error || 'X API error',
+          status: error.response?.status,
+          message: 'X APIからエラーが返されました。'
+        },
+        { status: error.response?.status || 500 }
       )
     }
 
