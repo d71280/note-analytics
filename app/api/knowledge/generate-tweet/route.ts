@@ -91,30 +91,22 @@ export async function POST(request: NextRequest) {
         ? `以下の知識ベースの情報を参考にして、「${prompt}」についてのコンテンツを生成してください：\n\n${knowledgeContent}`
         : `以下の知識ベースの情報を参考にして、魅力的なコンテンツを生成してください：\n\n${knowledgeContent}`)
     
-    // Grok APIキーを環境変数から取得
-    const grokApiKey = process.env.GROK_API_KEY
-    console.log('Grok API available:', !!grokApiKey)
-    console.log('Grok API key preview:', grokApiKey ? `${grokApiKey.substring(0, 10)}...` : 'NOT_FOUND')
-    
-    // APIキーが設定されていない場合は早期リターン
-    if (!grokApiKey) {
-      console.error('GROK_API_KEY is not configured')
-      return NextResponse.json(
-        { 
-          error: 'Grok APIが設定されていません',
-          details: 'GROK_API_KEYを環境変数に設定してください',
-          message: 'AIコンテンツ生成にはGrok APIキーが必要です。環境変数を確認してください。'
-        },
-        { status: 500 }
-      )
-    }
-    
     let generatedTweet = ''
+    let aiModel = 'fallback'
     
+    // AI生成を試行（Grok → Gemini → シンプルな文字列）
+    const grokApiKey = process.env.GROK_API_KEY
+    const geminiApiKey = process.env.GEMINI_API_KEY
+    
+    console.log('AI service availability:', {
+      grok: !!grokApiKey,
+      gemini: !!geminiApiKey
+    })
+    
+    // 1. Grok APIを試行
     if (grokApiKey) {
-      console.log('Using Grok API for generation...')
+      console.log('Trying Grok API...')
       try {
-        // Grok APIを直接呼び出し
         const grokResponse = await fetch('https://api.x.ai/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -150,94 +142,121 @@ export async function POST(request: NextRequest) {
             model: 'grok-2-latest',
             stream: false,
             temperature: 0.7,
-            max_tokens: platform === 'x' ? 60 : 500 // Xは非常に短く制限
+            max_tokens: platform === 'x' ? 60 : 500
           })
         })
         
-        if (!grokResponse.ok) {
-          const errorText = await grokResponse.text()
-          console.error('Grok API response error:', {
-            status: grokResponse.status,
-            statusText: grokResponse.statusText,
-            headers: Object.fromEntries(grokResponse.headers.entries()),
-            body: errorText
-          })
-          throw new Error(`Grok API failed: ${grokResponse.status} - ${errorText}`)
-        }
-        
-        const grokData = await grokResponse.json()
-        console.log('Grok API response:', JSON.stringify(grokData, null, 2))
-        
-        if (grokData.choices && grokData.choices[0] && grokData.choices[0].message) {
-          generatedTweet = grokData.choices[0].message.content || ''
-          
-          // Xの場合は積極的にトリミング
-          if (platform === 'x') {
-            // 改行で分割して最初の文だけを取る
-            const firstSentence = generatedTweet.split('\n')[0]
-            generatedTweet = firstSentence
-            
-            // それでも長い場合は強制的にトリミング
-            if (generatedTweet.length > maxLength) {
-              console.log(`Tweet too long (${generatedTweet.length} chars), trimming to ${maxLength}`)
-              // 句読点で区切って短くする
-              const sentences = generatedTweet.split(/[。！？]/)
-              let trimmed = ''
-              for (const sentence of sentences) {
-                if ((trimmed + sentence).length <= maxLength - 10) {
-                  trimmed += sentence + '。'
-                } else {
-                  break
-                }
-              }
-              
-              // それでも長い場合は強制カット
-              if (trimmed.length === 0 || trimmed.length > maxLength) {
-                generatedTweet = generatedTweet.substring(0, maxLength - 3) + '...'
-              } else {
-                generatedTweet = trimmed
-              }
-            }
-          }
-          console.log(`Generated tweet (${generatedTweet.length} chars):`, generatedTweet)
-          
-          // 空のレスポンスの場合はエラーとして扱う
-          if (!generatedTweet.trim()) {
-            console.warn('Grok returned empty content, using fallback')
-            throw new Error('Grok returned empty content')
+        if (grokResponse.ok) {
+          const grokData = await grokResponse.json()
+          if (grokData.choices && grokData.choices[0] && grokData.choices[0].message) {
+            generatedTweet = grokData.choices[0].message.content || ''
+            aiModel = 'grok-2-latest'
+            console.log('Grok API success!')
           }
         } else {
-          console.error('Unexpected Grok API response structure:', grokData)
-          throw new Error('Invalid response structure from Grok API')
+          const errorText = await grokResponse.text()
+          console.warn(`Grok API failed (${grokResponse.status}):`, errorText)
+          // 429エラー（レート制限）や支払い制限の場合は警告を出してフォールバック
+          if (grokResponse.status === 429) {
+            console.log('Grok API rate limited or spending limit reached, falling back to alternative')
+          }
         }
       } catch (error) {
-        console.error('Grok API error:', error)
-        // エラーの場合は空文字列を返す
-        return NextResponse.json(
-          { 
-            error: 'AI生成に失敗しました',
-            details: error instanceof Error ? error.message : 'Unknown error'
-          },
-          { status: 500 }
-        )
+        console.warn('Grok API error:', error instanceof Error ? error.message : 'Unknown error')
       }
-    } else {
-      console.log('No Grok API available')
-      // Grok APIが設定されていない場合はエラーを返す
-      return NextResponse.json(
-        { 
-          error: 'Grok APIが設定されていません',
-          details: 'GROK_API_KEYを環境変数に設定してください'
-        },
-        { status: 500 }
-      )
     }
+    
+    // 2. Grokが失敗した場合、Gemini APIを試行
+    if (!generatedTweet && geminiApiKey) {
+      console.log('Falling back to Gemini API...')
+      try {
+        const { GoogleGenerativeAI } = await import('@google/generative-ai')
+        const genAI = new GoogleGenerativeAI(geminiApiKey)
+        const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+
+        const systemPrompt = platform === 'x' 
+          ? `あなたはX(Twitter)の投稿専門家です。${maxLength}文字以内で簡潔なツイートを生成してください。`
+          : `あなたはコンテンツ生成の専門家です。${maxLength}文字以内で魅力的なコンテンツを生成してください。`
+        
+        const fullPrompt = `${systemPrompt}\n\n${userPrompt}`
+        const result = await model.generateContent(fullPrompt)
+        const response = await result.response
+        generatedTweet = response.text() || ''
+        aiModel = 'gemini-pro'
+        console.log('Gemini API success!')
+      } catch (error) {
+        console.warn('Gemini API error:', error instanceof Error ? error.message : 'Unknown error')
+      }
+    }
+    
+    // 3. 全てのAIが失敗した場合、知識ベースからシンプルなコンテンツを生成
+    if (!generatedTweet) {
+      console.log('All AI services failed, generating simple content from knowledge base...')
+      
+      if (knowledgeItems.length > 0) {
+        const randomItem = knowledgeItems[Math.floor(Math.random() * knowledgeItems.length)]
+        const tags = randomItem.tags?.slice(0, 2) || []
+        const hashTags = tags.map(tag => `#${tag}`).join(' ')
+        
+        if (platform === 'x') {
+          // Twitter用のシンプルなフォーマット
+          generatedTweet = `${randomItem.title}について学習中。${randomItem.content.substring(0, 200)}... ${hashTags}`.substring(0, maxLength)
+        } else {
+          generatedTweet = `${randomItem.title}についての要点をまとめました。${randomItem.content.substring(0, maxLength - randomItem.title.length - 50)}...`
+        }
+        
+        aiModel = 'template-based'
+        console.log('Generated template-based content')
+      } else {
+        // 最終的なフォールバック
+        const defaultContent = platform === 'x' 
+          ? '今日も新しいことを学び続けています。知識は力なり。#学習 #成長'
+          : '継続的な学習と成長を通じて、価値のあるコンテンツをお届けしています。'
+        
+        generatedTweet = defaultContent.substring(0, maxLength)
+        aiModel = 'default-fallback'
+        console.log('Used default fallback content')
+      }
+    }
+    
+    // 文字数制限を適用（最終チェック）
+    if (generatedTweet.length > maxLength) {
+      console.log(`Content too long (${generatedTweet.length}), trimming to ${maxLength}`)
+      
+      if (platform === 'x') {
+        // Twitter用の積極的なトリミング
+        const firstSentence = generatedTweet.split('\n')[0]
+        generatedTweet = firstSentence
+        
+        if (generatedTweet.length > maxLength) {
+          const sentences = generatedTweet.split(/[。！？]/)
+          let trimmed = ''
+          for (const sentence of sentences) {
+            if ((trimmed + sentence).length <= maxLength - 10) {
+              trimmed += sentence + '。'
+            } else {
+              break
+            }
+          }
+          
+          if (trimmed.length === 0 || trimmed.length > maxLength) {
+            generatedTweet = generatedTweet.substring(0, maxLength - 3) + '...'
+          } else {
+            generatedTweet = trimmed
+          }
+        }
+      } else {
+        generatedTweet = generatedTweet.substring(0, maxLength - 3) + '...'
+      }
+    }
+    
+    console.log(`Final generated content (${generatedTweet.length} chars):`, generatedTweet)
 
     return NextResponse.json({
       success: true,
       tweet: generatedTweet,
       usedKnowledge: knowledgeItems?.length || 0,
-      model: grokApiKey ? 'grok-2-latest' : 'fallback',
+      model: aiModel,
       knowledgeItems: knowledgeItems?.map(item => ({ 
         title: item.title, 
         content_type: item.content_type 

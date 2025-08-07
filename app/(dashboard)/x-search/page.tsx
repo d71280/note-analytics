@@ -106,10 +106,20 @@ export default function ContentGenerationPage() {
             message: errorData.message,
             fullResponse: errorData
           })
-          if (errorData.message || errorData.error) {
-            alert(errorData.message || errorData.error || 'コンテンツ生成に失敗しました')
-            break // エラーが発生したら生成を中止
+          
+          // より詳細なエラーメッセージを表示
+          let userMessage = 'コンテンツ生成に失敗しました'
+          if (response.status === 429) {
+            userMessage = 'API制限に達しました。しばらく待ってから再試行してください。'
+          } else if (response.status >= 500) {
+            userMessage = 'サーバーエラーが発生しました。しばらく待ってから再試行してください。'
+          } else if (errorData.message || errorData.error) {
+            userMessage = errorData.message || errorData.error
           }
+          
+          alert(userMessage)
+          console.warn(`Stopping generation after error on attempt ${i + 1}/${contentsToGenerate}`)
+          break // エラーが発生したら生成を中止
         }
         
         // API制限を避けるため少し待機
