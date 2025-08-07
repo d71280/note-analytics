@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
           .from('knowledge_base')
           .select('title, content, content_type, tags')
           .order('created_at', { ascending: false })
-          .limit(10) // 最新10件を取得
+          .limit(50) // 最新50件を取得して多様性を確保
 
         if (error) {
           console.error('Knowledge base fetch error:', error)
@@ -123,12 +123,12 @@ export async function POST(request: NextRequest) {
 【絶対条件】
 - 出力は${maxLength}文字以内に収める
 - 1つの短い文章で完結させる
-- ハッシュタグも含めて${maxLength}文字以内
+- ハッシュタグ（#から始まる単語）は絶対に含めない
 - 長い説明や複数段落は絶対に生成しない
 - 簡潔で印象的な内容にする
 
 出力例（${maxLength}文字以内）:
-「今日学んだこと：AIツールは使い方次第で生産性が10倍変わる。プロンプトの質が結果の質を決める。#AI活用 #生産性向上」`
+「今日学んだこと：AIツールは使い方次第で生産性が10倍変わる。プロンプトの質が結果の質を決める。」`
                   : platform === 'note'
                   ? `あなたはNoteの記事要約を生成する専門家です。
 必ず${maxLength}文字以内で、簡潔な要約を1つだけ生成してください。`
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
         const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
 
         const systemPrompt = platform === 'x' 
-          ? `あなたはX(Twitter)の投稿専門家です。${maxLength}文字以内で簡潔なツイートを生成してください。`
+          ? `あなたはX(Twitter)の投稿専門家です。${maxLength}文字以内で簡潔なツイートを生成してください。ハッシュタグ（#から始まる単語）は絶対に含めないでください。`
           : `あなたはコンテンツ生成の専門家です。${maxLength}文字以内で魅力的なコンテンツを生成してください。`
         
         const fullPrompt = `${systemPrompt}\n\n${userPrompt}`
@@ -195,12 +195,10 @@ export async function POST(request: NextRequest) {
       
       if (knowledgeItems.length > 0) {
         const randomItem = knowledgeItems[Math.floor(Math.random() * knowledgeItems.length)]
-        const tags = randomItem.tags?.slice(0, 2) || []
-        const hashTags = tags.map(tag => `#${tag}`).join(' ')
         
         if (platform === 'x') {
           // Twitter用のシンプルなフォーマット
-          generatedTweet = `${randomItem.title}について学習中。${randomItem.content.substring(0, 200)}... ${hashTags}`.substring(0, maxLength)
+          generatedTweet = `${randomItem.title}について学習中。${randomItem.content.substring(0, 200)}...`.substring(0, maxLength)
         } else {
           generatedTweet = `${randomItem.title}についての要点をまとめました。${randomItem.content.substring(0, maxLength - randomItem.title.length - 50)}...`
         }
@@ -210,7 +208,7 @@ export async function POST(request: NextRequest) {
       } else {
         // 最終的なフォールバック
         const defaultContent = platform === 'x' 
-          ? '今日も新しいことを学び続けています。知識は力なり。#学習 #成長'
+          ? '今日も新しいことを学び続けています。知識は力なり。'
           : '継続的な学習と成長を通じて、価値のあるコンテンツをお届けしています。'
         
         generatedTweet = defaultContent.substring(0, maxLength)
