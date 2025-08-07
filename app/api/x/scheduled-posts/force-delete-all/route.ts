@@ -18,7 +18,16 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Service Roleクライアントを使用（RLSを完全バイパス）
-    const adminClient = createAdminClient()
+    let adminClient
+    try {
+      adminClient = createAdminClient()
+      console.log('Using admin client with Service Role')
+    } catch (error) {
+      console.log('Service Role not available, using regular client:', error)
+      // Service Roleがない場合は通常クライアントを使用
+      const { createClient } = await import('@/lib/supabase/server')
+      adminClient = createClient()
+    }
     
     console.log('Force delete all: Starting...')
     

@@ -16,7 +16,16 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const adminClient = createAdminClient()
+    // Adminクライアントを取得
+    let adminClient
+    try {
+      adminClient = createAdminClient()
+      console.log('Using admin client with Service Role')
+    } catch (error) {
+      console.log('Service Role not available, using regular client:', error)
+      const { createClient } = await import('@/lib/supabase/server')
+      adminClient = createClient()
+    }
     
     console.log('SQL Delete: Starting...')
     
