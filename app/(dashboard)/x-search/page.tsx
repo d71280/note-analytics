@@ -96,6 +96,13 @@ export default function ContentGenerationPage() {
               platform: activeTab
             })
           }
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          console.error('Generate tweet API error:', errorData)
+          if (errorData.message) {
+            alert(errorData.message)
+            break // エラーが発生したら生成を中止
+          }
         }
         
         // API制限を避けるため少し待機

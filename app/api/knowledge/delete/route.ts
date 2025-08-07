@@ -14,7 +14,7 @@ export async function DELETE(request: NextRequest) {
 
     console.log('Deleting knowledge base item with ID:', id)
     
-    const supabase = await createClient()
+    const supabase = createClient()
     
     // まず関連するchunksを削除（存在する場合）
     const { data: chunks, error: chunksError } = await supabase

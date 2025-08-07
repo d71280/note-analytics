@@ -21,7 +21,7 @@ export async function GET() {
     }
     
     // Supabaseクライアントを作成
-    const supabase = await createClient()
+    const supabase = createClient()
     
     // データベース接続テスト - knowledge_baseテーブルの件数を取得
     const { count, error: countError } = await supabase
