@@ -2,11 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FileText, TrendingUp, Search, Brain, ListOrdered } from 'lucide-react'
+import { TrendingUp, Search, Brain, ListOrdered } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
-  { name: '記事分析', href: '/analyze', icon: FileText },
   { name: 'トレンド', href: '/trends', icon: TrendingUp },
   { name: 'コンテンツ生成&配信', href: '/x-search', icon: Search },
   { name: '知識ベース', href: '/knowledge', icon: Brain },

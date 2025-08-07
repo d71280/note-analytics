@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { Calendar, Clock, Edit, Trash2, Save, X as XIcon, Twitter, FileText, Globe, Loader2, Send } from 'lucide-react'
+import { Calendar, Clock, Edit, Trash2, Save, X as XIcon, Twitter, FileText, Globe, Loader2, Send, CheckSquare, Square } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -55,6 +55,8 @@ export default function ScheduledPostsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isPosting, setIsPosting] = useState<string | null>(null)
   const [isDeletingFailed, setIsDeletingFailed] = useState(false)
+  const [selectedPosts, setSelectedPosts] = useState<Set<string>>(new Set())
+  const [isDeletingSelected, setIsDeletingSelected] = useState(false)
 
   useEffect(() => {
     fetchScheduledPosts()
@@ -192,6 +194,54 @@ export default function ScheduledPostsPage() {
     }
   }
 
+  const toggleSelectPost = (postId: string) => {
+    const newSelected = new Set(selectedPosts)
+    if (newSelected.has(postId)) {
+      newSelected.delete(postId)
+    } else {
+      newSelected.add(postId)
+    }
+    setSelectedPosts(newSelected)
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedPosts.size === posts.length) {
+      setSelectedPosts(new Set())
+    } else {
+      setSelectedPosts(new Set(posts.map(p => p.id)))
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedPosts.size === 0) {
+      alert('削除する投稿を選択してください')
+      return
+    }
+
+    if (!confirm(`${selectedPosts.size}件の投稿を削除してもよろしいですか？`)) return
+
+    setIsDeletingSelected(true)
+    try {
+      const response = await fetch('/api/x/scheduled-posts/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedPosts) })
+      })
+
+      if (response.ok) {
+        setSelectedPosts(new Set())
+        await fetchScheduledPosts()
+      } else {
+        alert('削除に失敗しました')
+      }
+    } catch (error) {
+      console.error('Failed to delete selected posts:', error)
+      alert('削除に失敗しました')
+    } finally {
+      setIsDeletingSelected(false)
+    }
+  }
+
   const handlePostNow = async (post: ScheduledPost) => {
     setIsPosting(post.id)
     
@@ -275,6 +325,25 @@ export default function ScheduledPostsPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            {selectedPosts.size > 0 && (
+              <Button
+                onClick={handleDeleteSelected}
+                variant="destructive"
+                disabled={isDeletingSelected}
+              >
+                {isDeletingSelected ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    削除中...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    選択した{selectedPosts.size}件を削除
+                  </>
+                )}
+              </Button>
+            )}
             {posts.some(p => p.status === 'failed') && (
               <Button
                 onClick={handleDeleteFailedPosts}
@@ -326,16 +395,47 @@ export default function ScheduledPostsPage() {
             
             return (
               <div key={platform}>
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <Icon className="h-5 w-5" />
-                  {platformNames[platform as keyof typeof platformNames]}
-                </h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <Icon className="h-5 w-5" />
+                    {platformNames[platform as keyof typeof platformNames]}
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleSelectAll}
+                  >
+                    {selectedPosts.size === posts.length ? (
+                      <>
+                        <CheckSquare className="mr-2 h-4 w-4" />
+                        すべて選択解除
+                      </>
+                    ) : (
+                      <>
+                        <Square className="mr-2 h-4 w-4" />
+                        すべて選択
+                      </>
+                    )}
+                  </Button>
+                </div>
                 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {platformPosts.map((post) => (
                     <Card key={post.id} className="hover:shadow-lg transition-shadow">
                       <CardHeader>
                         <div className="flex justify-between items-start">
+                          <div className="flex items-start gap-2">
+                            <button
+                              onClick={() => toggleSelectPost(post.id)}
+                              className="mt-1"
+                            >
+                              {selectedPosts.has(post.id) ? (
+                                <CheckSquare className="h-5 w-5 text-blue-600" />
+                              ) : (
+                                <Square className="h-5 w-5 text-gray-400" />
+                              )}
+                            </button>
+                          </div>
                           <div className="flex-1">
                             <CardTitle className="text-sm">
                               {format(new Date(post.scheduled_at), 'M月d日 HH:mm', { locale: ja })}
