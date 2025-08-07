@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getXApiConfig } from '@/lib/x-api/config'
+import OAuth from 'oauth-1.0a'
+import crypto from 'crypto'
 import axios from 'axios'
 
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets'
@@ -48,13 +50,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // OAuth 1.0a署名を生成
+    const oauth = new OAuth({
+      consumer: {
+        key: config.api_key,
+        secret: config.api_key_secret
+      },
+      signature_method: 'HMAC-SHA1',
+      hash_function(base_string, key) {
+        return crypto
+          .createHmac('sha1', key)
+          .update(base_string)
+          .digest('base64')
+      },
+    })
+
+    const token = {
+      key: config.access_token,
+      secret: config.access_token_secret,
+    }
+
+    const requestData = {
+      url: TWITTER_API_URL,
+      method: 'POST',
+      data: tweetData,
+    }
+
     // ツイートを投稿
     const tweetResponse = await axios.post(
       TWITTER_API_URL,
       tweetData,
       {
         headers: {
-          'Authorization': `Bearer ${config.access_token}`,
+          ...oauth.toHeader(oauth.authorize(requestData, token)),
           'Content-Type': 'application/json'
         }
       }
