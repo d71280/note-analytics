@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     for (const id of ids) {
       try {
         // 直接SQLを実行してRLSを回避
-        const { data, error } = await supabase.rpc('delete_tweet_queue_by_id', {
+        const { error } = await supabase.rpc('delete_tweet_queue_by_id', {
           target_id: id
         })
         

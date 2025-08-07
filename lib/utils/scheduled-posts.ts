@@ -16,9 +16,9 @@ export interface ScheduledPost {
 }
 
 // Determine which table to use based on what exists and has data
-async function getTableName(supabase: any): Promise<string> {
+async function getTableName(supabase: ReturnType<typeof createClient> | ReturnType<typeof createAdminClient>): Promise<string> {
   // Try tweet_queue first (appears to be the active table)
-  const { data: tweetQueueData, error: tweetQueueError } = await supabase
+  const { error: tweetQueueError } = await supabase
     .from('tweet_queue')
     .select('id')
     .limit(1)
@@ -92,7 +92,12 @@ export async function deleteScheduledPost(id: string): Promise<boolean> {
   return false
 }
 
-export async function deleteAllScheduledPosts(): Promise<{ success: boolean; deleted: number; errors?: any[] }> {
+interface DeleteError {
+  id: string
+  error: string
+}
+
+export async function deleteAllScheduledPosts(): Promise<{ success: boolean; deleted: number; errors?: DeleteError[] }> {
   const supabase = createClient()
   const adminClient = createAdminClient()
   const tableName = await getTableName(supabase)
