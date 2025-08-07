@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Brain, Plus, Edit, Trash2, Save, X as XIcon, FileText, Loader2, Upload } from 'lucide-react'
+import { Brain, Plus, Edit, Trash2, Save, X as XIcon, FileText, Loader2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
 interface KnowledgeItem {
@@ -32,7 +32,6 @@ export default function KnowledgePage() {
     tags: []
   })
   const [tagInput, setTagInput] = useState('')
-  const [isUploading, setIsUploading] = useState(false)
 
   useEffect(() => {
     fetchKnowledgeItems()
@@ -123,63 +122,6 @@ export default function KnowledgePage() {
     setFormData({ ...formData, tags })
   }
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setIsUploading(true)
-
-    try {
-      let content = ''
-      let title = file.name.replace(/\.[^/.]+$/, '') // 拡張子を除いたファイル名
-
-      if (file.type === 'application/pdf') {
-        // PDFの場合はpdf.jsでテキスト抽出
-        const pdfjsLib = (await import('pdfjs-dist')).default
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
-        
-        const arrayBuffer = await file.arrayBuffer()
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-        
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i)
-          const textContent = await page.getTextContent()
-          const pageText = textContent.items
-            .map((item: any) => item.str)
-            .join(' ')
-          content += `\n\n=== ページ ${i} ===\n${pageText}`
-        }
-      } else {
-        // テキストファイルの場合は直接読み込み
-        content = await file.text()
-      }
-
-      // 知識ベースに保存
-      const response = await fetch('/api/knowledge/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title,
-          content: content,
-          content_type: 'document',
-          tags: [file.type === 'application/pdf' ? 'PDF' : 'テキスト', 'アップロード']
-        })
-      })
-
-      if (response.ok) {
-        await fetchKnowledgeItems()
-        alert(`ファイル「${file.name}」を知識ベースに追加しました`)
-      } else {
-        const error = await response.json()
-        alert(`保存に失敗しました: ${error.message || 'Unknown error'}`)
-      }
-    } catch (error) {
-      console.error('Upload error:', error)
-      alert('ファイルの処理に失敗しました')
-    } finally {
-      setIsUploading(false)
-    }
-  }
 
   if (isLoading) {
     return (
@@ -201,14 +143,13 @@ export default function KnowledgePage() {
             コンテンツ生成に使用する知識を管理します
           </p>
         </div>
-        <div className="flex gap-2">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openCreateDialog} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                新規追加
-              </Button>
-            </DialogTrigger>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={openCreateDialog} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              新規追加
+            </Button>
+          </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
@@ -256,8 +197,8 @@ export default function KnowledgePage() {
                   id="content"
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  placeholder="知識の内容を入力..."
-                  rows={8}
+                  placeholder="知識の内容を入力...\n\n例：\n- 記事の本文\n- 参考資料\n- アイデアメモ\n- よく使うフレーズ\n- 専門知識"
+                  rows={10}
                   className="mt-2"
                 />
               </div>
@@ -292,36 +233,6 @@ export default function KnowledgePage() {
             </div>
           </DialogContent>
         </Dialog>
-        
-        <div className="relative">
-          <input
-            type="file"
-            id="file-upload"
-            className="hidden"
-            onChange={handleFileUpload}
-            accept=".pdf,.txt,.md,.doc,.docx"
-            disabled={isUploading}
-          />
-          <Button
-            onClick={() => document.getElementById('file-upload')?.click()}
-            variant="outline"
-            disabled={isUploading}
-            className="flex items-center gap-2"
-          >
-            {isUploading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                アップロード中...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4" />
-                ファイルアップロード
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
       </div>
 
       {knowledgeItems.length === 0 ? (
