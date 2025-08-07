@@ -1,9 +1,9 @@
 // X API設定を環境変数から取得するユーティリティ
 export function getXApiConfig() {
   const apiKey = process.env.X_API_KEY
-  const apiSecret = process.env.X_API_SECRET || process.env.X_API_KEY_SECRET
+  const apiSecret = process.env.X_API_SECRET
   const accessToken = process.env.X_ACCESS_TOKEN
-  const accessTokenSecret = process.env.X_ACCESS_SECRET
+  const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET
   const bearerToken = process.env.X_BEARER_TOKEN
   
   // OAuth 1.0a認証を優先（ツイート投稿に必須）
@@ -33,9 +33,9 @@ export function getXApiConfig() {
   // どちらの認証情報もない場合
   const missing = []
   if (!apiKey) missing.push('X_API_KEY')
-  if (!apiSecret) missing.push('X_API_SECRET or X_API_KEY_SECRET')
+  if (!apiSecret) missing.push('X_API_SECRET')
   if (!accessToken) missing.push('X_ACCESS_TOKEN')
-  if (!accessTokenSecret) missing.push('X_ACCESS_SECRET')
+  if (!accessTokenSecret) missing.push('X_ACCESS_TOKEN_SECRET')
   
   
   throw new Error(`X API認証情報が設定されていません。ツイート投稿には以下が必要です: ${missing.join(', ')}`)

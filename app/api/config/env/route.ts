@@ -5,12 +5,12 @@ export async function GET() {
   const xApiKey = process.env.X_API_KEY || ''
   const xApiSecret = process.env.X_API_SECRET || ''
   const xAccessToken = process.env.X_ACCESS_TOKEN || ''
-  const xAccessSecret = process.env.X_ACCESS_SECRET || ''
+  const xAccessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET || ''
   const xBearerToken = process.env.X_BEARER_TOKEN || ''
   const grokApiKey = process.env.GROK_API_KEY || ''
 
   // API情報が設定されているかチェック
-  const hasXConfig = !!(xApiKey && xApiSecret && xAccessToken && xAccessSecret)
+  const hasXConfig = !!(xApiKey && xApiSecret && xAccessToken && xAccessTokenSecret)
   const hasGrokConfig = !!grokApiKey
   const hasBearerToken = !!xBearerToken
 
@@ -21,7 +21,7 @@ export async function GET() {
       api_key: hasXConfig && xApiKey ? `${xApiKey.substring(0, 4)}...${xApiKey.slice(-4)}` : '',
       api_secret: hasXConfig && xApiSecret ? `${xApiSecret.substring(0, 4)}...${xApiSecret.slice(-4)}` : '',
       access_token: hasXConfig && xAccessToken ? `${xAccessToken.substring(0, 4)}...${xAccessToken.slice(-4)}` : '',
-      access_token_secret: hasXConfig && xAccessSecret ? `${xAccessSecret.substring(0, 4)}...${xAccessSecret.slice(-4)}` : '',
+      access_token_secret: hasXConfig && xAccessTokenSecret ? `${xAccessTokenSecret.substring(0, 4)}...${xAccessTokenSecret.slice(-4)}` : '',
       bearer_token: hasBearerToken && xBearerToken ? `${xBearerToken.substring(0, 4)}...${xBearerToken.slice(-4)}` : ''
     },
     grok: {
