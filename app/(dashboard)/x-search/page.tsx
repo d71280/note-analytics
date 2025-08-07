@@ -98,9 +98,16 @@ export default function ContentGenerationPage() {
           }
         } else {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-          console.error('Generate tweet API error:', errorData)
-          if (errorData.message) {
-            alert(errorData.message)
+          console.error('Generate tweet API error:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData.error,
+            details: errorData.details,
+            message: errorData.message,
+            fullResponse: errorData
+          })
+          if (errorData.message || errorData.error) {
+            alert(errorData.message || errorData.error || 'コンテンツ生成に失敗しました')
             break // エラーが発生したら生成を中止
           }
         }
