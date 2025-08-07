@@ -9,7 +9,7 @@ export async function POST() {
     const apiKey = process.env.X_API_KEY
     const apiSecret = process.env.X_API_SECRET
     const accessToken = process.env.X_ACCESS_TOKEN
-    const accessSecret = process.env.X_ACCESS_SECRET
+    const accessSecret = process.env.X_ACCESS_TOKEN_SECRET
     
     if (!apiKey || !apiSecret || !accessToken || !accessSecret) {
       return NextResponse.json({
