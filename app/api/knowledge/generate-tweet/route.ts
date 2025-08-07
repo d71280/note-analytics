@@ -82,11 +82,11 @@ export async function POST(request: NextRequest) {
     console.log('Final knowledge items count:', knowledgeItems.length)
     console.log('Knowledge content preview:', knowledgeContent.substring(0, 200) + '...')
 
-    // プロンプトに知識ベースの内容を含める（Xの場合は短くする）
+    // プロンプトに知識ベースの内容を含める
     const userPrompt = platform === 'x'
       ? (prompt 
-        ? `「${prompt}」について、${maxLength}文字以内の短いツイートを1つ生成してください。参考：${knowledgeItems[0]?.title || '知識ベース'}` 
-        : `${knowledgeItems[0]?.title || '知識ベース'}について、${maxLength}文字以内の短いツイートを1つ生成してください。`)
+        ? `以下の知識ベースの情報を参考にして、「${prompt}」について${maxLength}文字以内の短いツイートを1つ生成してください。\n\n知識ベース情報：\n${knowledgeContent}` 
+        : `以下の知識ベースの情報を参考にして、${maxLength}文字以内の短いツイートを1つ生成してください。\n\n知識ベース情報：\n${knowledgeContent}`)
       : (prompt 
         ? `以下の知識ベースの情報を参考にして、「${prompt}」についてのコンテンツを生成してください：\n\n${knowledgeContent}`
         : `以下の知識ベースの情報を参考にして、魅力的なコンテンツを生成してください：\n\n${knowledgeContent}`)
