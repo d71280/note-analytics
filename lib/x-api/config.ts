@@ -16,10 +16,10 @@ export function getXApiConfig() {
   }
   
   return {
-    api_key: apiKey,
-    api_key_secret: apiSecret,
-    access_token: accessToken,
-    access_token_secret: accessTokenSecret,
-    bearer_token: accessToken // Twitter API v2ではaccess_tokenをbearer_tokenとして使用
+    api_key: apiKey as string,
+    api_key_secret: apiSecret as string,
+    access_token: accessToken as string,
+    access_token_secret: accessTokenSecret as string,
+    bearer_token: accessToken as string // Twitter API v2ではaccess_tokenをbearer_tokenとして使用
   }
 }
