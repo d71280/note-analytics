@@ -170,6 +170,16 @@ export async function POST(request: NextRequest) {
           },
           { status: 401 }
         )
+      } else if (error.response?.status === 403) {
+        return NextResponse.json(
+          { 
+            error: 'Forbidden - Access denied', 
+            details: error.response?.data,
+            message: 'X APIへのアクセスが拒否されました。アプリの権限設定を確認し、Read and Write権限があることを確認してください。',
+            suggestion: 'X Developer Portalでアプリの設定を確認し、User authentication settingsでRead and Write権限を有効にしてください。'
+          },
+          { status: 403 }
+        )
       } else if (error.response?.status === 429) {
         return NextResponse.json(
           { 
