@@ -9,8 +9,16 @@ interface KnowledgeItem {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('=== Generate Tweet API Start ===')
+  console.log('Environment check:', {
+    NODE_ENV: process.env.NODE_ENV,
+    hasGrokKey: !!process.env.GROK_API_KEY,
+    grokKeyLength: process.env.GROK_API_KEY?.length || 0,
+    hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  })
+  
   try {
-    console.log('Knowledge generate-tweet API called')
     const { prompt, platform = 'x', maxLength = 280 } = await request.json()
     console.log('Request params:', { prompt, platform, maxLength })
 
@@ -236,14 +244,18 @@ export async function POST(request: NextRequest) {
       })) || []
     })
   } catch (error) {
-    console.error('Generate tweet error:', error)
-    console.error('Error stack:', error instanceof Error ? error.stack : error)
+    console.error('=== Generate Tweet Error ===')
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error)
+    console.error('Error message:', error instanceof Error ? error.message : String(error))
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
       { 
-        error: 'Failed to generate tweet',
-        details: errorMessage
+        error: 'コンテンツ生成中にエラーが発生しました',
+        details: errorMessage,
+        message: `エラー: ${errorMessage}`,
+        timestamp: new Date().toISOString()
       },
       { status: 500 }
     )
