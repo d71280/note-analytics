@@ -74,10 +74,14 @@ export async function POST(request: NextRequest) {
     console.log('Final knowledge items count:', knowledgeItems.length)
     console.log('Knowledge content preview:', knowledgeContent.substring(0, 200) + '...')
 
-    // プロンプトに知識ベースの内容を含める
-    const userPrompt = prompt 
-      ? `以下の知識ベースの情報を参考にして、「${prompt}」についてのツイートを生成してください：\n\n${knowledgeContent}`
-      : `以下の知識ベースの情報を参考にして、魅力的なツイートを生成してください：\n\n${knowledgeContent}`
+    // プロンプトに知識ベースの内容を含める（Xの場合は短くする）
+    const userPrompt = platform === 'x'
+      ? (prompt 
+        ? `「${prompt}」について、${maxLength}文字以内の短いツイートを1つ生成してください。参考：${knowledgeItems[0]?.title || '知識ベース'}` 
+        : `${knowledgeItems[0]?.title || '知識ベース'}について、${maxLength}文字以内の短いツイートを1つ生成してください。`)
+      : (prompt 
+        ? `以下の知識ベースの情報を参考にして、「${prompt}」についてのコンテンツを生成してください：\n\n${knowledgeContent}`
+        : `以下の知識ベースの情報を参考にして、魅力的なコンテンツを生成してください：\n\n${knowledgeContent}`)
     
     // Grok APIキーを環境変数から取得
     const grokApiKey = process.env.GROK_API_KEY
@@ -101,9 +105,20 @@ export async function POST(request: NextRequest) {
               {
                 role: 'system',
                 content: platform === 'x' 
-                  ? `あなたは魅力的で価値のあるツイートを生成する専門家です。${maxLength}文字以内で、読者に価値を提供する内容を生成してください。`
+                  ? `あなたはX(Twitter)の投稿専門家です。
+
+【絶対条件】
+- 出力は${maxLength}文字以内に収める
+- 1つの短い文章で完結させる
+- ハッシュタグも含めて${maxLength}文字以内
+- 長い説明や複数段落は絶対に生成しない
+- 簡潔で印象的な内容にする
+
+出力例（${maxLength}文字以内）:
+「今日学んだこと：AIツールは使い方次第で生産性が10倍変わる。プロンプトの質が結果の質を決める。#AI活用 #生産性向上」`
                   : platform === 'note'
-                  ? `あなたはNoteの記事要約や導入文を生成する専門家です。${maxLength}文字以内で、読者の興味を引く魅力的な内容を生成してください。`
+                  ? `あなたはNoteの記事要約を生成する専門家です。
+必ず${maxLength}文字以内で、簡潔な要約を1つだけ生成してください。`
                   : `あなたはSEOを意識したブログ記事の抜粋を生成する専門家です。${maxLength}文字以内で、読者を引き込む内容を生成してください。`
               },
               {
@@ -114,7 +129,7 @@ export async function POST(request: NextRequest) {
             model: 'grok-2-latest',
             stream: false,
             temperature: 0.7,
-            max_tokens: 200
+            max_tokens: platform === 'x' ? 60 : 500 // Xは非常に短く制限
           })
         })
         
@@ -134,7 +149,36 @@ export async function POST(request: NextRequest) {
         
         if (grokData.choices && grokData.choices[0] && grokData.choices[0].message) {
           generatedTweet = grokData.choices[0].message.content || ''
-          console.log('Successfully extracted tweet:', generatedTweet)
+          
+          // Xの場合は積極的にトリミング
+          if (platform === 'x') {
+            // 改行で分割して最初の文だけを取る
+            const firstSentence = generatedTweet.split('\n')[0]
+            generatedTweet = firstSentence
+            
+            // それでも長い場合は強制的にトリミング
+            if (generatedTweet.length > maxLength) {
+              console.log(`Tweet too long (${generatedTweet.length} chars), trimming to ${maxLength}`)
+              // 句読点で区切って短くする
+              const sentences = generatedTweet.split(/[。！？]/)
+              let trimmed = ''
+              for (const sentence of sentences) {
+                if ((trimmed + sentence).length <= maxLength - 10) {
+                  trimmed += sentence + '。'
+                } else {
+                  break
+                }
+              }
+              
+              // それでも長い場合は強制カット
+              if (trimmed.length === 0 || trimmed.length > maxLength) {
+                generatedTweet = generatedTweet.substring(0, maxLength - 3) + '...'
+              } else {
+                generatedTweet = trimmed
+              }
+            }
+          }
+          console.log(`Generated tweet (${generatedTweet.length} chars):`, generatedTweet)
           
           // 空のレスポンスの場合はエラーとして扱う
           if (!generatedTweet.trim()) {
