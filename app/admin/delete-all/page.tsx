@@ -7,8 +7,41 @@ import { AlertTriangle, Trash2, Loader2 } from 'lucide-react'
 
 export default function DeleteAllPage() {
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isSqlDeleting, setIsSqlDeleting] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const handleSqlDelete = async () => {
+    if (!confirm('⚠️ SQLで直接削除します。この操作は取り消せません。続行しますか？')) {
+      return
+    }
+
+    setIsSqlDeleting(true)
+    setError(null)
+    setResult(null)
+
+    try {
+      const response = await fetch('/api/x/scheduled-posts/delete-with-sql?confirm=DELETE_ALL_SQL', {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        setResult(data)
+      } else {
+        setError(data.error || '削除に失敗しました')
+        if (data.suggestion) {
+          setError(error + '\n\n' + data.suggestion)
+        }
+      }
+    } catch (err) {
+      console.error('SQL Delete error:', err)
+      setError('SQL削除中にエラーが発生しました')
+    } finally {
+      setIsSqlDeleting(false)
+    }
+  }
 
   const handleForceDeleteAll = async () => {
     if (!confirm('⚠️ 警告: すべてのスケジュール投稿を完全に削除します。\n\nこの操作は取り消せません。本当に続行しますか？')) {
@@ -66,25 +99,47 @@ export default function DeleteAllPage() {
             </ul>
           </div>
 
-          <Button
-            onClick={handleForceDeleteAll}
-            disabled={isDeleting}
-            variant="destructive"
-            className="w-full"
-            size="lg"
-          >
-            {isDeleting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                削除中...
-              </>
-            ) : (
-              <>
-                <Trash2 className="mr-2 h-4 w-4" />
-                すべての投稿を強制削除
-              </>
-            )}
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={handleForceDeleteAll}
+              disabled={isDeleting || isSqlDeleting}
+              variant="destructive"
+              className="w-full"
+              size="lg"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  削除中...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  通常削除（Service Role）
+                </>
+              )}
+            </Button>
+            
+            <Button
+              onClick={handleSqlDelete}
+              disabled={isDeleting || isSqlDeleting}
+              variant="destructive"
+              className="w-full bg-red-700 hover:bg-red-800"
+              size="lg"
+            >
+              {isSqlDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  SQL削除中...
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  強制SQL削除（最終手段）
+                </>
+              )}
+            </Button>
+          </div>
 
           {result && (
             <div className={`border rounded-lg p-4 ${result.success ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
