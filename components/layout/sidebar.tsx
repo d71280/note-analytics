@@ -17,6 +17,7 @@ const navigation = [
   { name: 'DB状態確認', href: '/admin/db-check', icon: Database },
   { name: 'テーブル作成', href: '/admin/setup-tables', icon: Database },
   { name: '環境変数確認', href: '/admin/env-debug', icon: Key },
+  { name: '強制削除', href: '/admin/delete-all', icon: Settings },
 ]
 
 export function Sidebar() {
