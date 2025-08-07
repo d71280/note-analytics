@@ -5,9 +5,22 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 
+interface APITestResult {
+  success?: boolean
+  error?: string
+  details?: string
+  keyPreview?: string
+  response?: string
+  errorDetails?: unknown
+  status?: number
+  tweet?: string
+  model?: string
+  message?: string
+}
+
 export default function APITestPage() {
-  const [grokTest, setGrokTest] = useState<any>(null)
-  const [generateTest, setGenerateTest] = useState<any>(null)
+  const [grokTest, setGrokTest] = useState<APITestResult | null>(null)
+  const [generateTest, setGenerateTest] = useState<APITestResult | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const testGrokAPI = async () => {
