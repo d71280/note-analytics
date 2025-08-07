@@ -11,7 +11,8 @@ interface APITestResult {
   details?: string
   keyPreview?: string
   response?: string
-  errorDetails?: unknown
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  errorDetails?: any
   status?: number
   tweet?: string
   model?: string
