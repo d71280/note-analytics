@@ -40,4 +40,3 @@ export function getXApiConfig() {
   
   throw new Error(`X API認証情報が設定されていません。ツイート投稿には以下が必要です: ${missing.join(', ')}`)
 }
-}
