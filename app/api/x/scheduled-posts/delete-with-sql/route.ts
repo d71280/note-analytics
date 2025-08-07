@@ -30,14 +30,14 @@ export async function DELETE(request: NextRequest) {
       if (disableRLSError) {
         console.log('RLS disable failed, trying direct SQL...')
       }
-    } catch (e) {
+    } catch {
       console.log('RLS modification not available')
     }
     
     // 方法2: 直接SQLで削除
     try {
       // カウントを取得
-      const { data: countData, error: countError } = await adminClient
+      const { data: countData } = await adminClient
         .from('tweet_queue')
         .select('id', { count: 'exact', head: true })
       
@@ -55,7 +55,7 @@ export async function DELETE(request: NextRequest) {
           method: 'rpc_function'
         })
       }
-    } catch (e) {
+    } catch {
       console.log('RPC function not available, trying raw delete')
     }
     
@@ -68,7 +68,7 @@ export async function DELETE(request: NextRequest) {
     console.log('Before delete count:', beforeCount)
     
     // すべて削除
-    const { error: deleteError, count } = await adminClient
+    const { error: deleteError } = await adminClient
       .from('tweet_queue')
       .delete()
       .gte('created_at', '1970-01-01') // すべてのレコードを対象

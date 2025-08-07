@@ -8,7 +8,14 @@ import { AlertTriangle, Trash2, Loader2 } from 'lucide-react'
 export default function DeleteAllPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [isSqlDeleting, setIsSqlDeleting] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<{
+    success: boolean
+    message: string
+    deleted: number
+    remaining?: number
+    failed?: Array<{ id: string; error: string }>
+    method?: string
+  } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleSqlDelete = async () => {
@@ -147,7 +154,7 @@ export default function DeleteAllPage() {
               <div className="text-sm space-y-1">
                 <p>削除成功: {result.deleted}件</p>
                 <p>削除方法: {result.method === 'bulk' ? '一括削除' : '個別削除'}</p>
-                {result.remaining > 0 && (
+                {result.remaining !== undefined && result.remaining > 0 && (
                   <p className="text-orange-600">残り: {result.remaining}件</p>
                 )}
                 {result.failed && result.failed.length > 0 && (
