@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FileText, TrendingUp, Settings, Search, Brain, ListOrdered, Key } from 'lucide-react'
+import { FileText, TrendingUp, Search, Brain, ListOrdered } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -11,8 +11,6 @@ const navigation = [
   { name: 'コンテンツ生成&配信', href: '/x-search', icon: Search },
   { name: '知識ベース', href: '/knowledge', icon: Brain },
   { name: '投稿管理', href: '/scheduled-posts', icon: ListOrdered },
-  { name: '環境変数確認', href: '/admin/env-debug', icon: Key },
-  { name: '強制削除', href: '/admin/delete-all', icon: Settings },
 ]
 
 export function Sidebar() {
