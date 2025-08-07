@@ -130,17 +130,40 @@ export default function KnowledgePage() {
     setIsUploading(true)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
+      let content = ''
+      let title = file.name.replace(/\.[^/.]+$/, '') // 拡張子を除いたファイル名
 
-      // PDFの場合は専用のAPIを使用
-      const endpoint = file.type === 'application/pdf' 
-        ? '/api/knowledge/process-pdf'
-        : '/api/knowledge/upload'
+      if (file.type === 'application/pdf') {
+        // PDFの場合はpdf.jsでテキスト抽出
+        const pdfjsLib = (await import('pdfjs-dist')).default
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+        
+        const arrayBuffer = await file.arrayBuffer()
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+        
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i)
+          const textContent = await page.getTextContent()
+          const pageText = textContent.items
+            .map((item: any) => item.str)
+            .join(' ')
+          content += `\n\n=== ページ ${i} ===\n${pageText}`
+        }
+      } else {
+        // テキストファイルの場合は直接読み込み
+        content = await file.text()
+      }
 
-      const response = await fetch(endpoint, {
+      // 知識ベースに保存
+      const response = await fetch('/api/knowledge/create', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title,
+          content: content,
+          content_type: 'document',
+          tags: [file.type === 'application/pdf' ? 'PDF' : 'テキスト', 'アップロード']
+        })
       })
 
       if (response.ok) {
@@ -148,11 +171,11 @@ export default function KnowledgePage() {
         alert(`ファイル「${file.name}」を知識ベースに追加しました`)
       } else {
         const error = await response.json()
-        alert(`アップロードに失敗しました: ${error.message || 'Unknown error'}`)
+        alert(`保存に失敗しました: ${error.message || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Upload error:', error)
-      alert('ファイルのアップロードに失敗しました')
+      alert('ファイルの処理に失敗しました')
     } finally {
       setIsUploading(false)
     }
@@ -221,6 +244,7 @@ export default function KnowledgePage() {
                     <SelectItem value="blog">ブログ記事</SelectItem>
                     <SelectItem value="tweet">ツイート</SelectItem>
                     <SelectItem value="idea">アイデア</SelectItem>
+                    <SelectItem value="document">ドキュメント</SelectItem>
                     <SelectItem value="other">その他</SelectItem>
                   </SelectContent>
                 </Select>
