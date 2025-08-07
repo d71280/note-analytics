@@ -88,6 +88,19 @@ export async function POST(request: NextRequest) {
     console.log('Grok API available:', !!grokApiKey)
     console.log('Grok API key preview:', grokApiKey ? `${grokApiKey.substring(0, 10)}...` : 'NOT_FOUND')
     
+    // APIキーが設定されていない場合は早期リターン
+    if (!grokApiKey) {
+      console.error('GROK_API_KEY is not configured')
+      return NextResponse.json(
+        { 
+          error: 'Grok APIが設定されていません',
+          details: 'GROK_API_KEYを環境変数に設定してください',
+          message: 'AIコンテンツ生成にはGrok APIキーが必要です。環境変数を確認してください。'
+        },
+        { status: 500 }
+      )
+    }
+    
     let generatedTweet = ''
     
     if (grokApiKey) {
