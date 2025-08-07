@@ -15,8 +15,6 @@ const navigation = [
   { name: 'X連携設定', href: '/settings', icon: Share2 },
   { name: 'データ管理', href: '/admin', icon: Settings },
   { name: 'DB状態確認', href: '/admin/db-check', icon: Database },
-  { name: 'X API確認', href: '/admin/x-api-check', icon: Twitter },
-  { name: 'X デバッグ', href: '/admin/x-debug', icon: Bug },
   { name: 'テーブル作成', href: '/admin/setup-tables', icon: Database },
   { name: '環境変数確認', href: '/admin/env-debug', icon: Key },
 ]

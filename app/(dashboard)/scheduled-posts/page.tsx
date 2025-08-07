@@ -169,6 +169,29 @@ export default function ScheduledPostsPage() {
     }
   }
 
+  const handleDeleteAllPosts = async () => {
+    if (!confirm('すべての投稿を削除してもよろしいですか？この操作は取り消せません。')) return
+
+    try {
+      const response = await fetch('/api/x/scheduled-posts/delete-all?confirm=true', {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+
+      const result = await response.json()
+      
+      if (response.ok) {
+        await fetchScheduledPosts()
+        alert(`${result.deleted}件の投稿を削除しました`)
+      } else {
+        alert(`削除に失敗しました: ${result.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Failed to delete all posts:', error)
+      alert('一括削除に失敗しました')
+    }
+  }
+
   const handlePostNow = async (post: ScheduledPost) => {
     setIsPosting(post.id)
     
@@ -251,25 +274,36 @@ export default function ScheduledPostsPage() {
               予約されている投稿の編集・削除ができます
             </p>
           </div>
-          {posts.some(p => p.status === 'failed') && (
-            <Button
-              onClick={handleDeleteFailedPosts}
-              variant="destructive"
-              disabled={isDeletingFailed}
-            >
-              {isDeletingFailed ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  削除中...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  失敗した投稿をすべて削除
-                </>
-              )}
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {posts.some(p => p.status === 'failed') && (
+              <Button
+                onClick={handleDeleteFailedPosts}
+                variant="destructive"
+                disabled={isDeletingFailed}
+              >
+                {isDeletingFailed ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    削除中...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    失敗した投稿をすべて削除
+                  </>
+                )}
+              </Button>
+            )}
+            {posts.length > 0 && (
+              <Button
+                onClick={handleDeleteAllPosts}
+                variant="destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                すべての投稿を削除
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

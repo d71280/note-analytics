@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { deleteScheduledPost } from '@/lib/utils/scheduled-posts'
 
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
+    
+    console.log('Delete request received for ID:', id)
     
     if (!id) {
       return NextResponse.json(
@@ -13,27 +15,30 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const supabase = createClient()
+    const success = await deleteScheduledPost(id)
     
-    // スケジュール投稿を削除
-    const { error } = await supabase
-      .from('tweet_queue')
-      .delete()
-      .eq('id', id)
-    
-    if (error) {
-      console.error('Delete scheduled post error:', error)
+    if (success) {
+      return NextResponse.json({ 
+        success: true,
+        message: 'Post deleted successfully',
+        deleted: [{ id }]
+      })
+    } else {
       return NextResponse.json(
-        { error: 'Failed to delete scheduled post' },
+        { 
+          error: 'Failed to delete post',
+          suggestion: 'Post may not exist or database permission issues'
+        },
         { status: 500 }
       )
     }
-
-    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Delete scheduled post error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }
@@ -44,6 +49,18 @@ export async function POST(request: NextRequest) {
   try {
     const { ids, status } = await request.json()
     
+    if (status && !ids) {
+      // Delete by status
+      const { deletePostsByStatus } = await import('@/lib/utils/scheduled-posts')
+      const result = await deletePostsByStatus(status)
+      
+      return NextResponse.json({ 
+        success: result.success,
+        deleted: result.deleted,
+        message: `Deleted ${result.deleted} posts with status: ${status}`
+      })
+    }
+    
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json(
         { error: 'Post IDs are required' },
@@ -51,37 +68,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createClient()
-    
-    // 条件に基づいて削除
-    let query = supabase
-      .from('tweet_queue')
-      .delete()
-      .in('id', ids)
-    
-    // ステータスでフィルタリング（オプション）
-    if (status) {
-      query = query.eq('status', status)
-    }
-    
-    const { error } = await query
-    
-    if (error) {
-      console.error('Delete scheduled posts error:', error)
-      return NextResponse.json(
-        { error: 'Failed to delete scheduled posts' },
-        { status: 500 }
-      )
+    // Delete individual posts
+    let deletedCount = 0
+    const errors = []
+
+    for (const id of ids) {
+      try {
+        const success = await deleteScheduledPost(id)
+        if (success) {
+          deletedCount++
+        } else {
+          errors.push({ id, error: 'Failed to delete' })
+        }
+      } catch (error) {
+        errors.push({ 
+          id, 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        })
+      }
     }
 
     return NextResponse.json({ 
-      success: true,
-      deleted: ids.length 
+      success: deletedCount > 0,
+      deleted: deletedCount,
+      failed: errors.length > 0 ? errors : undefined
     })
   } catch (error) {
     console.error('Delete scheduled posts error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }

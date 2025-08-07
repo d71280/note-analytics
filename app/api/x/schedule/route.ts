@@ -95,26 +95,17 @@ export async function POST(request: NextRequest) {
 // スケジュールされたツイートの一覧を取得
 export async function GET() {
   try {
-    const supabase = createClient()
-    
-    const { data, error } = await supabase
-      .from('tweet_queue')
-      .select('*')
-      .order('scheduled_at', { ascending: true })
-    
-    if (error) {
-      console.error('Failed to fetch scheduled tweets:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch scheduled tweets' },
-        { status: 500 }
-      )
-    }
+    const { getScheduledPosts } = await import('@/lib/utils/scheduled-posts')
+    const data = await getScheduledPosts()
     
     return NextResponse.json(data || [])
   } catch (error) {
     console.error('Get schedule error:', error)
     return NextResponse.json(
-      { error: 'Failed to get scheduled tweets' },
+      { 
+        error: 'Failed to get scheduled tweets',
+        message: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }
