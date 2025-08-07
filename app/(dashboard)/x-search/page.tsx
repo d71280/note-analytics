@@ -36,9 +36,9 @@ const defaultPlatformConfig = {
   x: {
     name: 'X (Twitter)',
     icon: Twitter,
-    maxLength: 280,
+    maxLength: 260, // 280文字制限より少し短くして余裕を持たせる
     placeholder: 'ツイート内容を入力...',
-    generatePrompt: '知識ベースから価値のあるツイートを生成してください'
+    generatePrompt: '知識ベースから価値のあるツイートを生成してください。必ず260文字以内でまとめてください。'
   },
   note: {
     name: 'Note',

@@ -19,9 +19,23 @@ export async function POST(request: NextRequest) {
     postType = body.postType || 'manual'
     replyToId = body.replyToId
 
-    if (!tweetText || tweetText.length > 280) {
+    if (!tweetText) {
       return NextResponse.json(
-        { error: 'Invalid tweet text' },
+        { error: 'Tweet text is required' },
+        { status: 400 }
+      )
+    }
+    
+    // 文字数チェック（無料アカウントは280文字まで）
+    if (tweetText.length > 280) {
+      console.log(`Tweet too long: ${tweetText.length} characters`)
+      return NextResponse.json(
+        { 
+          error: 'ツイートが長すぎます',
+          length: tweetText.length,
+          limit: 280,
+          text: tweetText.substring(0, 100) + '...'
+        },
         { status: 400 }
       )
     }
