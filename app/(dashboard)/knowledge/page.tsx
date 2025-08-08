@@ -375,13 +375,29 @@ export default function KnowledgePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
-              高度なコンテンツ生成について
+              知識ベース活用状況
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600 mb-4">
-              知識ベースに登録されたデータを活用して、高度なコンテンツ生成が可能になりました。
-            </p>
+            <div className="grid gap-6 md:grid-cols-3 mb-6">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{knowledgeItems.length}</div>
+                <div className="text-sm text-blue-800">登録済み知識</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">
+                  {knowledgeItems.filter(item => item.content_type === 'note').length}
+                </div>
+                <div className="text-sm text-green-800">Note関連</div>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">
+                  {knowledgeItems.filter(item => item.content_type === 'strategy').length}
+                </div>
+                <div className="text-sm text-purple-800">戦略・分析</div>
+              </div>
+            </div>
+            
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <h4 className="font-semibold mb-2">利用可能な機能</h4>
@@ -391,6 +407,7 @@ export default function KnowledgePage() {
                   <li>• コンテンツタイプ選択（要約、分析、チュートリアル、意見、ニュース）</li>
                   <li>• ターゲットオーディエンス指定</li>
                   <li>• ハッシュタグ自動生成（X用）</li>
+                  <li>• 知識ベース活用状況の可視化</li>
                 </ul>
               </div>
               <div>
@@ -403,6 +420,17 @@ export default function KnowledgePage() {
                 </ul>
               </div>
             </div>
+            
+            <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <h4 className="font-semibold text-yellow-800 mb-2">🚀 知識ベース活用のコツ</h4>
+              <ul className="text-sm text-yellow-700 space-y-1">
+                <li>• 具体的なキーワードを含むプロンプトを使用すると、より関連性の高い知識が活用されます</li>
+                <li>• 「脳内OS」「AI活用」「マーケティング」などのタグが付いた知識が豊富にあります</li>
+                <li>• 高度な生成設定を有効にすると、より詳細な知識ベースの活用が可能です</li>
+                <li>• 生成されたコンテンツの詳細で、使用された知識の詳細を確認できます</li>
+              </ul>
+            </div>
+            
             <div className="mt-4">
               <Button 
                 onClick={() => window.location.href = '/x-search'}

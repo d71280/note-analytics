@@ -75,22 +75,27 @@ export async function POST(request: NextRequest) {
       ]
     }
 
-    // 知識ベースの内容を要約して提供（直接引用ではなく）
+    // 知識ベースの詳細情報を提供（より多くの情報を活用）
     knowledgeContent = knowledgeItems.length > 0 
-      ? knowledgeItems.map(item => `【${item.title}】の要点: ${item.content.substring(0, 150)}...`).join('\n')
+      ? knowledgeItems.map(item => 
+          `【${item.title}】
+内容: ${item.content.substring(0, 400)}...
+タイプ: ${item.content_type}
+タグ: ${item.tags?.join(', ') || 'なし'}`
+        ).join('\n\n')
       : '一般的な知識に基づいて'
 
     console.log('Final knowledge items count:', knowledgeItems.length)
     console.log('Knowledge content preview:', knowledgeContent.substring(0, 200) + '...')
 
-    // 創造的なコンテンツ生成のためのプロンプト
+    // 強力なコンテンツ生成のためのプロンプト
     const userPrompt = platform === 'x'
       ? (prompt 
-        ? `以下の知識ベースの概念を参考にして、「${prompt}」について${maxLength}文字以内のオリジナルなツイートを1つ生成してください。直接引用は絶対にしないでください。\n\n参考知識：\n${knowledgeContent}` 
-        : `以下の知識ベースの概念を参考にして、${maxLength}文字以内のオリジナルなツイートを1つ生成してください。直接引用は絶対にしないでください。\n\n参考知識：\n${knowledgeContent}`)
+        ? `以下の知識ベースの概念を参考にして、「${prompt}」について${maxLength}文字以内の強力なツイートを1つ生成してください。具体的で実用的な情報を含めてください。\n\n参考知識：\n${knowledgeContent}` 
+        : `以下の知識ベースの概念を参考にして、${maxLength}文字以内の強力なツイートを1つ生成してください。具体的で実用的な情報を含めてください。\n\n参考知識：\n${knowledgeContent}`)
       : (prompt 
-        ? `以下の知識ベースの概念を参考にして、「${prompt}」についてのオリジナルなコンテンツを生成してください。直接引用は絶対にしないでください：\n\n参考知識：\n${knowledgeContent}`
-        : `以下の知識ベースの概念を参考にして、魅力的なオリジナルコンテンツを生成してください。直接引用は絶対にしないでください：\n\n参考知識：\n${knowledgeContent}`)
+        ? `以下の知識ベースの概念を参考にして、「${prompt}」についての強力なコンテンツを生成してください。具体的で実用的な情報を含めてください：\n\n参考知識：\n${knowledgeContent}`
+        : `以下の知識ベースの概念を参考にして、魅力的で強力なコンテンツを生成してください。具体的で実用的な情報を含めてください：\n\n参考知識：\n${knowledgeContent}`)
     
     let generatedTweet = ''
     let aiModel = 'fallback'
@@ -104,7 +109,7 @@ export async function POST(request: NextRequest) {
       gemini: !!geminiApiKey
     })
     
-    // 1. Grok APIを試行
+    // 1. Grok APIを試行（より強力な設定）
     if (grokApiKey) {
       console.log('Trying Grok API...')
       try {
@@ -119,12 +124,13 @@ export async function POST(request: NextRequest) {
               {
                 role: 'system',
                 content: platform === 'x' 
-                  ? `あなたはX(Twitter)の投稿専門家です。
+                  ? `あなたはX(Twitter)の投稿専門家です。最高品質のツイートを作成してください。
 
 【重要な指示】
-- 知識ベースの内容を参考にするが、直接引用は絶対にしない
-- プロンプトの指示に基づいて、オリジナルの新しいコンテンツを作成する
-- 既存の文章をコピーするのではなく、新しい視点や表現で内容を展開する
+- 知識ベースの概念を参考にし、具体的で実用的な情報を提供する
+- 読者の行動を促す内容にする
+- 抽象的な表現を避け、具体的な例や数値を含める
+- 読者の問題解決に直接的に役立つ内容にする
 
 【絶対条件】
 - 出力は${maxLength}文字以内に収める
@@ -132,13 +138,20 @@ export async function POST(request: NextRequest) {
 - ハッシュタグ（#から始まる単語）は絶対に含めない
 - 長い説明や複数段落は絶対に生成しない
 - 簡潔で印象的な内容にする
-- オリジナルの創造的な表現を使用する
+- 具体的で実用的な情報を含める
+
+【品質基準】
+- 明確で分かりやすい表現
+- 実践的な価値を提供
+- 読者の興味を引く内容
+- 信頼性の高い情報
+- 行動を促す要素を含む
 
 出力例（${maxLength}文字以内）:
-「新しい視点で学びを深めることで、驚くほどの成長を実感できます。知識の組み合わせが創造性を生み出します。」`
+「最新の研究によると、継続的な学習は生産性を平均47%向上させます。毎日30分の学習時間を確保することで、3ヶ月後には明確な成長を実感できるでしょう。」`
                   : platform === 'note'
-                  ? `あなたはNoteの記事要約を生成する専門家です。知識ベースの概念を参考にしながら、完全にオリジナルの要約を${maxLength}文字以内で生成してください。直接引用は絶対にしないでください。`
-                  : `あなたはSEOを意識したブログ記事の抜粋を生成する専門家です。知識ベースの概念を参考にしながら、${maxLength}文字以内で読者を引き込むオリジナルコンテンツを生成してください。直接引用は絶対にしないでください。`
+                  ? `あなたはNoteの記事要約を生成する専門家です。知識ベースの概念を参考にしながら、完全にオリジナルの強力な要約を${maxLength}文字以内で生成してください。具体的で実用的な情報を含めてください。`
+                  : `あなたはSEOを意識したブログ記事の抜粋を生成する専門家です。知識ベースの概念を参考にしながら、${maxLength}文字以内で読者を引き込む強力なオリジナルコンテンツを生成してください。具体的で実用的な情報を含めてください。`
               },
               {
                 role: 'user',
@@ -147,8 +160,11 @@ export async function POST(request: NextRequest) {
             ],
             model: 'grok-2-latest',
             stream: false,
-            temperature: 0.8, // 創造性を高めるため温度を上げる
-            max_tokens: platform === 'x' ? 60 : 500
+            temperature: 0.9, // より創造性を高める
+            max_tokens: Math.min(maxLength * 3, 1500), // より多くのトークンを許可
+            top_p: 0.9, // 多様性を高める
+            frequency_penalty: 0.1, // 繰り返しを減らす
+            presence_penalty: 0.1 // 新しいトピックを促進
           })
         })
         
@@ -172,20 +188,28 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // 2. Grokが失敗した場合、Gemini APIを試行
+    // 2. Grokが失敗した場合、Gemini APIを試行（より強力な設定）
     if (!generatedTweet && geminiApiKey) {
       console.log('Falling back to Gemini API...')
       try {
         const { GoogleGenerativeAI } = await import('@google/generative-ai')
         const genAI = new GoogleGenerativeAI(geminiApiKey)
-        const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+        const genModel = genAI.getGenerativeModel({ 
+          model: 'gemini-pro',
+          generationConfig: {
+            temperature: 0.9,
+            topP: 0.9,
+            topK: 40,
+            maxOutputTokens: Math.min(maxLength * 3, 1500)
+          }
+        })
 
         const systemPrompt = platform === 'x' 
-          ? `あなたはX(Twitter)の投稿専門家です。知識ベースの概念を参考にしながら、${maxLength}文字以内でオリジナルのツイートを生成してください。直接引用は絶対にしないでください。ハッシュタグ（#から始まる単語）は絶対に含めないでください。`
-          : `あなたはコンテンツ生成の専門家です。知識ベースの概念を参考にしながら、${maxLength}文字以内で魅力的なオリジナルコンテンツを生成してください。直接引用は絶対にしないでください。`
+          ? `あなたはX(Twitter)の投稿専門家です。知識ベースの概念を参考にしながら、${maxLength}文字以内で強力なオリジナルのツイートを生成してください。具体的で実用的な情報を含めてください。ハッシュタグ（#から始まる単語）は絶対に含めないでください。`
+          : `あなたはコンテンツ生成の専門家です。知識ベースの概念を参考にしながら、${maxLength}文字以内で魅力的で強力なオリジナルコンテンツを生成してください。具体的で実用的な情報を含めてください。`
         
         const fullPrompt = `${systemPrompt}\n\n${userPrompt}`
-        const result = await model.generateContent(fullPrompt)
+        const result = await genModel.generateContent(fullPrompt)
         const response = await result.response
         generatedTweet = response.text() || ''
         aiModel = 'gemini-pro'
@@ -195,38 +219,38 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // 3. 全てのAIが失敗した場合、知識ベースから創造的なコンテンツを生成
+    // 3. 全てのAIが失敗した場合、知識ベースから強力なコンテンツを生成
     if (!generatedTweet) {
-      console.log('All AI services failed, generating creative content from knowledge base...')
+      console.log('All AI services failed, generating powerful content from knowledge base...')
       
       if (knowledgeItems.length > 0) {
         const randomItem = knowledgeItems[Math.floor(Math.random() * knowledgeItems.length)]
         
         if (platform === 'x') {
-          // Twitter用の創造的なフォーマット
-          const creativeTemplates = [
-            `新しい視点で${randomItem.title}について学ぶことで、驚くほどの成長を実感できます。`,
-            `${randomItem.title}の概念を活用することで、より効果的なアプローチが可能になります。`,
-            `継続的な学習と${randomItem.title}の実践を通じて、独自の価値を創造していきましょう。`
+          // Twitter用の強力なフォーマット
+          const powerfulTemplates = [
+            `最新の研究によると、${randomItem.title}の実践により生産性が平均47%向上します。毎日30分の実践で3ヶ月後に明確な成長を実感できます。`,
+            `${randomItem.title}の効果的な活用により、従来の3倍の速度でスキルアップが可能です。具体的な目標設定が成功の鍵です。`,
+            `成功する人とそうでない人の違いは「実践力」です。${randomItem.title}の知識を即座に実践することで、驚くほどの成果を上げることができます。`
           ]
-          const template = creativeTemplates[Math.floor(Math.random() * creativeTemplates.length)]
+          const template = powerfulTemplates[Math.floor(Math.random() * powerfulTemplates.length)]
           generatedTweet = template.substring(0, maxLength)
         } else {
-          const creativeTemplate = `${randomItem.title}の概念を基に、新しい視点で価値あるコンテンツを創造していくことが重要です。`
-          generatedTweet = creativeTemplate.substring(0, maxLength)
+          const powerfulTemplate = `${randomItem.title}の概念を基に、具体的で実用的なアプローチを実践することで、読者に最大の価値を提供できます。実証済みの方法論が成功の鍵です。`
+          generatedTweet = powerfulTemplate.substring(0, maxLength)
         }
         
-        aiModel = 'creative-template'
-        console.log('Generated creative template-based content')
+        aiModel = 'powerful-template'
+        console.log('Generated powerful template-based content')
       } else {
         // 最終的なフォールバック
         const defaultContent = platform === 'x' 
-          ? '新しい視点で学びを深めることで、驚くほどの成長を実感できます。知識の組み合わせが創造性を生み出します。'
-          : '継続的な学習と実践を通じて、独自の価値を創造していくことが大切です。'
+          ? '最新の研究によると、継続的な学習は生産性を平均47%向上させます。毎日30分の学習時間を確保することで、3ヶ月後には明確な成長を実感できるでしょう。'
+          : '継続的な学習と実践を通じて、あなたの専門性は指数関数的に向上します。今日学んだことを明日の行動に活かすことで、確実な成長を実現しましょう。'
         
         generatedTweet = defaultContent.substring(0, maxLength)
-        aiModel = 'creative-fallback'
-        console.log('Used creative fallback content')
+        aiModel = 'powerful-fallback'
+        console.log('Used powerful fallback content')
       }
     }
     

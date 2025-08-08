@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Sparkles, Loader2, Plus, Clock, X, Grip, Check, Twitter, FileText, Globe, Settings, Zap } from 'lucide-react'
+import { Sparkles, Loader2, Plus, Clock, X, Grip, Check, Twitter, FileText, Globe, Settings, Zap, Database } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Switch } from '@/components/ui/switch'
 
@@ -24,6 +24,12 @@ interface GeneratedContent {
     contentType: string
     model: string
     generationTime: number
+    usedKnowledgeCount?: number
+    knowledgeSources?: Array<{
+      title: string
+      contentType: string
+      relevance: string
+    }>
   }
 }
 
@@ -268,6 +274,16 @@ export default function ContentGenerationPage() {
                     className="mt-2"
                     rows={3}
                   />
+                  <div className="mt-2 text-xs text-gray-600">
+                    <p className="font-medium mb-1">💡 効果的なプロンプト例:</p>
+                    <ul className="space-y-1">
+                      <li>• "脳内OS強化の具体的なステップを3つ教えて"</li>
+                      <li>• "AI活用で生産性を向上させる実践的な方法"</li>
+                      <li>• "マーケティング成功事例から学ぶ3つのポイント"</li>
+                      <li>• "リーダーシップ開発のための日々の習慣"</li>
+                      <li>• "デジタルマーケティングの最新トレンドと実践法"</li>
+                    </ul>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -473,71 +489,92 @@ export default function ContentGenerationPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <DragDropContext onDragEnd={handleDragEnd}>
-                  <Droppable droppableId="contents">
-                    {(provided) => (
-                      <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className="space-y-3"
-                      >
-                        {generatedContents.map((content, index) => (
-                          <Draggable key={content.id} draggableId={content.id} index={index}>
-                            {(provided) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={`p-4 border rounded-lg ${
-                                  content.selected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                                }`}
-                              >
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <Grip className="h-4 w-4 text-gray-400" {...provided.dragHandleProps} />
-                                      <span className="text-sm text-gray-500">
-                                        {platformConfig[content.platform].name}
-                                      </span>
-                                      {content.metadata && (
-                                        <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                                          {content.metadata.style} / {content.metadata.tone}
-                                        </span>
-                                      )}
+                <div className="space-y-4">
+                  {generatedContents.map((content, index) => (
+                    <Card key={content.id} className="relative">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-2">
+                            {content.platform === 'x' && <Twitter className="h-4 w-4 text-blue-400" />}
+                            {content.platform === 'note' && <FileText className="h-4 w-4 text-green-400" />}
+                            {content.platform === 'wordpress' && <Globe className="h-4 w-4 text-purple-400" />}
+                            <span className="text-sm font-medium">
+                              {content.metadata?.style} / {content.metadata?.tone}
+                            </span>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => toggleContentSelection(content.id)}
+                            >
+                              {content.selected ? (
+                                <Check className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <div className="h-4 w-4 border-2 border-gray-300 rounded" />
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => deleteContent(content.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-700 mb-3">{content.content}</p>
+                        
+                        {/* 知識ベース活用状況の表示 */}
+                        {content.metadata?.usedKnowledgeCount && content.metadata.usedKnowledgeCount > 0 && (
+                          <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Database className="h-4 w-4 text-blue-600" />
+                              <span className="text-sm font-medium text-blue-800">
+                                知識ベース活用状況
+                              </span>
+                            </div>
+                            <div className="text-xs text-blue-700">
+                              <p>• 使用された知識: {content.metadata.usedKnowledgeCount}件</p>
+                              <p>• 生成モデル: {content.metadata.model}</p>
+                              <p>• 生成時間: {content.metadata.generationTime}ms</p>
+                            </div>
+                            
+                            {/* 知識ソースの詳細表示 */}
+                            {content.metadata.knowledgeSources && content.metadata.knowledgeSources.length > 0 && (
+                              <details className="mt-2">
+                                <summary className="text-xs text-blue-600 cursor-pointer hover:text-blue-800">
+                                  使用された知識の詳細を見る
+                                </summary>
+                                <div className="mt-2 space-y-1">
+                                  {content.metadata.knowledgeSources.slice(0, 3).map((source, idx) => (
+                                    <div key={idx} className="text-xs text-blue-700 bg-blue-100 p-2 rounded">
+                                      <p className="font-medium">{source.title}</p>
+                                      <p className="text-blue-600">タイプ: {source.contentType}</p>
                                     </div>
-                                    <p className="text-sm">{content.content}</p>
-                                    {content.metadata && (
-                                      <div className="flex gap-2 mt-2 text-xs text-gray-500">
-                                        <span>モデル: {content.metadata.model}</span>
-                                        <span>生成時間: {content.metadata.generationTime}ms</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex gap-1 ml-4">
-                                    <Button
-                                      size="sm"
-                                      variant={content.selected ? "default" : "outline"}
-                                      onClick={() => toggleContentSelection(content.id)}
-                                    >
-                                      <Check className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => deleteContent(content.id)}
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </div>
+                                  ))}
+                                  {content.metadata.knowledgeSources.length > 3 && (
+                                    <p className="text-xs text-blue-600">
+                                      他 {content.metadata.knowledgeSources.length - 3}件の知識を使用
+                                    </p>
+                                  )}
                                 </div>
-                              </div>
+                              </details>
                             )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </DragDropContext>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-between items-center mt-3 text-xs text-gray-500">
+                          <span>{content.content.length}文字</span>
+                          <span>生成時間: {content.metadata?.generationTime || 0}ms</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}
