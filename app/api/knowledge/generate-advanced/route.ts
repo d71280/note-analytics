@@ -760,7 +760,7 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
   }
 
   // 文字数制限の最終チェック
-  if (content.length > maxLength) {
+  if (content && content.length > maxLength) {
     content = content.substring(0, maxLength - 3) + '...'
   }
 
@@ -768,12 +768,13 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
 
   // 確実に戻り値を返す
   const result = {
-    content,
-    model,
+    content: content || generateDiverseFallbackContent(platform, maxLength),
+    model: model || 'fallback',
     generationTime
   }
   
   console.log('=== generateWithPowerfulAI Result ===', result)
+  console.log('Result content length:', result.content.length)
   return result
 }
 
@@ -825,5 +826,4 @@ function generateDiverseFallbackContent(platform: string, maxLength: number): st
   const template = templates[Math.floor(Math.random() * templates.length)]
   
   return template.substring(0, maxLength)
-}
 }
