@@ -187,13 +187,14 @@ function selectDiverseItems(items: KnowledgeItem[], prompt: string, platform: st
   // スコアでソート
   const sortedItems = scoredItems.sort((a, b) => (b.relevance || 0) - (a.relevance || 0))
   
-  // 多様性を確保するための選択
+  // 多様性を確保するための選択（重み付けを強化）
   const selectedItems = []
   const usedTypes = new Set<string>()
   const usedTags = new Set<string>()
+  const usedKeywords = new Set<string>()
   
   // 上位の関連アイテムを優先的に選択
-  for (const item of sortedItems.slice(0, 20)) {
+  for (const item of sortedItems.slice(0, 25)) {
     if (selectedItems.length >= 15) break
     
     // コンテンツタイプの多様性を確保
@@ -206,32 +207,45 @@ function selectDiverseItems(items: KnowledgeItem[], prompt: string, platform: st
       usedTags.has(tag)
     ).length || 0
     
-    // 多様性スコアを計算
-    const diversityScore = (1 / (typeCount + 1)) + (1 / (tagOverlap + 1))
-    const finalScore = (item.relevance || 0) * 0.7 + diversityScore * 0.3
+    // キーワードの多様性を確保
+    const keywordOverlap = keywords.filter(keyword => 
+      item.title.toLowerCase().includes(keyword) || 
+      item.content.toLowerCase().includes(keyword)
+    ).length
+    
+    // 多様性スコアを計算（重み付けを強化）
+    const diversityScore = (1 / (typeCount + 1)) + (1 / (tagOverlap + 1)) + (1 / (keywordOverlap + 1))
+    const finalScore = (item.relevance || 0) * 0.4 + diversityScore * 0.6 // 多様性の重みを60%に増加
     
     // スコアが高いアイテムを選択
-    if (finalScore > 2 || selectedItems.length < 8) {
+    if (finalScore > 1.5 || selectedItems.length < 8) {
       selectedItems.push({
         ...item,
         relevance: finalScore
       })
       usedTypes.add(item.content_type)
       item.tags?.forEach(tag => usedTags.add(tag))
+      keywords.forEach(keyword => usedKeywords.add(keyword))
     }
   }
   
-  // 最終的な多様性チェック
+  // 最終的な多様性チェック（より厳格に）
   const finalItems = []
   const typeDistribution = new Map<string, number>()
+  const tagDistribution = new Map<string, number>()
   
   for (const item of selectedItems) {
-    const currentCount = typeDistribution.get(item.content_type) || 0
+    const currentTypeCount = typeDistribution.get(item.content_type) || 0
+    const currentTagCount = item.tags?.reduce((sum, tag) => 
+      sum + (tagDistribution.get(tag) || 0), 0) || 0
     
-    // 各タイプから最大3件まで選択
-    if (currentCount < 3) {
+    // 各タイプから最大2件まで選択（より分散）
+    if (currentTypeCount < 2 && currentTagCount < 3) {
       finalItems.push(item)
-      typeDistribution.set(item.content_type, currentCount + 1)
+      typeDistribution.set(item.content_type, currentTypeCount + 1)
+      item.tags?.forEach(tag => {
+        tagDistribution.set(tag, (tagDistribution.get(tag) || 0) + 1)
+      })
     }
     
     if (finalItems.length >= 12) break
@@ -410,14 +424,35 @@ function buildPowerfulPrompt(params: {
     news: '最新の情報と背景を分かりやすく伝える。事実に基づく報道。文脈を提供。'
   }
 
-  return `あなたは${config.name}のコンテンツ生成専門家です。最高品質のコンテンツを作成してください。
+  return `あなたは${config.name}のコンテンツ生成専門家です。最高品質で多様性のあるコンテンツを作成してください。
 
 【重要な指示】
-- 提供された知識ベースの内容を最大限に活用し、その概念やアイデアを具体的に応用する
-- プロンプトの指示に基づいて、読者に明確で実用的な価値を提供する
+- 提供された知識ベースの内容を活用し、その概念やアイデアを創造的に応用する
+- 毎回異なる視点、表現、具体例を使用して多様性を確保する
 - 抽象的な表現を避け、具体的な数値、事例、ステップを含める
 - 読者の問題解決や成長に直接的に役立つ情報を提供する
 - 必ず${maxLength}文字以内で完結し、読みやすい文章にする
+
+【創造性と多様性の基準】
+- 異なるアプローチや視点を提供
+- 多様な具体例や事例を使用（同じ事例を繰り返し使用しない）
+- 様々な表現方法を活用
+- 読者の興味を引く魅力的な内容
+- 深い洞察と実践的な価値を提供
+
+【品質向上のための指示】
+- 統計データや研究結果を活用して信頼性を高める
+- 段階的な説明やステップバイステップのガイドを提供
+- 読者の感情に訴えるストーリーテリングを活用
+- 反対意見や異なる視点も考慮したバランスの取れた内容
+- 即座に実践できる具体的なアクションを提示
+
+【多様性確保のルール】
+- 同じキーワードやフレーズを繰り返し使用しない
+- 異なる業界や分野の事例を組み合わせる
+- 様々なトーンやスタイルを試す
+- 読者の異なるニーズや状況に対応する
+- 予想外の角度からアプローチする
 
 【生成要件】
 - プラットフォーム: ${config.name}
@@ -431,7 +466,7 @@ function buildPowerfulPrompt(params: {
 ${knowledgeContext}
 
 【具体的な生成指示】
-「${prompt}」について、上記の参考知識を基に、以下の要素を含む強力なコンテンツを${maxLength}文字以内で生成してください：
+「${prompt}」について、上記の参考知識を基に、以下の要素を含む強力で多様なコンテンツを${maxLength}文字以内で生成してください：
 
 1. 具体的な数値やデータ（研究結果、統計、事例）
 2. 実践的なアドバイスや具体的なステップ
@@ -439,6 +474,8 @@ ${knowledgeContext}
 4. 知識ベースの内容を活用した専門的な洞察
 5. 読者に即座に価値を提供する内容
 6. 信頼性と実用性を兼ね備えた情報
+7. 予想外の視点やアプローチ
+8. 感情に訴える魅力的な表現
 
 【品質基準】
 - 明確で分かりやすい表現
@@ -447,6 +484,8 @@ ${knowledgeContext}
 - 信頼性の高い情報源
 - 行動を促す要素を含む
 - 知識ベースの内容を効果的に活用
+- 多様性と創造性を重視
+- 深い洞察と実用的な価値
 
 【出力形式】
 - 1つの完結した文章
@@ -454,6 +493,7 @@ ${knowledgeContext}
 - 指定されたスタイルとトーンに準拠
 - 具体的で実用的な内容
 - 読者の行動を促す要素を含む
+- 多様で魅力的な表現
 
 生成してください：`
 }
@@ -490,11 +530,26 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
 - 読者の問題解決や成長に直接的に役立つ情報を提供する
 - 必ず${maxLength}文字以内で完結し、読みやすい文章にする
 
-【創造性の基準】
+【創造性と多様性の基準】
 - 異なるアプローチや視点を提供
-- 多様な具体例や事例を使用
+- 多様な具体例や事例を使用（同じ事例を繰り返し使用しない）
 - 様々な表現方法を活用
-- 読者の興味を引く魅力的な内容`
+- 読者の興味を引く魅力的な内容
+- 深い洞察と実践的な価値を提供
+
+【品質向上のための指示】
+- 統計データや研究結果を活用して信頼性を高める
+- 段階的な説明やステップバイステップのガイドを提供
+- 読者の感情に訴えるストーリーテリングを活用
+- 反対意見や異なる視点も考慮したバランスの取れた内容
+- 即座に実践できる具体的なアクションを提示
+
+【多様性確保のルール】
+- 同じキーワードやフレーズを繰り返し使用しない
+- 異なる業界や分野の事例を組み合わせる
+- 様々なトーンやスタイルを試す
+- 読者の異なるニーズや状況に対応する
+- 予想外の角度からアプローチする`
             },
             {
               role: 'user',
@@ -503,12 +558,12 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
           ],
           model: 'grok-2-latest',
           stream: false,
-          temperature: 0.95, // より高い創造性
+          temperature: 0.98, // より高い創造性
           max_tokens: Math.min(maxLength * 3, 1500),
-          top_p: 0.95, // より多様な選択
-          frequency_penalty: 0.3, // 繰り返しを減らす
-          presence_penalty: 0.2, // 新しいトピックを促進
-          stop: ['\n\n', '---', '###'] // 自然な終了
+          top_p: 0.98, // より多様な選択
+          frequency_penalty: 0.5, // 繰り返しを大幅に減らす
+          presence_penalty: 0.4, // 新しいトピックを強く促進
+          stop: ['\n\n', '---', '###', '##', '#'] // 自然な終了
         })
       })
 
@@ -534,9 +589,9 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
         const genModel = genAI.getGenerativeModel({ 
           model: 'gemini-pro',
           generationConfig: {
-            temperature: 0.95,
-            topP: 0.95,
-            topK: 50,
+            temperature: 0.98,
+            topP: 0.98,
+            topK: 60,
             maxOutputTokens: Math.min(maxLength * 3, 1500),
             candidateCount: 1
           }

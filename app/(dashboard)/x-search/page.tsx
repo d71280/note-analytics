@@ -267,12 +267,25 @@ export default function ContentGenerationPage() {
                   <div className="mt-2 text-xs text-gray-600">
                     <p className="font-medium mb-1">💡 効果的なプロンプト例:</p>
                     <ul className="space-y-1">
-                      <li>• {"脳内OS強化の具体的なステップを3つ教えて"}</li>
-                      <li>• {"AI活用で生産性を向上させる実践的な方法"}</li>
-                      <li>• {"マーケティング成功事例から学ぶ3つのポイント"}</li>
-                      <li>• {"リーダーシップ開発のための日々の習慣"}</li>
-                      <li>• {"デジタルマーケティングの最新トレンドと実践法"}</li>
+                      <li>• "脳内OS強化の具体的なステップを3つ教えて"</li>
+                      <li>• "AI活用で生産性を向上させる実践的な方法"</li>
+                      <li>• "マーケティング成功事例から学ぶ3つのポイント"</li>
+                      <li>• "リーダーシップ開発のための日々の習慣"</li>
+                      <li>• "デジタルマーケティングの最新トレンドと実践法"</li>
                     </ul>
+                    <div className="mt-3 p-2 bg-blue-50 rounded border border-blue-200">
+                      <p className="font-medium text-blue-800 mb-1">🎯 多様性を高めるプロンプト例:</p>
+                      <ul className="space-y-1 text-blue-700">
+                        <li>• "起業家が知るべき資金調達の裏技"</li>
+                        <li>• "リモートワークでチームをまとめる秘訣"</li>
+                        <li>• "個人ブランディングでキャリアを加速させる方法"</li>
+                        <li>• "データ分析でビジネスを変革する実例"</li>
+                        <li>• "クリエイティブ思考を鍛える日常習慣"</li>
+                        <li>• "健康経営で長期的な成功を実現する戦略"</li>
+                        <li>• "ヒアリング能力で営業成績を2倍にする技術"</li>
+                        <li>• "持続可能なビジネスモデルの設計法"</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
 
