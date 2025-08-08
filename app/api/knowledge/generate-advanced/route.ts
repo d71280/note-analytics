@@ -105,48 +105,56 @@ async function fetchRelevantKnowledge(prompt: string, platform: string): Promise
     // より詳細なキーワード抽出
     const promptKeywords = extractDetailedKeywords(prompt)
     
-    const query = supabase
+    // 複数の検索戦略を実行
+    const searchStrategies = []
+    
+    // 戦略1: キーワードベース検索
+    if (promptKeywords.length > 0) {
+      const keywordQuery = supabase
+        .from('knowledge_base')
+        .select('id, title, content, content_type, tags')
+        .or(`tags.cs.{${promptKeywords.join(',')}},title.ilike.%${promptKeywords[0]}%,content.ilike.%${promptKeywords[0]}%`)
+        .limit(10)
+      searchStrategies.push(keywordQuery)
+    }
+    
+    // 戦略2: プラットフォーム特化検索
+    const platformQuery = supabase
+      .from('knowledge_base')
+      .select('id, title, content, content_type, tags')
+      .eq('content_type', platform)
+      .limit(8)
+    searchStrategies.push(platformQuery)
+    
+    // 戦略3: 多様性確保のためのランダム検索
+    const randomQuery = supabase
       .from('knowledge_base')
       .select('id, title, content, content_type, tags')
       .order('created_at', { ascending: false })
-      .limit(30) // より多くの候補を取得
-
-    // 複数の検索条件を組み合わせ
-    const searchConditions = []
+      .limit(12)
+    searchStrategies.push(randomQuery)
     
-    // 1. タグでの検索
-    if (promptKeywords.length > 0) {
-      searchConditions.push(query.overlaps('tags', promptKeywords))
-    }
-    
-    // 2. タイトルでの検索
-    const titleSearch = promptKeywords.map(keyword => 
-      query.ilike('title', `%${keyword}%`)
-    )
-    
-    // 3. コンテンツでの検索
-    const contentSearch = promptKeywords.map(keyword => 
-      query.ilike('content', `%${keyword}%`)
-    )
+    // 戦略4: 異なるコンテンツタイプの検索
+    const diverseTypes = ['strategy', 'guidebook', 'analysis', 'research', 'tutorial']
+    const diverseQuery = supabase
+      .from('knowledge_base')
+      .select('id, title, content, content_type, tags')
+      .in('content_type', diverseTypes)
+      .limit(10)
+    searchStrategies.push(diverseQuery)
 
-    // 複数の条件で検索を実行
-    const searchPromises = [
-      query,
-      ...titleSearch,
-      ...contentSearch
-    ]
-
+    // 複数の戦略で検索を実行
     const searchResults = await Promise.all(
-      searchPromises.map(async (searchQuery, index) => {
+      searchStrategies.map(async (searchQuery, index) => {
         try {
           const { data, error } = await searchQuery
           if (error) {
-            console.warn(`Search ${index} error:`, error)
+            console.warn(`Search strategy ${index} error:`, error)
             return []
           }
           return data || []
         } catch (error) {
-          console.warn(`Search ${index} failed:`, error)
+          console.warn(`Search strategy ${index} failed:`, error)
           return []
         }
       })
@@ -158,21 +166,78 @@ async function fetchRelevantKnowledge(prompt: string, platform: string): Promise
       index === self.findIndex(t => t.id === item.id)
     )
 
-    // 関連性スコアを計算（より詳細なスコアリング）
-    const scoredItems = uniqueItems.map(item => ({
-      ...item,
-      relevance: calculateDetailedRelevance(item, prompt, platform, promptKeywords)
-    }))
+    // 多様性を確保するための選択ロジック
+    const diverseItems = selectDiverseItems(uniqueItems, prompt, platform, promptKeywords)
 
-    // 関連性でソートして上位15件を返す
-    return scoredItems
-      .sort((a, b) => (b.relevance || 0) - (a.relevance || 0))
-      .slice(0, 15)
+    return diverseItems
 
   } catch (error) {
     console.error('Knowledge fetch error:', error)
     return []
   }
+}
+
+function selectDiverseItems(items: KnowledgeItem[], prompt: string, platform: string, keywords: string[]): KnowledgeItem[] {
+  // 関連性スコアを計算
+  const scoredItems = items.map(item => ({
+    ...item,
+    relevance: calculateDetailedRelevance(item, prompt, platform, keywords)
+  }))
+
+  // スコアでソート
+  const sortedItems = scoredItems.sort((a, b) => (b.relevance || 0) - (a.relevance || 0))
+  
+  // 多様性を確保するための選択
+  const selectedItems = []
+  const usedTypes = new Set<string>()
+  const usedTags = new Set<string>()
+  
+  // 上位の関連アイテムを優先的に選択
+  for (const item of sortedItems.slice(0, 20)) {
+    if (selectedItems.length >= 15) break
+    
+    // コンテンツタイプの多様性を確保
+    const typeCount = Array.from(usedTypes).filter(type => 
+      item.content_type === type
+    ).length
+    
+    // タグの多様性を確保
+    const tagOverlap = item.tags?.filter(tag => 
+      usedTags.has(tag)
+    ).length || 0
+    
+    // 多様性スコアを計算
+    const diversityScore = (1 / (typeCount + 1)) + (1 / (tagOverlap + 1))
+    const finalScore = (item.relevance || 0) * 0.7 + diversityScore * 0.3
+    
+    // スコアが高いアイテムを選択
+    if (finalScore > 2 || selectedItems.length < 8) {
+      selectedItems.push({
+        ...item,
+        relevance: finalScore
+      })
+      usedTypes.add(item.content_type)
+      item.tags?.forEach(tag => usedTags.add(tag))
+    }
+  }
+  
+  // 最終的な多様性チェック
+  const finalItems = []
+  const typeDistribution = new Map<string, number>()
+  
+  for (const item of selectedItems) {
+    const currentCount = typeDistribution.get(item.content_type) || 0
+    
+    // 各タイプから最大3件まで選択
+    if (currentCount < 3) {
+      finalItems.push(item)
+      typeDistribution.set(item.content_type, currentCount + 1)
+    }
+    
+    if (finalItems.length >= 12) break
+  }
+  
+  return finalItems.sort((a, b) => (b.relevance || 0) - (a.relevance || 0))
 }
 
 function extractDetailedKeywords(text: string): string[] {
@@ -182,7 +247,7 @@ function extractDetailedKeywords(text: string): string[] {
     .split(/\s+/)
     .filter(word => word.length > 1)
     .map(word => word.toLowerCase())
-    .filter(word => !['の', 'に', 'は', 'を', 'が', 'で', 'と', 'から', 'まで', 'より', 'など', 'とか', 'や', 'やら', 'か', 'も', 'でも', 'ばかり', 'だけ', 'ほど', 'くらい', 'ぐらい', 'など', 'なんか', 'なんて', 'なんと', 'なんの', 'なんで', 'なぜ', 'どう', 'どんな', 'どの', 'どれ', 'どこ', 'いつ', '誰', '何', 'いくつ', 'いくら'].includes(word))
+    .filter(word => !['の', 'に', 'は', 'を', 'が', 'で', 'と', 'から', 'まで', 'より', 'など', 'とか', 'や', 'やら', 'か', 'も', 'でも', 'ばかり', 'だけ', 'ほど', 'くらい', 'ぐらい', 'など', 'なんか', 'なんて', 'なんと', 'なんの', 'なんで', 'なんで', 'なぜ', 'どう', 'どんな', 'どの', 'どれ', 'どこ', 'いつ', '誰', '何', 'いくつ', 'いくら'].includes(word))
     .slice(0, 8) // より多くのキーワードを抽出
   
   return Array.from(new Set(keywords))
@@ -402,7 +467,7 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
   let content = ''
   let model = 'fallback'
 
-  // 1. Grok APIを試行（より強力な設定）
+  // 1. Grok APIを試行（より創造的な設定）
   const grokApiKey = process.env.GROK_API_KEY
   if (grokApiKey) {
     try {
@@ -416,21 +481,20 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
           messages: [
             {
               role: 'system',
-              content: `あなたは${platform}のコンテンツ生成専門家です。最高品質のコンテンツを作成してください。
+              content: `あなたは${platform}のコンテンツ生成専門家です。最高品質で多様性のあるコンテンツを作成してください。
 
 【重要な指示】
-- 具体的で実用的な情報を提供する
-- 読者の行動を促す内容にする
-- 抽象的な表現を避け、具体的な例を含める
-- 読者の問題解決に直接的に役立つ内容にする
-- 必ず${maxLength}文字以内で完結させる
+- 提供された知識ベースの内容を活用し、その概念やアイデアを創造的に応用する
+- 毎回異なる視点、表現、具体例を使用して多様性を確保する
+- 抽象的な表現を避け、具体的な数値、事例、ステップを含める
+- 読者の問題解決や成長に直接的に役立つ情報を提供する
+- 必ず${maxLength}文字以内で完結し、読みやすい文章にする
 
-【品質基準】
-- 明確で分かりやすい表現
-- 実践的な価値を提供
-- 読者の興味を引く内容
-- 信頼性の高い情報
-- 行動を促す要素を含む`
+【創造性の基準】
+- 異なるアプローチや視点を提供
+- 多様な具体例や事例を使用
+- 様々な表現方法を活用
+- 読者の興味を引く魅力的な内容`
             },
             {
               role: 'user',
@@ -439,11 +503,12 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
           ],
           model: 'grok-2-latest',
           stream: false,
-          temperature: 0.9, // より創造性を高める
-          max_tokens: Math.min(maxLength * 3, 1500), // より多くのトークンを許可
-          top_p: 0.9, // 多様性を高める
-          frequency_penalty: 0.1, // 繰り返しを減らす
-          presence_penalty: 0.1 // 新しいトピックを促進
+          temperature: 0.95, // より高い創造性
+          max_tokens: Math.min(maxLength * 3, 1500),
+          top_p: 0.95, // より多様な選択
+          frequency_penalty: 0.3, // 繰り返しを減らす
+          presence_penalty: 0.2, // 新しいトピックを促進
+          stop: ['\n\n', '---', '###'] // 自然な終了
         })
       })
 
@@ -459,7 +524,7 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
     }
   }
 
-  // 2. Gemini APIを試行（より強力な設定）
+  // 2. Gemini APIを試行（より創造的な設定）
   if (!content) {
     const geminiApiKey = process.env.GEMINI_API_KEY
     if (geminiApiKey) {
@@ -469,10 +534,11 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
         const genModel = genAI.getGenerativeModel({ 
           model: 'gemini-pro',
           generationConfig: {
-            temperature: 0.9,
-            topP: 0.9,
-            topK: 40,
-            maxOutputTokens: Math.min(maxLength * 3, 1500)
+            temperature: 0.95,
+            topP: 0.95,
+            topK: 50,
+            maxOutputTokens: Math.min(maxLength * 3, 1500),
+            candidateCount: 1
           }
         })
 
@@ -486,10 +552,10 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
     }
   }
 
-  // 3. 強力なフォールバック生成
+  // 3. 多様性のあるフォールバック生成
   if (!content) {
-    content = generatePowerfulFallbackContent(platform, maxLength)
-    model = 'powerful-fallback'
+    content = generateDiverseFallbackContent(platform, maxLength)
+    model = 'diverse-fallback'
   }
 
   // 文字数制限の最終チェック
@@ -506,31 +572,51 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
   }
 }
 
-function generatePowerfulFallbackContent(platform: string, maxLength: number): string {
-  const powerfulTemplates = {
+function generateDiverseFallbackContent(platform: string, maxLength: number): string {
+  const diverseTemplates = {
     x: [
       '最新の研究によると、継続的な学習は生産性を平均47%向上させます。毎日30分の学習時間を確保することで、3ヶ月後には明確な成長を実感できるでしょう。',
       '効果的な学習の秘訣は「実践」にあります。学んだことを24時間以内に実践することで、記憶定着率が78%向上することが分かっています。',
-      '成功する人とそうでない人の違いは「行動力」です。知識を蓄えるだけでなく、即座に実践することで、驚くほどの成果を上げることができます。'
+      '成功する人とそうでない人の違いは「行動力」です。知識を蓄えるだけでなく、即座に実践することで、驚くほどの成果を上げることができます。',
+      'リモートワーク時代の生産性向上術：1) 朝のルーティン確立 2) 集中時間の設定 3) 定期的な休憩。この3つで作業効率が2倍に向上します。',
+      '個人ブランディングの成功法則：専門性×一貫性×継続性。週3回の価値ある発信で、6ヶ月後には確実に認知度が向上します。',
+      'データ分析の基本は「仮説→検証→改善」のサイクル。顧客データを活用した意思決定で、売上を平均35%向上させた事例があります。',
+      'クリエイティブ思考を高める3つの方法：1) 異分野の知識組み合わせ 2) 制約を創造性の源泉に 3) 失敗を恐れない実験精神。',
+      '健康経営の重要性：週3回の運動で認知機能が20%向上、ストレスレベルが40%減少。長期的なキャリア成功の鍵です。'
     ],
     note: [
       '継続的な学習と実践を通じて、あなたの専門性は指数関数的に向上します。今日学んだことを明日の行動に活かすことで、確実な成長を実現しましょう。',
       '知識の積み重ねが革新的なアイデアを生み出します。異なる分野の知識を組み合わせることで、独自の価値を創造できるようになります。',
-      '効果的な学習戦略を実践することで、従来の3倍の速度でスキルアップが可能です。具体的な目標設定と継続的なフィードバックが成功の鍵です。'
+      '効果的な学習戦略を実践することで、従来の3倍の速度でスキルアップが可能です。具体的な目標設定と継続的なフィードバックが成功の鍵です。',
+      'リモートワーク環境でのチームマネジメント成功の秘訣：定期的な1on1、明確な目標設定、非同期コミュニケーションの活用で生産性が向上します。',
+      '個人ブランディング戦略：専門分野での価値提供、一貫したメッセージ発信、ネットワーキングの活用でキャリア機会を創出できます。',
+      'データ駆動型の意思決定：顧客行動分析、A/Bテスト、予測モデルを活用することで、ビジネス成果を最大化できます。',
+      'イノベーション創出のフレームワーク：デザイン思考、ブレインストーミング、プロトタイピングを組み合わせて革新的なソリューションを開発しましょう。',
+      '持続可能なキャリア構築：健康管理、スキル開発、ネットワーク構築のバランスを取ることで、長期的な成功を実現できます。'
     ],
     wordpress: [
       '読者の問題を解決する具体的な方法を提供することで、信頼性とエンゲージメントを大幅に向上させることができます。実践的なアドバイスが最も価値のあるコンテンツです。',
       'SEOを意識した質の高いコンテンツは、検索エンジンでの上位表示と読者の満足度を同時に実現します。具体的で実用的な情報が成功の鍵です。',
-      '読者の興味を引く魅力的なコンテンツは、平均滞在時間を2.5倍に延長し、リピート訪問率を67%向上させることが分かっています。'
+      '読者の興味を引く魅力的なコンテンツは、平均滞在時間を2.5倍に延長し、リピート訪問率を67%向上させることが分かっています。',
+      'リモートワーク時代の生産性向上：時間管理、コミュニケーション、モチベーション維持の3つの要素が重要です。',
+      '個人ブランディングの実践法：専門性の構築、価値提供、ネットワーキングでキャリアを加速させましょう。',
+      'データ分析の基礎知識：統計的思考、仮説検定、可視化技術を身につけてビジネス洞察力を向上させます。',
+      'クリエイティブ思考の開発：発散思考と収束思考を組み合わせて革新的なアイデアを生み出しましょう。',
+      '健康経営の実践：身体的・精神的健康を維持することで、長期的なキャリア成功を実現できます。'
     ],
     article: [
       '専門的な知識と実践的な経験を組み合わせることで、読者に最大の価値を提供できます。具体的な事例と数値に基づいた分析が信頼性を高めます。',
       '構造化された情報と明確な論理展開により、読者の理解を深め、実践への移行を促進します。段階的な説明が学習効果を最大化します。',
-      '継続的な研究と実践を通じて得られた知見は、読者の成長に直接的に貢献します。実証済みの方法論が最も価値のある情報です。'
+      '継続的な研究と実践を通じて得られた知見は、読者の成長に直接的に貢献します。実証済みの方法論が最も価値のある情報です。',
+      'リモートワーク環境での効果的なマネジメント：コミュニケーション戦略、生産性管理、チームビルディングの実践法を解説します。',
+      '個人ブランディング戦略の構築：専門性の確立、価値提供、ネットワーク構築によるキャリア加速の方法論です。',
+      'データ駆動型ビジネス分析：統計的手法、予測モデル、可視化技術を活用した意思決定支援の実践ガイドです。',
+      'イノベーション創出プロセス：デザイン思考、創造的問題解決、プロトタイピングを組み合わせた革新的ソリューション開発法です。',
+      '持続可能なキャリア開発：健康管理、スキル開発、ワークライフバランスを統合した長期的成功戦略です。'
     ]
   }
 
-  const templates = powerfulTemplates[platform as keyof typeof powerfulTemplates] || powerfulTemplates.x
+  const templates = diverseTemplates[platform as keyof typeof diverseTemplates] || diverseTemplates.x
   const template = templates[Math.floor(Math.random() * templates.length)]
   
   return template.substring(0, maxLength)
