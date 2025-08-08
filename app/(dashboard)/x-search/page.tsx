@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Sparkles, Loader2, Plus, Clock, Send, X, Grip, Check, Twitter, FileText, Globe, Settings, Zap } from 'lucide-react'
+import { Sparkles, Loader2, Plus, Clock, X, Grip, Check, Twitter, FileText, Globe, Settings, Zap } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Switch } from '@/components/ui/switch'
 
@@ -27,18 +27,6 @@ interface GeneratedContent {
   }
 }
 
-interface IntervalOption {
-  value: number
-  label: string
-}
-
-const intervalOptions: IntervalOption[] = [
-  { value: 5, label: '5分' },
-  { value: 15, label: '15分' },
-  { value: 30, label: '30分' },
-  { value: 60, label: '1時間' },
-  { value: 180, label: '3時間' },
-]
 
 const defaultPlatformConfig = {
   x: {
@@ -69,7 +57,6 @@ export default function ContentGenerationPage() {
   const [prompt, setPrompt] = useState('')
   const [generatedContents, setGeneratedContents] = useState<GeneratedContent[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
-  const [selectedInterval, setSelectedInterval] = useState(30)
   const [isScheduling, setIsScheduling] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
   const [platformConfig, setPlatformConfig] = useState(defaultPlatformConfig)
@@ -328,7 +315,7 @@ export default function ContentGenerationPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="style">スタイル</Label>
-                          <Select value={generationStyle} onValueChange={(value: any) => setGenerationStyle(value)}>
+                          <Select value={generationStyle} onValueChange={(value) => setGenerationStyle(value as 'professional' | 'casual' | 'educational' | 'entertaining')}>
                             <SelectTrigger className="mt-2">
                               <SelectValue />
                             </SelectTrigger>
@@ -342,7 +329,7 @@ export default function ContentGenerationPage() {
                         </div>
                         <div>
                           <Label htmlFor="tone">トーン</Label>
-                          <Select value={generationTone} onValueChange={(value: any) => setGenerationTone(value)}>
+                          <Select value={generationTone} onValueChange={(value) => setGenerationTone(value as 'formal' | 'friendly' | 'authoritative' | 'conversational')}>
                             <SelectTrigger className="mt-2">
                               <SelectValue />
                             </SelectTrigger>
@@ -359,7 +346,7 @@ export default function ContentGenerationPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="contentType">コンテンツタイプ</Label>
-                          <Select value={contentType} onValueChange={(value: any) => setContentType(value)}>
+                          <Select value={contentType} onValueChange={(value) => setContentType(value as 'summary' | 'analysis' | 'tutorial' | 'opinion' | 'news')}>
                             <SelectTrigger className="mt-2">
                               <SelectValue />
                             </SelectTrigger>

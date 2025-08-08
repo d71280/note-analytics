@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 const sampleKnowledgeData = [
@@ -332,7 +332,7 @@ const sampleKnowledgeData = [
   }
 ]
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   console.log('=== Seed Sample Knowledge Data API Start ===')
   
   try {

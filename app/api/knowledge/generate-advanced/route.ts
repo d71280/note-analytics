@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       knowledgeSources: knowledgeItems.map(item => ({
         title: item.title,
         contentType: item.content_type,
-        relevance: item.relevance || 'high'
+        relevance: 'high'
       }))
     })
 
@@ -150,7 +150,7 @@ function extractKeywords(text: string): string[] {
     .filter(word => word.length > 1)
     .slice(0, 5)
   
-  return [...new Set(keywords)]
+  return Array.from(new Set(keywords))
 }
 
 function calculateRelevance(item: KnowledgeItem, prompt: string, platform: string): number {
