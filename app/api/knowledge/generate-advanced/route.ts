@@ -66,6 +66,17 @@ export async function POST(request: NextRequest) {
     // AI生成を実行
     const generatedContent = await generateWithPowerfulAI(powerfulPrompt, platform, maxLength)
 
+    // 戻り値の検証とデバッグ
+    console.log('Generated content result:', generatedContent)
+    
+    if (!generatedContent) {
+      throw new Error('AI生成でコンテンツが生成されませんでした')
+    }
+
+    if (!generatedContent.content) {
+      throw new Error('AI生成でコンテンツが空でした')
+    }
+
     return NextResponse.json({
       success: true,
       content: generatedContent.content,
@@ -76,8 +87,8 @@ export async function POST(request: NextRequest) {
         contentType,
         wordCount: generatedContent.content.length,
         usedKnowledgeCount: knowledgeItems.length,
-        model: generatedContent.model,
-        generationTime: generatedContent.generationTime
+        model: generatedContent.model || 'unknown',
+        generationTime: generatedContent.generationTime || 0
       },
       knowledgeSources: knowledgeItems.map(item => ({
         title: item.title,
@@ -498,23 +509,22 @@ ${knowledgeContext}
 生成してください：`
 }
 
-async function generateWithPowerfulAI(prompt: string, platform: string, maxLength: number): Promise<{
-  content: string
-  model: string
-  generationTime: number
-}> {
+async function generateWithPowerfulAI(prompt: string, platform: string, maxLength: number) {
+  console.log('=== generateWithPowerfulAI Start ===')
   const startTime = Date.now()
   let content = ''
   let model = 'fallback'
 
-  // 1. Grok APIを試行（より創造的な設定）
-  const grokApiKey = process.env.GROK_API_KEY
-  if (grokApiKey) {
+  // 1. OpenAI GPT-4oを試行（最高品質・最新モデル）
+  console.log('Checking OpenAI API key...')
+  const openaiApiKey = process.env.OPEN_AI_KEY
+  console.log('OpenAI API key exists:', !!openaiApiKey)
+  if (openaiApiKey) {
     try {
-      const grokResponse = await fetch('https://api.x.ai/v1/chat/completions', {
+      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${grokApiKey}`,
+          'Authorization': `Bearer ${openaiApiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -556,14 +566,148 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
               content: prompt
             }
           ],
+          model: 'gpt-4o',
+          stream: false,
+          temperature: 0.9, // 高い創造性
+          max_tokens: Math.min(maxLength * 3, 1500),
+          top_p: 0.95, // 多様な選択
+          frequency_penalty: 0.3, // 繰り返しを減らす
+          presence_penalty: 0.2, // 新しいトピックを促進
+          stop: ['\n\n', '---', '###', '##'] // 自然な終了（最大4個まで）
+        })
+      })
+
+      console.log('OpenAI response status:', openaiResponse.status)
+      if (openaiResponse.ok) {
+        const openaiData = await openaiResponse.json()
+        console.log('OpenAI response data:', openaiData)
+        if (openaiData.choices?.[0]?.message?.content) {
+          content = openaiData.choices[0].message.content
+          model = 'gpt-4o'
+          console.log('GPT-4o content generated:', content.substring(0, 50) + '...')
+        }
+      } else {
+        const errorData = await openaiResponse.json()
+        console.log('OpenAI API error:', errorData)
+      }
+    } catch (error) {
+      console.warn('OpenAI GPT-4o API error:', error)
+    }
+  }
+
+  // 2. OpenAI GPT-4o-miniを試行（高速・コスト効率）
+  if (!content && openaiApiKey) {
+    try {
+      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: `あなたは${platform}のコンテンツ生成専門家です。高品質で実用的なコンテンツを作成してください。
+
+【重要な指示】
+- 提供された知識ベースの内容を活用し、その概念やアイデアを応用する
+- 具体的な数値、事例、ステップを含める
+- 読者の問題解決や成長に直接的に役立つ情報を提供する
+- 必ず${maxLength}文字以内で完結し、読みやすい文章にする
+
+【品質基準】
+- 明確で分かりやすい表現
+- 実践的な価値を提供
+- 読者の興味を引く内容
+- 信頼性の高い情報
+- 行動を促す要素を含む`
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          model: 'gpt-4o-mini',
+          stream: false,
+          temperature: 0.8,
+          max_tokens: Math.min(maxLength * 3, 1500),
+          top_p: 0.9,
+          frequency_penalty: 0.2,
+          presence_penalty: 0.1
+        })
+      })
+
+      if (openaiResponse.ok) {
+        const openaiData = await openaiResponse.json()
+        if (openaiData.choices?.[0]?.message?.content) {
+          content = openaiData.choices[0].message.content
+          model = 'gpt-4o-mini'
+        }
+      }
+    } catch (error) {
+      console.warn('OpenAI GPT-4o-mini API error:', error)
+    }
+  }
+
+  // 3. Grok APIを試行（バックアップ）
+  if (!content) {
+    const grokApiKey = process.env.GROK_API_KEY
+    if (grokApiKey) {
+      try {
+        const grokResponse = await fetch('https://api.x.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${grokApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            messages: [
+              {
+                role: 'system',
+                content: `あなたは${platform}のコンテンツ生成専門家です。最高品質で多様性のあるコンテンツを作成してください。
+
+【重要な指示】
+- 提供された知識ベースの内容を活用し、その概念やアイデアを創造的に応用する
+- 毎回異なる視点、表現、具体例を使用して多様性を確保する
+- 抽象的な表現を避け、具体的な数値、事例、ステップを含める
+- 読者の問題解決や成長に直接的に役立つ情報を提供する
+- 必ず${maxLength}文字以内で完結し、読みやすい文章にする
+
+【創造性と多様性の基準】
+- 異なるアプローチや視点を提供
+- 多様な具体例や事例を使用（同じ事例を繰り返し使用しない）
+- 様々な表現方法を活用
+- 読者の興味を引く魅力的な内容
+- 深い洞察と実践的な価値を提供
+
+【品質向上のための指示】
+- 統計データや研究結果を活用して信頼性を高める
+- 段階的な説明やステップバイステップのガイドを提供
+- 読者の感情に訴えるストーリーテリングを活用
+- 反対意見や異なる視点も考慮したバランスの取れた内容
+- 即座に実践できる具体的なアクションを提示
+
+【多様性確保のルール】
+- 同じキーワードやフレーズを繰り返し使用しない
+- 異なる業界や分野の事例を組み合わせる
+- 様々なトーンやスタイルを試す
+- 読者の異なるニーズや状況に対応する
+- 予想外の角度からアプローチする`
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
           model: 'grok-2-latest',
           stream: false,
-          temperature: 0.98, // より高い創造性
+          temperature: 0.98,
           max_tokens: Math.min(maxLength * 3, 1500),
-          top_p: 0.98, // より多様な選択
-          frequency_penalty: 0.5, // 繰り返しを大幅に減らす
-          presence_penalty: 0.4, // 新しいトピックを強く促進
-          stop: ['\n\n', '---', '###', '##', '#'] // 自然な終了
+          top_p: 0.98,
+          frequency_penalty: 0.5,
+          presence_penalty: 0.4,
+          stop: ['\n\n', '---', '###', '##', '#']
         })
       })
 
@@ -579,7 +723,7 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
     }
   }
 
-  // 2. Gemini APIを試行（より創造的な設定）
+  // 4. Gemini APIを試行（バックアップ）
   if (!content) {
     const geminiApiKey = process.env.GEMINI_API_KEY
     if (geminiApiKey) {
@@ -607,8 +751,10 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
     }
   }
 
-  // 3. 多様性のあるフォールバック生成
-  if (!content) {
+  // 5. 多様性のあるフォールバック生成（確実に実行）
+  console.log('Before fallback check - content:', content)
+  if (!content || content.trim() === '') {
+    console.log('Using fallback content')
     content = generateDiverseFallbackContent(platform, maxLength)
     model = 'diverse-fallback'
   }
@@ -620,11 +766,15 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
 
   const generationTime = Date.now() - startTime
 
-  return {
+  // 確実に戻り値を返す
+  const result = {
     content,
     model,
     generationTime
   }
+  
+  console.log('=== generateWithPowerfulAI Result ===', result)
+  return result
 }
 
 function generateDiverseFallbackContent(platform: string, maxLength: number): string {
@@ -675,4 +825,5 @@ function generateDiverseFallbackContent(platform: string, maxLength: number): st
   const template = templates[Math.floor(Math.random() * templates.length)]
   
   return template.substring(0, maxLength)
-} 
+}
+}
