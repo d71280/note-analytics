@@ -8,8 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Sparkles, Loader2, Plus, Clock, X, Grip, Check, Twitter, FileText, Globe, Settings, Zap, Database } from 'lucide-react'
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import { Sparkles, Loader2, Plus, Clock, X, Check, Twitter, FileText, Globe, Settings, Zap, Database } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 
 interface GeneratedContent {
@@ -162,15 +161,6 @@ export default function ContentGenerationPage() {
     )
   }
 
-  const handleDragEnd = (result: { destination: { index: number } | null, source: { index: number } }) => {
-    if (!result.destination) return
-
-    const items = Array.from(generatedContents)
-    const [reorderedItem] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, reorderedItem)
-
-    setGeneratedContents(items.map((item, index) => ({ ...item, order: index })))
-  }
 
   const addCustomContent = () => {
     if (!customPrompt.trim()) return
@@ -277,11 +267,11 @@ export default function ContentGenerationPage() {
                   <div className="mt-2 text-xs text-gray-600">
                     <p className="font-medium mb-1">💡 効果的なプロンプト例:</p>
                     <ul className="space-y-1">
-                      <li>• "脳内OS強化の具体的なステップを3つ教えて"</li>
-                      <li>• "AI活用で生産性を向上させる実践的な方法"</li>
-                      <li>• "マーケティング成功事例から学ぶ3つのポイント"</li>
-                      <li>• "リーダーシップ開発のための日々の習慣"</li>
-                      <li>• "デジタルマーケティングの最新トレンドと実践法"</li>
+                      <li>• {"脳内OS強化の具体的なステップを3つ教えて"}</li>
+                      <li>• {"AI活用で生産性を向上させる実践的な方法"}</li>
+                      <li>• {"マーケティング成功事例から学ぶ3つのポイント"}</li>
+                      <li>• {"リーダーシップ開発のための日々の習慣"}</li>
+                      <li>• {"デジタルマーケティングの最新トレンドと実践法"}</li>
                     </ul>
                   </div>
                 </div>
@@ -490,7 +480,7 @@ export default function ContentGenerationPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {generatedContents.map((content, index) => (
+                  {generatedContents.map((content) => (
                     <Card key={content.id} className="relative">
                       <CardHeader>
                         <div className="flex justify-between items-start">

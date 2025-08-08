@@ -105,7 +105,7 @@ async function fetchRelevantKnowledge(prompt: string, platform: string): Promise
     // より詳細なキーワード抽出
     const promptKeywords = extractDetailedKeywords(prompt)
     
-    let query = supabase
+    const query = supabase
       .from('knowledge_base')
       .select('id, title, content, content_type, tags')
       .order('created_at', { ascending: false })
