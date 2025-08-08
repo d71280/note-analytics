@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
     // 知識ベースから関連コンテンツを取得
     const knowledgeItems = await fetchRelevantKnowledge(prompt, platform)
     
-    // 高度なプロンプトエンジニアリング
-    const enhancedPrompt = buildAdvancedPrompt({
+    // 創造的な文章生成のためのプロンプトエンジニアリング
+    const creativePrompt = buildCreativePrompt({
       prompt,
       platform,
       maxLength,
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     })
 
     // AI生成を実行
-    const generatedContent = await generateWithAI(enhancedPrompt, platform, maxLength)
+    const generatedContent = await generateWithAI(creativePrompt, platform, maxLength)
 
     return NextResponse.json({
       success: true,
@@ -182,7 +182,7 @@ function calculateRelevance(item: KnowledgeItem, prompt: string, platform: strin
   return score
 }
 
-function buildAdvancedPrompt(params: {
+function buildCreativePrompt(params: {
   prompt: string
   platform: string
   maxLength: number
@@ -205,11 +205,12 @@ function buildAdvancedPrompt(params: {
     knowledgeItems
   } = params
 
-  const knowledgeContext = knowledgeItems.length > 0
+  // 知識ベースの内容を要約して提供（直接引用ではなく）
+  const knowledgeSummary = knowledgeItems.length > 0
     ? knowledgeItems.map(item => 
-        `【${item.title}】\n${item.content.substring(0, 300)}...`
-      ).join('\n\n')
-    : '参考知識がありません。一般的な知識に基づいて生成してください。'
+        `【${item.title}】の要点: ${item.content.substring(0, 150)}...`
+      ).join('\n')
+    : '一般的な知識に基づいて'
 
   const platformConfig = {
     x: {
@@ -268,6 +269,12 @@ function buildAdvancedPrompt(params: {
 
   return `あなたは${config.name}のコンテンツ生成専門家です。
 
+【重要な指示】
+- 知識ベースの内容を参考にするが、直接引用は絶対にしない
+- プロンプトの指示に基づいて、オリジナルの新しいコンテンツを作成する
+- 知識ベースの概念やアイデアを活用して、創造的な文章を生成する
+- 既存の文章をコピーするのではなく、新しい視点や表現で内容を展開する
+
 【生成要件】
 - プラットフォーム: ${config.name}
 - 文字数制限: ${config.requirements.join(', ')}
@@ -276,17 +283,18 @@ function buildAdvancedPrompt(params: {
 - ターゲット: ${targetAudience}
 - コンテンツタイプ: ${contentType}
 
-【参考知識】
-${knowledgeContext}
+【参考知識（直接引用禁止）】
+${knowledgeSummary}
 
 【生成指示】
-「${prompt}」について、上記の要件に従って${maxLength}文字以内のコンテンツを生成してください。
+「${prompt}」について、上記の参考知識を基にしながら、完全にオリジナルの新しいコンテンツを${maxLength}文字以内で生成してください。
 
 【出力形式】
 - 1つの完結した文章
 - 指定された文字数以内
 - 指定されたスタイルとトーンに準拠
-- 参考知識を効果的に活用
+- 知識ベースの概念を活用したオリジナルコンテンツ
+- 直接引用は絶対にしない
 
 生成してください：`
 }
@@ -314,7 +322,7 @@ async function generateWithAI(prompt: string, platform: string, maxLength: numbe
           messages: [
             {
               role: 'system',
-              content: `あなたは${platform}のコンテンツ生成専門家です。必ず${maxLength}文字以内で、指定された要件に従ってコンテンツを生成してください。`
+              content: `あなたは${platform}のコンテンツ生成専門家です。必ず${maxLength}文字以内で、指定された要件に従ってオリジナルのコンテンツを生成してください。既存の文章をコピーするのではなく、新しい視点で創造的な内容を作成してください。`
             },
             {
               role: 'user',
@@ -323,7 +331,7 @@ async function generateWithAI(prompt: string, platform: string, maxLength: numbe
           ],
           model: 'grok-2-latest',
           stream: false,
-          temperature: 0.7,
+          temperature: 0.8, // 創造性を高めるため温度を上げる
           max_tokens: Math.min(maxLength * 2, 1000)
         })
       })
@@ -361,7 +369,7 @@ async function generateWithAI(prompt: string, platform: string, maxLength: numbe
 
   // 3. フォールバック生成
   if (!content) {
-    content = generateFallbackContent(platform, maxLength)
+    content = generateCreativeFallbackContent(platform, maxLength)
     model = 'fallback'
   }
 
@@ -379,31 +387,31 @@ async function generateWithAI(prompt: string, platform: string, maxLength: numbe
   }
 }
 
-function generateFallbackContent(platform: string, maxLength: number): string {
-  const fallbackTemplates = {
+function generateCreativeFallbackContent(platform: string, maxLength: number): string {
+  const creativeTemplates = {
     x: [
-      '今日学んだこと：新しい知識を得ることで視野が広がります。継続的な学習が成長の鍵です。',
-      '興味深い発見がありました。知識を共有することで、みんなで成長できますね。',
-      '学びの時間は貴重です。新しい視点を得ることで、世界が変わって見えます。'
+      '新しい視点で学びを深めることで、驚くほどの成長を実感できます。知識の組み合わせが創造性を生み出します。',
+      '継続的な学習と実践を通じて、独自の価値を創造していくことが大切です。',
+      '知識を活用して新しいアイデアを生み出すことで、他者に価値を提供できます。'
     ],
     note: [
-      '継続的な学習と成長を通じて、価値のあるコンテンツをお届けしています。',
-      '新しい発見や学びを共有することで、読者の皆様と一緒に成長していきたいと思います。',
-      '知識の共有は、社会全体の成長につながります。'
+      '知識の積み重ねが新しい発見につながります。継続的な学習で成長し続けましょう。',
+      '創造的な思考と実践的な知識の組み合わせが、革新的な解決策を生み出します。',
+      '学びを深めることで、より豊かな視点と価値あるコンテンツを提供できます。'
     ],
     wordpress: [
-      '読者の皆様に価値のある情報をお届けすることを心がけています。',
-      '専門的な知識と実践的な経験を組み合わせた内容をお届けします。',
-      '継続的な改善と学習を通じて、より良いコンテンツを提供していきます。'
+      '知識を基盤とした創造的なアプローチが、読者に価値ある情報を提供します。',
+      '継続的な学習と実践を通じて、質の高いコンテンツを作成していきましょう。',
+      '新しい視点と知識の組み合わせが、魅力的なコンテンツを生み出します。'
     ],
     article: [
-      '詳細な分析と実践的なアドバイスを通じて、読者の理解を深めることを目指しています。',
-      '専門的な視点から、読者の皆様に役立つ情報をお届けします。',
-      '継続的な研究と実践を通じて、信頼性の高いコンテンツを提供しています。'
+      '知識を活用した創造的な思考が、革新的なアイデアを生み出します。',
+      '継続的な学習と実践を通じて、独自の価値を創造していくことが重要です。',
+      '知識の組み合わせと新しい視点が、質の高いコンテンツを作成する鍵です。'
     ]
   }
 
-  const templates = fallbackTemplates[platform as keyof typeof fallbackTemplates] || fallbackTemplates.x
+  const templates = creativeTemplates[platform as keyof typeof creativeTemplates] || creativeTemplates.x
   const template = templates[Math.floor(Math.random() * templates.length)]
   
   return template.substring(0, maxLength)

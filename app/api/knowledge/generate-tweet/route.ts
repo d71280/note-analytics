@@ -75,21 +75,22 @@ export async function POST(request: NextRequest) {
       ]
     }
 
+    // 知識ベースの内容を要約して提供（直接引用ではなく）
     knowledgeContent = knowledgeItems.length > 0 
-      ? knowledgeItems.map(item => `タイトル: ${item.title}\nタイプ: ${item.content_type}\nコンテンツ: ${item.content}\nタグ: ${item.tags?.join(', ') || 'なし'}`).join('\n\n---\n\n')
-      : 'まだ知識ベースにコンテンツが登録されていません。'
+      ? knowledgeItems.map(item => `【${item.title}】の要点: ${item.content.substring(0, 150)}...`).join('\n')
+      : '一般的な知識に基づいて'
 
     console.log('Final knowledge items count:', knowledgeItems.length)
     console.log('Knowledge content preview:', knowledgeContent.substring(0, 200) + '...')
 
-    // プロンプトに知識ベースの内容を含める
+    // 創造的なコンテンツ生成のためのプロンプト
     const userPrompt = platform === 'x'
       ? (prompt 
-        ? `以下の知識ベースの情報を参考にして、「${prompt}」について${maxLength}文字以内の短いツイートを1つ生成してください。\n\n知識ベース情報：\n${knowledgeContent}` 
-        : `以下の知識ベースの情報を参考にして、${maxLength}文字以内の短いツイートを1つ生成してください。\n\n知識ベース情報：\n${knowledgeContent}`)
+        ? `以下の知識ベースの概念を参考にして、「${prompt}」について${maxLength}文字以内のオリジナルなツイートを1つ生成してください。直接引用は絶対にしないでください。\n\n参考知識：\n${knowledgeContent}` 
+        : `以下の知識ベースの概念を参考にして、${maxLength}文字以内のオリジナルなツイートを1つ生成してください。直接引用は絶対にしないでください。\n\n参考知識：\n${knowledgeContent}`)
       : (prompt 
-        ? `以下の知識ベースの情報を参考にして、「${prompt}」についてのコンテンツを生成してください：\n\n${knowledgeContent}`
-        : `以下の知識ベースの情報を参考にして、魅力的なコンテンツを生成してください：\n\n${knowledgeContent}`)
+        ? `以下の知識ベースの概念を参考にして、「${prompt}」についてのオリジナルなコンテンツを生成してください。直接引用は絶対にしないでください：\n\n参考知識：\n${knowledgeContent}`
+        : `以下の知識ベースの概念を参考にして、魅力的なオリジナルコンテンツを生成してください。直接引用は絶対にしないでください：\n\n参考知識：\n${knowledgeContent}`)
     
     let generatedTweet = ''
     let aiModel = 'fallback'
@@ -120,19 +121,24 @@ export async function POST(request: NextRequest) {
                 content: platform === 'x' 
                   ? `あなたはX(Twitter)の投稿専門家です。
 
+【重要な指示】
+- 知識ベースの内容を参考にするが、直接引用は絶対にしない
+- プロンプトの指示に基づいて、オリジナルの新しいコンテンツを作成する
+- 既存の文章をコピーするのではなく、新しい視点や表現で内容を展開する
+
 【絶対条件】
 - 出力は${maxLength}文字以内に収める
 - 1つの短い文章で完結させる
 - ハッシュタグ（#から始まる単語）は絶対に含めない
 - 長い説明や複数段落は絶対に生成しない
 - 簡潔で印象的な内容にする
+- オリジナルの創造的な表現を使用する
 
 出力例（${maxLength}文字以内）:
-「今日学んだこと：AIツールは使い方次第で生産性が10倍変わる。プロンプトの質が結果の質を決める。」`
+「新しい視点で学びを深めることで、驚くほどの成長を実感できます。知識の組み合わせが創造性を生み出します。」`
                   : platform === 'note'
-                  ? `あなたはNoteの記事要約を生成する専門家です。
-必ず${maxLength}文字以内で、簡潔な要約を1つだけ生成してください。`
-                  : `あなたはSEOを意識したブログ記事の抜粋を生成する専門家です。${maxLength}文字以内で、読者を引き込む内容を生成してください。`
+                  ? `あなたはNoteの記事要約を生成する専門家です。知識ベースの概念を参考にしながら、完全にオリジナルの要約を${maxLength}文字以内で生成してください。直接引用は絶対にしないでください。`
+                  : `あなたはSEOを意識したブログ記事の抜粋を生成する専門家です。知識ベースの概念を参考にしながら、${maxLength}文字以内で読者を引き込むオリジナルコンテンツを生成してください。直接引用は絶対にしないでください。`
               },
               {
                 role: 'user',
@@ -141,7 +147,7 @@ export async function POST(request: NextRequest) {
             ],
             model: 'grok-2-latest',
             stream: false,
-            temperature: 0.7,
+            temperature: 0.8, // 創造性を高めるため温度を上げる
             max_tokens: platform === 'x' ? 60 : 500
           })
         })
@@ -175,8 +181,8 @@ export async function POST(request: NextRequest) {
         const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
 
         const systemPrompt = platform === 'x' 
-          ? `あなたはX(Twitter)の投稿専門家です。${maxLength}文字以内で簡潔なツイートを生成してください。ハッシュタグ（#から始まる単語）は絶対に含めないでください。`
-          : `あなたはコンテンツ生成の専門家です。${maxLength}文字以内で魅力的なコンテンツを生成してください。`
+          ? `あなたはX(Twitter)の投稿専門家です。知識ベースの概念を参考にしながら、${maxLength}文字以内でオリジナルのツイートを生成してください。直接引用は絶対にしないでください。ハッシュタグ（#から始まる単語）は絶対に含めないでください。`
+          : `あなたはコンテンツ生成の専門家です。知識ベースの概念を参考にしながら、${maxLength}文字以内で魅力的なオリジナルコンテンツを生成してください。直接引用は絶対にしないでください。`
         
         const fullPrompt = `${systemPrompt}\n\n${userPrompt}`
         const result = await model.generateContent(fullPrompt)
@@ -189,31 +195,38 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // 3. 全てのAIが失敗した場合、知識ベースからシンプルなコンテンツを生成
+    // 3. 全てのAIが失敗した場合、知識ベースから創造的なコンテンツを生成
     if (!generatedTweet) {
-      console.log('All AI services failed, generating simple content from knowledge base...')
+      console.log('All AI services failed, generating creative content from knowledge base...')
       
       if (knowledgeItems.length > 0) {
         const randomItem = knowledgeItems[Math.floor(Math.random() * knowledgeItems.length)]
         
         if (platform === 'x') {
-          // Twitter用のシンプルなフォーマット
-          generatedTweet = `${randomItem.title}について学習中。${randomItem.content.substring(0, 200)}...`.substring(0, maxLength)
+          // Twitter用の創造的なフォーマット
+          const creativeTemplates = [
+            `新しい視点で${randomItem.title}について学ぶことで、驚くほどの成長を実感できます。`,
+            `${randomItem.title}の概念を活用することで、より効果的なアプローチが可能になります。`,
+            `継続的な学習と${randomItem.title}の実践を通じて、独自の価値を創造していきましょう。`
+          ]
+          const template = creativeTemplates[Math.floor(Math.random() * creativeTemplates.length)]
+          generatedTweet = template.substring(0, maxLength)
         } else {
-          generatedTweet = `${randomItem.title}についての要点をまとめました。${randomItem.content.substring(0, maxLength - randomItem.title.length - 50)}...`
+          const creativeTemplate = `${randomItem.title}の概念を基に、新しい視点で価値あるコンテンツを創造していくことが重要です。`
+          generatedTweet = creativeTemplate.substring(0, maxLength)
         }
         
-        aiModel = 'template-based'
-        console.log('Generated template-based content')
+        aiModel = 'creative-template'
+        console.log('Generated creative template-based content')
       } else {
         // 最終的なフォールバック
         const defaultContent = platform === 'x' 
-          ? '今日も新しいことを学び続けています。知識は力なり。'
-          : '継続的な学習と成長を通じて、価値のあるコンテンツをお届けしています。'
+          ? '新しい視点で学びを深めることで、驚くほどの成長を実感できます。知識の組み合わせが創造性を生み出します。'
+          : '継続的な学習と実践を通じて、独自の価値を創造していくことが大切です。'
         
         generatedTweet = defaultContent.substring(0, maxLength)
-        aiModel = 'default-fallback'
-        console.log('Used default fallback content')
+        aiModel = 'creative-fallback'
+        console.log('Used creative fallback content')
       }
     }
     
