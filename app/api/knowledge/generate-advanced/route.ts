@@ -509,7 +509,7 @@ ${knowledgeContext}
 生成してください：`
 }
 
-async function generateWithPowerfulAI(prompt: string, platform: string, maxLength: number) {
+async function generateWithPowerfulAI(prompt: string, platform: string, maxLength: number): Promise<{ content: string; model: string; generationTime: number }> {
   console.log('=== generateWithPowerfulAI Start ===')
   const startTime = Date.now()
   let content = ''
@@ -720,6 +720,7 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
       }
     } catch (error) {
       console.warn('Grok API error:', error)
+    }
     }
   }
 
