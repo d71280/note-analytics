@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Brain, Plus, Edit, Trash2, Save, X as XIcon, FileText, Loader2 } from 'lucide-react'
+import { Brain, Plus, Edit, Trash2, Save, X as XIcon, FileText, Loader2, Database, Sparkles } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
 interface KnowledgeItem {
@@ -32,6 +32,7 @@ export default function KnowledgePage() {
     tags: []
   })
   const [tagInput, setTagInput] = useState('')
+  const [isSeedingData, setIsSeedingData] = useState(false)
 
   useEffect(() => {
     fetchKnowledgeItems()
@@ -122,6 +123,31 @@ export default function KnowledgePage() {
     setFormData({ ...formData, tags })
   }
 
+  const seedSampleData = async () => {
+    if (!confirm('サンプルデータを追加しますか？既存のデータがある場合は追加されません。')) return
+
+    setIsSeedingData(true)
+    try {
+      const response = await fetch('/api/knowledge/seed-sample-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        alert(data.message)
+        await fetchKnowledgeItems()
+      } else {
+        alert(data.message || 'サンプルデータの追加に失敗しました')
+      }
+    } catch (error) {
+      console.error('Failed to seed sample data:', error)
+      alert('サンプルデータの追加中にエラーが発生しました')
+    } finally {
+      setIsSeedingData(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -143,96 +169,115 @@ export default function KnowledgePage() {
             コンテンツ生成に使用する知識を管理します
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              新規追加
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingItem ? '知識を編集' : '新しい知識を追加'}
-              </DialogTitle>
-              <DialogDescription>
-                コンテンツ生成に使用する知識情報を入力してください
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 mt-4">
-              <div>
-                <Label htmlFor="title">タイトル</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="知識のタイトル"
-                  className="mt-2"
-                />
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={seedSampleData}
+            disabled={isSeedingData}
+            className="flex items-center gap-2"
+          >
+            {isSeedingData ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Database className="h-4 w-4" />
+            )}
+            {isSeedingData ? '追加中...' : 'サンプルデータ追加'}
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openCreateDialog} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                新規追加
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingItem ? '知識を編集' : '新しい知識を追加'}
+                </DialogTitle>
+                <DialogDescription>
+                  コンテンツ生成に使用する知識情報を入力してください
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 mt-4">
+                <div>
+                  <Label htmlFor="title">タイトル</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="知識のタイトル"
+                    className="mt-2"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="content_type">コンテンツタイプ</Label>
+                  <Select
+                    value={formData.content_type}
+                    onValueChange={(value) => setFormData({ ...formData, content_type: value })}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="note">Note記事</SelectItem>
+                      <SelectItem value="blog">ブログ記事</SelectItem>
+                      <SelectItem value="tweet">ツイート</SelectItem>
+                      <SelectItem value="idea">アイデア</SelectItem>
+                      <SelectItem value="document">ドキュメント</SelectItem>
+                      <SelectItem value="guidebook">ガイドブック</SelectItem>
+                      <SelectItem value="strategy">戦略</SelectItem>
+                      <SelectItem value="research">リサーチ</SelectItem>
+                      <SelectItem value="analysis">分析</SelectItem>
+                      <SelectItem value="other">その他</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="content">内容</Label>
+                  <Textarea
+                    id="content"
+                    value={formData.content}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    placeholder="知識の内容を入力...\n\n例：\n- 記事の本文\n- 参考資料\n- アイデアメモ\n- よく使うフレーズ\n- 専門知識"
+                    rows={10}
+                    className="mt-2"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="tags">タグ（カンマ区切り）</Label>
+                  <Input
+                    id="tags"
+                    value={tagInput}
+                    onChange={(e) => handleTagInputChange(e.target.value)}
+                    placeholder="例: AI, 技術, トレンド"
+                    className="mt-2"
+                  />
+                </div>
+                
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsDialogOpen(false)
+                      resetForm()
+                    }}
+                  >
+                    <XIcon className="mr-2 h-4 w-4" />
+                    キャンセル
+                  </Button>
+                  <Button onClick={handleSave}>
+                    <Save className="mr-2 h-4 w-4" />
+                    保存
+                  </Button>
+                </div>
               </div>
-              
-              <div>
-                <Label htmlFor="content_type">コンテンツタイプ</Label>
-                <Select
-                  value={formData.content_type}
-                  onValueChange={(value) => setFormData({ ...formData, content_type: value })}
-                >
-                  <SelectTrigger className="mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="note">Note記事</SelectItem>
-                    <SelectItem value="blog">ブログ記事</SelectItem>
-                    <SelectItem value="tweet">ツイート</SelectItem>
-                    <SelectItem value="idea">アイデア</SelectItem>
-                    <SelectItem value="document">ドキュメント</SelectItem>
-                    <SelectItem value="other">その他</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="content">内容</Label>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  placeholder="知識の内容を入力...\n\n例：\n- 記事の本文\n- 参考資料\n- アイデアメモ\n- よく使うフレーズ\n- 専門知識"
-                  rows={10}
-                  className="mt-2"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="tags">タグ（カンマ区切り）</Label>
-                <Input
-                  id="tags"
-                  value={tagInput}
-                  onChange={(e) => handleTagInputChange(e.target.value)}
-                  placeholder="例: AI, 技術, トレンド"
-                  className="mt-2"
-                />
-              </div>
-              
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsDialogOpen(false)
-                    resetForm()
-                  }}
-                >
-                  <XIcon className="mr-2 h-4 w-4" />
-                  キャンセル
-                </Button>
-                <Button onClick={handleSave}>
-                  <Save className="mr-2 h-4 w-4" />
-                  保存
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {knowledgeItems.length === 0 ? (
@@ -240,9 +285,28 @@ export default function KnowledgePage() {
           <CardContent>
             <Brain className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-lg text-gray-600">まだ知識が登録されていません</p>
-            <p className="text-sm text-gray-500 mt-2">
-              「新規追加」ボタンから知識を追加してください
+            <p className="text-sm text-gray-500 mt-2 mb-4">
+              高度なコンテンツ生成を開始するには、まず知識ベースにデータを追加してください
             </p>
+            <div className="flex gap-2 justify-center">
+              <Button 
+                variant="outline" 
+                onClick={seedSampleData}
+                disabled={isSeedingData}
+                className="flex items-center gap-2"
+              >
+                {isSeedingData ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Database className="h-4 w-4" />
+                )}
+                {isSeedingData ? '追加中...' : 'サンプルデータを追加'}
+              </Button>
+              <Button onClick={openCreateDialog} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                手動で追加
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -304,6 +368,52 @@ export default function KnowledgePage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {knowledgeItems.length > 0 && (
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              高度なコンテンツ生成について
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-4">
+              知識ベースに登録されたデータを活用して、高度なコンテンツ生成が可能になりました。
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <h4 className="font-semibold mb-2">利用可能な機能</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• スタイル指定（専門的、カジュアル、教育的、エンターテイメント）</li>
+                  <li>• トーン調整（フォーマル、フレンドリー、権威的、会話的）</li>
+                  <li>• コンテンツタイプ選択（要約、分析、チュートリアル、意見、ニュース）</li>
+                  <li>• ターゲットオーディエンス指定</li>
+                  <li>• ハッシュタグ自動生成（X用）</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">対応プラットフォーム</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• X (Twitter) - 280文字以内</li>
+                  <li>• Note - 2000文字以内</li>
+                  <li>• WordPress - 1000文字以内</li>
+                  <li>• 記事 - カスタム文字数</li>
+                </ul>
+              </div>
+            </div>
+            <div className="mt-4">
+              <Button 
+                onClick={() => window.location.href = '/x-search'}
+                className="flex items-center gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                コンテンツ生成を開始
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   )
