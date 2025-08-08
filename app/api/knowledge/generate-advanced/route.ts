@@ -265,6 +265,34 @@ function selectDiverseItems(items: KnowledgeItem[], prompt: string, platform: st
   return finalItems.sort((a, b) => (b.relevance || 0) - (a.relevance || 0))
 }
 
+function extractKeyPoints(content: string): string {
+  // コンテンツから重要なポイントを抽出
+  const lines = content.split('\n').filter(line => line.trim())
+  const keyPoints = []
+  
+  // 数値を含む行を優先的に抽出
+  const numberLines = lines.filter(line => /\d+[%％倍個つ年月日時分秒]/.test(line))
+  if (numberLines.length > 0) {
+    keyPoints.push(...numberLines.slice(0, 2))
+  }
+  
+  // 「〜する」「〜できる」などのアクション可能な表現を抽出
+  const actionLines = lines.filter(line => /する|できる|なる|活用|実践|向上|改善/.test(line))
+  if (actionLines.length > 0) {
+    keyPoints.push(...actionLines.slice(0, 2))
+  }
+  
+  // 箇条書きや番号付きリストを抽出
+  const listLines = lines.filter(line => /^[・•◆▪︎123456789①②③④⑤]/.test(line.trim()))
+  if (listLines.length > 0) {
+    keyPoints.push(...listLines.slice(0, 3))
+  }
+  
+  // 重複を削除して最初の5つのポイントを返す
+  const uniquePoints = Array.from(new Set(keyPoints)).slice(0, 5)
+  return uniquePoints.join(' / ') || content.substring(0, 200)
+}
+
 function extractDetailedKeywords(text: string): string[] {
   // より詳細なキーワード抽出
   const keywords = text
@@ -353,11 +381,12 @@ function buildPowerfulPrompt(params: {
   const knowledgeContext = knowledgeItems.length > 0
     ? knowledgeItems.map((item, index) => 
         `【知識${index + 1}: ${item.title}】
-内容: ${item.content.substring(0, 500)}...
+${item.content.substring(0, 1500)}
+
+重要ポイント: ${extractKeyPoints(item.content)}
 タイプ: ${item.content_type}
-タグ: ${item.tags?.join(', ') || 'なし'}
-関連性: 高`
-      ).join('\n\n')
+タグ: ${item.tags?.join(', ') || 'なし'}`
+      ).join('\n\n---\n\n')
     : '一般的な知識とベストプラクティスに基づいて'
 
   const platformConfig = {
@@ -435,7 +464,9 @@ function buildPowerfulPrompt(params: {
     news: '最新の情報と背景を分かりやすく伝える。事実に基づく報道。文脈を提供。'
   }
 
-  return `あなたは${config.name}のコンテンツ生成専門家です。最高品質で多様性のあるコンテンツを作成してください。
+  return `あなたは${config.name}のプロフェッショナルコンテンツクリエイターです。
+
+【重要】以下の知識ベースの具体的な内容を必ず活用し、実践的で価値のある独自のコンテンツを作成してください。一般論や当たり障りのない内容は避け、読者が「なるほど！」と思える具体的な洞察を提供してください。
 
 【重要な指示】
 - 提供された知識ベースの内容を活用し、その概念やアイデアを創造的に応用する
@@ -476,17 +507,21 @@ function buildPowerfulPrompt(params: {
 【参考知識ベース】
 ${knowledgeContext}
 
-【具体的な生成指示】
-「${prompt}」について、上記の参考知識を基に、以下の要素を含む強力で多様なコンテンツを${maxLength}文字以内で生成してください：
+【必須要件】
+以下の知識ベースから具体的な概念、数値、事例を3つ以上引用して、「${prompt}」に関する${maxLength}文字以内のコンテンツを作成：
 
-1. 具体的な数値やデータ（研究結果、統計、事例）
-2. 実践的なアドバイスや具体的なステップ
-3. 読者の行動を促す明確な要素
-4. 知識ベースの内容を活用した専門的な洞察
-5. 読者に即座に価値を提供する内容
-6. 信頼性と実用性を兼ね備えた情報
-7. 予想外の視点やアプローチ
-8. 感情に訴える魅力的な表現
+✅ 必ず含める要素：
+• 知識ベースから具体的な手法名、フレームワーク、統計データを引用
+• 「例えば〜」「具体的には〜」「実際に〜」という具体例を2つ以上
+• 読者が今すぐ実践できる具体的なアクション（3ステップ以内）
+• 意外性のある視点や一般的でない切り口
+• 数値（％、倍数、期間など）を含む成果や効果の明示
+
+❌ 避けるべき表現：
+• 「重要です」「大切です」のような一般論
+• 「〜と言われています」のような曖昧な表現
+• 抽象的な概念だけの説明
+• 誰でも知っているような常識的な内容
 
 【品質基準】
 - 明確で分かりやすい表現
@@ -536,7 +571,7 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
           ],
           model: 'gpt-4o',
           stream: false,
-          temperature: 0.9, // 高い創造性
+          temperature: 0.7, // バランスの取れた創造性と一貫性
           max_tokens: Math.min(maxLength * 3, 1500),
           top_p: 0.95, // 多様な選択
           frequency_penalty: 0.3, // 繰り返しを減らす
@@ -581,7 +616,7 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
           ],
           model: 'gpt-4o-mini',
           stream: false,
-          temperature: 0.8,
+          temperature: 0.65, // 安定した品質
           max_tokens: Math.min(maxLength * 3, 1500),
           top_p: 0.9,
           frequency_penalty: 0.2,
@@ -621,7 +656,7 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
             ],
           model: 'grok-2-latest',
           stream: false,
-          temperature: 0.98,
+          temperature: 0.75, // 創造性と品質のバランス
           max_tokens: Math.min(maxLength * 3, 1500),
           top_p: 0.98,
           frequency_penalty: 0.5,
@@ -653,7 +688,7 @@ async function generateWithPowerfulAI(prompt: string, platform: string, maxLengt
         const genModel = genAI.getGenerativeModel({ 
           model: 'gemini-pro',
           generationConfig: {
-            temperature: 0.98,
+            temperature: 0.75, // 創造性と品質のバランス
             topP: 0.98,
             topK: 60,
             maxOutputTokens: Math.min(maxLength * 3, 1500),
