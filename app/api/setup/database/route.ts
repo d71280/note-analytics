@@ -5,33 +5,34 @@ export async function GET() {
   try {
     const supabase = createClient()
     
-    // scheduled_postsテーブルを作成
-    const { error: createTableError } = await supabase.rpc('exec_sql', {
-      sql: `
-        CREATE TABLE IF NOT EXISTS scheduled_posts (
-          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-          content TEXT NOT NULL,
-          platform VARCHAR(50) NOT NULL,
-          scheduled_for TIMESTAMP WITH TIME ZONE,
-          status VARCHAR(50) DEFAULT 'draft',
-          metadata JSONB DEFAULT '{}',
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-        );
-        
-        -- インデックスを作成
-        CREATE INDEX IF NOT EXISTS idx_scheduled_posts_status ON scheduled_posts(status);
-        CREATE INDEX IF NOT EXISTS idx_scheduled_posts_platform ON scheduled_posts(platform);
-        CREATE INDEX IF NOT EXISTS idx_scheduled_posts_scheduled_for ON scheduled_posts(scheduled_for);
-        CREATE INDEX IF NOT EXISTS idx_scheduled_posts_metadata ON scheduled_posts USING GIN (metadata);
-      `
-    }).catch(() => {
-      // exec_sql RPCが存在しない場合、直接SQLを実行
-      return null
-    })
+    // scheduled_postsテーブルを作成（RPCが存在しない場合はスキップ）
+    try {
+      await supabase.rpc('exec_sql', {
+        sql: `
+          CREATE TABLE IF NOT EXISTS scheduled_posts (
+            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+            content TEXT NOT NULL,
+            platform VARCHAR(50) NOT NULL,
+            scheduled_for TIMESTAMP WITH TIME ZONE,
+            status VARCHAR(50) DEFAULT 'draft',
+            metadata JSONB DEFAULT '{}',
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+          
+          -- インデックスを作成
+          CREATE INDEX IF NOT EXISTS idx_scheduled_posts_status ON scheduled_posts(status);
+          CREATE INDEX IF NOT EXISTS idx_scheduled_posts_platform ON scheduled_posts(platform);
+          CREATE INDEX IF NOT EXISTS idx_scheduled_posts_scheduled_for ON scheduled_posts(scheduled_for);
+          CREATE INDEX IF NOT EXISTS idx_scheduled_posts_metadata ON scheduled_posts USING GIN (metadata);
+        `
+      })
+    } catch {
+      // exec_sql RPCが存在しない場合はスキップ
+    }
     
     // テーブルの存在確認
-    const { data: tableExists, error: checkError } = await supabase
+    const { error: checkError } = await supabase
       .from('scheduled_posts')
       .select('id')
       .limit(1)
@@ -79,7 +80,7 @@ export async function GET() {
 // POST: テーブルを手動で作成
 export async function POST() {
   try {
-    const supabase = createClient()
+    // const supabase = createClient() // 未使用
     
     // Supabaseのダッシュボードで実行するSQL
     const createTableSQL = `
@@ -122,7 +123,7 @@ export async function POST() {
       ]
     })
     
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Failed to generate SQL' },
       { status: 500 }

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Request params:', { prompt, platform, maxLength, style, tone, includeHashtags, targetAudience, contentType })
 
-    const knowledgeItems = await fetchRelevantKnowledge(prompt, platform)
+    const knowledgeItems = await fetchRelevantKnowledge(prompt)
 
     const powerfulPrompt = buildPrompt({
       prompt,
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function fetchRelevantKnowledge(prompt: string, platform: Platform): Promise<KnowledgeItem[]> {
+async function fetchRelevantKnowledge(prompt: string): Promise<KnowledgeItem[]> {
   const supabase = createClient()
   try {
     const keywords = extractKeywords(prompt)

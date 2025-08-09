@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Clock, Send, Globe, FileText, Twitter, Bot, CheckCircle, AlertCircle } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { DatePicker } from '@/components/ui/date-picker'
+// import { Tabs } from '@/components/ui/tabs' // 将来の実装用
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface GPTsPost {
@@ -55,6 +54,7 @@ export default function GPTsSchedulePage() {
 
   useEffect(() => {
     fetchPosts()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlatform, selectedStatus])
 
   const fetchPosts = async () => {
@@ -113,32 +113,33 @@ export default function GPTsSchedulePage() {
     }
   }
 
-  const deletePost = async (postId: string) => {
-    if (!confirm('この投稿を削除しますか？')) return
+  // 削除機能（将来の実装用）
+  // const deletePost = async (postId: string) => {
+  //   if (!confirm('この投稿を削除しますか？')) return
+  //
+  //   try {
+  //     const response = await fetch(`/api/gpts/posts/${postId}`, {
+  //       method: 'DELETE'
+  //     })
+  //
+  //     if (response.ok) {
+  //       fetchPosts()
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to delete post:', error)
+  //   }
+  // }
 
-    try {
-      const response = await fetch(`/api/gpts/posts/${postId}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        fetchPosts()
-      }
-    } catch (error) {
-      console.error('Failed to delete post:', error)
-    }
-  }
-
-  // スケジュール設定用の時間オプション
-  const timeSlots = [
-    { value: '08:00', label: '朝 8:00' },
-    { value: '10:00', label: '午前 10:00' },
-    { value: '12:00', label: '昼 12:00' },
-    { value: '15:00', label: '午後 3:00' },
-    { value: '18:00', label: '夕方 6:00' },
-    { value: '20:00', label: '夜 8:00' },
-    { value: '22:00', label: '夜 10:00' }
-  ]
+  // タイムスロット（将来の実装用）
+  // const timeSlots = [
+  //   { value: '08:00', label: '朝 8:00' },
+  //   { value: '10:00', label: '午前 10:00' },
+  //   { value: '12:00', label: '昼 12:00' },
+  //   { value: '15:00', label: '午後 3:00' },
+  //   { value: '18:00', label: '夕方 6:00' },
+  //   { value: '20:00', label: '夜 8:00' },
+  //   { value: '22:00', label: '夜 10:00' }
+  // ]
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -158,7 +159,7 @@ export default function GPTsSchedulePage() {
           <div className="flex gap-4 flex-wrap">
             <div className="flex-1 min-w-[200px]">
               <label className="text-sm font-medium mb-2 block">プラットフォーム</label>
-              <Select value={selectedPlatform} onValueChange={(value: any) => setSelectedPlatform(value)}>
+              <Select value={selectedPlatform} onValueChange={(value: 'all' | 'x' | 'note' | 'wordpress') => setSelectedPlatform(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -173,7 +174,7 @@ export default function GPTsSchedulePage() {
 
             <div className="flex-1 min-w-[200px]">
               <label className="text-sm font-medium mb-2 block">ステータス</label>
-              <Select value={selectedStatus} onValueChange={(value: any) => setSelectedStatus(value)}>
+              <Select value={selectedStatus} onValueChange={(value: 'all' | 'draft' | 'pending') => setSelectedStatus(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

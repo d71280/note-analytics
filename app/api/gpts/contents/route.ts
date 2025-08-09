@@ -7,7 +7,7 @@ export async function GET() {
     const supabase = createClient()
     
     // まずscheduled_postsテーブルの存在を確認
-    const { data: tableCheck, error: tableError } = await supabase
+    const { error: tableError } = await supabase
       .from('scheduled_posts')
       .select('id')
       .limit(1)
