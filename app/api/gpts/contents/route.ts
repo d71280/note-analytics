@@ -6,11 +6,31 @@ export async function GET() {
   try {
     const supabase = createClient()
     
+    // まずscheduled_postsテーブルの存在を確認
+    const { data: tableCheck, error: tableError } = await supabase
+      .from('scheduled_posts')
+      .select('id')
+      .limit(1)
+    
+    if (tableError?.code === '42P01') {
+      // テーブルが存在しない場合は作成
+      const { error: createError } = await supabase.rpc('create_scheduled_posts_table', {})
+      
+      if (createError) {
+        // RPCが存在しない場合は空配列を返す
+        return NextResponse.json({ 
+          contents: [],
+          total: 0,
+          message: 'Table not initialized yet'
+        })
+      }
+    }
+    
     // scheduled_postsテーブルからGPTs由来のコンテンツを取得
+    // metadata->>'source' の代わりに全件取得してフィルタリング
     const { data: contents, error } = await supabase
       .from('scheduled_posts')
       .select('*')
-      .eq('metadata->>source', 'gpts')
       .order('created_at', { ascending: false })
       .limit(50)
     
@@ -22,8 +42,13 @@ export async function GET() {
       )
     }
     
+    // GPTs由来のコンテンツのみフィルタリング
+    const gptsContents = contents?.filter(content => 
+      content.metadata?.source === 'gpts'
+    ) || []
+    
     // データを整形
-    const formattedContents = contents?.map(content => ({
+    const formattedContents = gptsContents.map(content => ({
       id: content.id,
       content: content.content,
       platform: content.platform,
