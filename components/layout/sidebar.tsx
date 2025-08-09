@@ -2,14 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { TrendingUp, Search, Brain, ListOrdered } from 'lucide-react'
+import { TrendingUp, Calendar, Bot, ListOrdered, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
-  { name: 'トレンド', href: '/trends', icon: TrendingUp },
-  { name: 'コンテンツ生成&配信', href: '/x-search', icon: Search },
-  { name: '知識ベース', href: '/knowledge', icon: Brain },
+  { name: 'スケジュール', href: '/schedule', icon: Calendar },
+  { name: 'GPTs連携', href: '/gpts/contents', icon: Bot },
   { name: '投稿管理', href: '/scheduled-posts', icon: ListOrdered },
+  { name: 'トレンド分析', href: '/trends', icon: TrendingUp },
+  { name: '設定', href: '/settings', icon: Settings },
 ]
 
 export function Sidebar() {

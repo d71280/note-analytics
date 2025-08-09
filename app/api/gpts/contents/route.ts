@@ -1,0 +1,55 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+// GPTsから受信したコンテンツ一覧を取得
+export async function GET() {
+  try {
+    const supabase = createClient()
+    
+    // scheduled_postsテーブルからGPTs由来のコンテンツを取得
+    const { data: contents, error } = await supabase
+      .from('scheduled_posts')
+      .select('*')
+      .eq('metadata->>source', 'gpts')
+      .order('created_at', { ascending: false })
+      .limit(50)
+    
+    if (error) {
+      console.error('Failed to fetch contents:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch contents' },
+        { status: 500 }
+      )
+    }
+    
+    // データを整形
+    const formattedContents = contents?.map(content => ({
+      id: content.id,
+      content: content.content,
+      platform: content.platform,
+      status: content.status,
+      scheduled_for: content.scheduled_for,
+      created_at: content.created_at,
+      metadata: {
+        title: content.metadata?.title,
+        tags: content.metadata?.tags,
+        category: content.metadata?.category,
+        generatedBy: content.metadata?.generatedBy,
+        model: content.metadata?.model,
+        prompt: content.metadata?.prompt,
+      },
+      received_at: content.metadata?.receivedAt || content.created_at
+    })) || []
+    
+    return NextResponse.json({ 
+      contents: formattedContents,
+      total: formattedContents.length 
+    })
+  } catch (error) {
+    console.error('Failed to fetch contents:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch contents' },
+      { status: 500 }
+    )
+  }
+}
