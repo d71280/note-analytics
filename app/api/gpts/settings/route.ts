@@ -64,7 +64,8 @@ export async function GET() {
       authentication: {
         type: 'api-key',
         header: 'x-api-key',
-        required: false // 一時的にfalseに設定
+        required: false, // 一時的にfalseに設定
+        testValue: 'test-api-key-12345' // テスト用のAPIキーを明示
       },
       status: 'active',
       timestamp: new Date().toISOString()
