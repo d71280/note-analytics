@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Calendar, Copy, Globe, FileText, Twitter, ArrowLeft, Save, Trash2 } from 'lucide-react'
-import { toast } from '@/hooks/use-toast'
+import { useToast } from '@/components/ui/use-toast'
 
 interface ContentDetail {
   id: string
@@ -36,6 +36,7 @@ const platformColors = {
 export default function ContentDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const { toast } = useToast()
   const [content, setContent] = useState<ContentDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [editedContent, setEditedContent] = useState('')
