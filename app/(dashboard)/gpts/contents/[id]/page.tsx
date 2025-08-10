@@ -8,13 +8,13 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar, Copy, Globe, FileText, Twitter, ArrowLeft, Save, Trash2 } from 'lucide-react'
+import { Copy, Globe, FileText, Twitter, ArrowLeft, Save, Trash2 } from 'lucide-react'
 
 interface ContentDetail {
   id: string
   content: string
   platform: 'x' | 'note' | 'wordpress'
-  metadata?: any
+  metadata?: Record<string, unknown>
   status: string
   created_at: string
   scheduled_for?: string
@@ -43,6 +43,7 @@ export default function ContentDetailPage() {
 
   useEffect(() => {
     fetchContent()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id])
 
   const fetchContent = async () => {
@@ -170,7 +171,7 @@ export default function ContentDetailPage() {
         <CardContent className="space-y-6">
           <div>
             <Label className="text-base font-semibold mb-2 block">プラットフォーム</Label>
-            <Select value={editedPlatform} onValueChange={(value: any) => setEditedPlatform(value)}>
+            <Select value={editedPlatform} onValueChange={(value) => setEditedPlatform(value as 'x' | 'note' | 'wordpress')}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
