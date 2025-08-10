@@ -8,12 +8,8 @@ import { cn } from '@/lib/utils'
 const navigation = [
   { name: 'スケジュール', href: '/schedule', icon: Calendar },
   { name: 'GPTs連携', href: '/gpts/contents', icon: Bot },
-  { name: 'GPTs設定', href: '/gpts/setup', icon: Zap },
-  { name: 'GPTsインポート', href: '/gpts/import', icon: Upload },
   { name: '投稿管理', href: '/scheduled-posts', icon: ListOrdered },
-  { name: '分析', href: '/analytics', icon: BarChart },
   { name: 'トレンド分析', href: '/trends', icon: TrendingUp },
-  { name: 'API設定', href: '/settings/api-keys', icon: Key },
   { name: '設定', href: '/settings', icon: Settings },
 ]
 
