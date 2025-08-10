@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// CORS設定のヘルパー関数
+function getCorsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*', // GPTsからのリクエストを許可
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-api-key',
+    'Access-Control-Max-Age': '86400', // 24時間
+  }
+}
+
 // GPTsから生成されたコンテンツを受け取るAPI
 interface GPTsContent {
   content: string
@@ -39,6 +49,16 @@ function validateApiKey(request: NextRequest): boolean {
   return apiKey === validApiKey || apiKey === 'gpts_test_key_2024_note_analytics_x_integration' || apiKey === gptsKey
 }
 
+// OPTIONS メソッド - プリフライトリクエストに対応
+export async function OPTIONS(request: NextRequest) {
+  console.log('=== GPTs CORS Preflight Request ===')
+  
+  return new NextResponse(null, {
+    status: 200,
+    headers: getCorsHeaders(),
+  })
+}
+
 export async function POST(request: NextRequest) {
   console.log('=== GPTs Content Receive API Start ===')
   
@@ -47,7 +67,10 @@ export async function POST(request: NextRequest) {
     if (!validateApiKey(request)) {
       return NextResponse.json(
         { error: 'Invalid API key' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: getCorsHeaders()
+        }
       )
     }
     
@@ -58,7 +81,10 @@ export async function POST(request: NextRequest) {
     if (!content || !platform) {
       return NextResponse.json(
         { error: 'Content and platform are required' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: getCorsHeaders()
+        }
       )
     }
     
@@ -76,7 +102,10 @@ export async function POST(request: NextRequest) {
           maxLength: maxLengths[platform],
           currentLength: content.length
         },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: getCorsHeaders()
+        }
       )
     }
     
@@ -107,7 +136,10 @@ export async function POST(request: NextRequest) {
       console.error('Failed to save content:', saveError)
       return NextResponse.json(
         { error: 'Failed to save content', details: saveError.message },
-        { status: 500 }
+        { 
+          status: 500,
+          headers: getCorsHeaders()
+        }
       )
     }
     
@@ -143,6 +175,8 @@ export async function POST(request: NextRequest) {
       scheduled: !!scheduling?.scheduledFor,
       scheduledFor: scheduling?.scheduledFor,
       webUrl: `${process.env.NEXT_PUBLIC_APP_URL}/gpts/contents/${savedContent.id}`
+    }, {
+      headers: getCorsHeaders()
     })
     
   } catch (error) {
@@ -152,7 +186,10 @@ export async function POST(request: NextRequest) {
         error: 'Failed to process content',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: getCorsHeaders()
+      }
     )
   }
 }
@@ -263,5 +300,7 @@ export async function GET() {
     }
   }
   
-  return NextResponse.json(schema)
+  return NextResponse.json(schema, {
+    headers: getCorsHeaders()
+  })
 }

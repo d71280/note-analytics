@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { TrendingUp, Calendar, Bot, ListOrdered, Settings, BarChart, Key } from 'lucide-react'
+import { TrendingUp, Calendar, Bot, ListOrdered, Settings, BarChart, Key, Upload } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
   { name: 'スケジュール', href: '/schedule', icon: Calendar },
   { name: 'GPTs連携', href: '/gpts/contents', icon: Bot },
+  { name: 'GPTsインポート', href: '/gpts/import', icon: Upload },
   { name: '投稿管理', href: '/scheduled-posts', icon: ListOrdered },
   { name: '分析', href: '/analytics', icon: BarChart },
   { name: 'トレンド分析', href: '/trends', icon: TrendingUp },
