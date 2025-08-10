@@ -1,6 +1,24 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// CORS設定のヘルパー関数
+function getCorsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-api-key',
+    'Access-Control-Max-Age': '86400',
+  }
+}
+
+// OPTIONS メソッド - プリフライトリクエストに対応
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: getCorsHeaders(),
+  })
+}
+
 // GPTsから受信したコンテンツ一覧を取得
 export async function GET() {
   try {
@@ -22,6 +40,8 @@ export async function GET() {
           contents: [],
           total: 0,
           message: 'Table not initialized yet'
+        }, {
+          headers: getCorsHeaders()
         })
       }
     }
@@ -38,7 +58,7 @@ export async function GET() {
       console.error('Failed to fetch contents:', error)
       return NextResponse.json(
         { error: 'Failed to fetch contents' },
-        { status: 500 }
+        { status: 500, headers: getCorsHeaders() }
       )
     }
     
@@ -69,6 +89,8 @@ export async function GET() {
     return NextResponse.json({ 
       contents: formattedContents,
       total: formattedContents.length 
+    }, {
+      headers: getCorsHeaders()
     })
   } catch (error) {
     console.error('Failed to fetch contents:', error)

@@ -1,0 +1,306 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Note Analytics Platform API for GPTs",
+    "description": "API for receiving and managing content from GPTs",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://note-analytics-platform.vercel.app",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/api/gpts/settings": {
+      "get": {
+        "operationId": "getSettings",
+        "summary": "Get platform settings and available endpoints",
+        "description": "Returns the current platform configuration and available API endpoints",
+        "responses": {
+          "200": {
+            "description": "Platform settings retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "platform": {
+                      "type": "string",
+                      "description": "Platform name"
+                    },
+                    "version": {
+                      "type": "string",
+                      "description": "API version"
+                    },
+                    "features": {
+                      "type": "object",
+                      "description": "Available features"
+                    },
+                    "endpoints": {
+                      "type": "object",
+                      "description": "Available API endpoints"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Platform status"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/gpts/receive-content": {
+      "post": {
+        "operationId": "sendContent",
+        "summary": "Send generated content to Note Analytics Platform",
+        "description": "Automatically sends AI-generated content to the platform for scheduling and posting",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["content", "platform"],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "The generated content text to be posted",
+                    "example": "AIの進化により、コンテンツ制作の効率性が大幅に向上しています。"
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": ["note", "x", "wordpress"],
+                    "description": "Target platform for the content",
+                    "example": "note"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Additional metadata about the content",
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "description": "Title of the content (for note/wordpress)",
+                        "example": "AI活用コンテンツ制作"
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Tags for the content",
+                        "example": ["AI", "GPTs", "コンテンツ制作"]
+                      },
+                      "category": {
+                        "type": "string",
+                        "description": "Content category",
+                        "example": "テクノロジー"
+                      },
+                      "generatedBy": {
+                        "type": "string",
+                        "description": "GPT model or assistant name",
+                        "example": "GPTs Assistant"
+                      },
+                      "model": {
+                        "type": "string",
+                        "description": "AI model used",
+                        "example": "gpt-4"
+                      },
+                      "prompt": {
+                        "type": "string",
+                        "description": "Original prompt used to generate content",
+                        "example": "AI技術を活用したコンテンツ制作について280文字で説明"
+                      }
+                    }
+                  },
+                  "scheduling": {
+                    "type": "object",
+                    "description": "Scheduling information",
+                    "properties": {
+                      "scheduledFor": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "ISO 8601 formatted datetime for scheduling",
+                        "example": "2025-08-10T10:00:00Z"
+                      },
+                      "timezone": {
+                        "type": "string",
+                        "description": "Timezone for scheduling",
+                        "example": "Asia/Tokyo"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Content received and saved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Operation success status"
+                    },
+                    "contentId": {
+                      "type": "string",
+                      "description": "Unique ID of the saved content"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Success message"
+                    },
+                    "platform": {
+                      "type": "string",
+                      "description": "Target platform"
+                    },
+                    "scheduled": {
+                      "type": "boolean",
+                      "description": "Whether content is scheduled"
+                    },
+                    "webUrl": {
+                      "type": "string",
+                      "description": "URL to view the content in the platform"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/gpts/contents": {
+      "get": {
+        "operationId": "getContents",
+        "summary": "Get list of received contents",
+        "description": "Retrieves a list of all contents received from GPTs",
+        "responses": {
+          "200": {
+            "description": "Contents retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "contents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "content": {
+                            "type": "string"
+                          },
+                          "platform": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Total number of contents"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/gpts/test": {
+      "get": {
+        "operationId": "testConnection",
+        "summary": "Test API connection",
+        "description": "Simple endpoint to test if the API connection is working",
+        "responses": {
+          "200": {
+            "description": "Connection test successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "GPTs API is working"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "API key for authentication. Use 'test-api-key-12345' for testing."
+      }
+    }
+  }
+}
