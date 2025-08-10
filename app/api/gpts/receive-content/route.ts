@@ -31,6 +31,7 @@ interface GPTsContent {
 }
 
 // APIキー認証（GPTsのBearer tokenとx-api-key両方をサポート）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function validateApiKey(request: NextRequest): boolean {
   const apiKey = request.headers.get('x-api-key')
   const authHeader = request.headers.get('authorization')

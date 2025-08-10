@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   let body = null
   try {
     body = await request.json()
-  } catch (error) {
+  } catch {
     body = { error: 'Could not parse request body' }
   }
 
