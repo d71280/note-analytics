@@ -34,28 +34,6 @@ export async function GET() {
       }
     ],
     paths: {
-      '/api/gpts/test': {
-        get: {
-          operationId: 'testConnection',
-          summary: 'Test the API connection',
-          responses: {
-            '200': {
-              description: 'Success',
-              content: {
-                'application/json': {
-                  schema: {
-                    type: 'object',
-                    properties: {
-                      status: { type: 'string' },
-                      message: { type: 'string' }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       '/api/gpts/receive-content': {
         post: {
           operationId: 'sendContent',
