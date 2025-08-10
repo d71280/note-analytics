@@ -8,7 +8,6 @@ import { Calendar, Copy, Globe, FileText, Twitter, Trash2, CheckCircle } from 'l
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { useToast } from '@/components/ui/use-toast'
 
 interface GPTsContent {
   id: string
@@ -48,7 +47,6 @@ export default function GPTsContentsPage() {
   const [apiKey, setApiKey] = useState('')
   const [showApiKey, setShowApiKey] = useState(false)
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
-  const { toast } = useToast()
 
   useEffect(() => {
     fetchContents()
@@ -83,11 +81,7 @@ export default function GPTsContentsPage() {
 
   const scheduleContent = async (contentId: string) => {
     if (!scheduleDate || !scheduleTime) {
-      toast({
-        title: 'エラー',
-        description: '日付と時刻を選択してください',
-        variant: 'destructive'
-      })
+      alert('日付と時刻を選択してください')
       return
     }
 
@@ -101,19 +95,12 @@ export default function GPTsContentsPage() {
       })
 
       if (response.ok) {
-        toast({
-          title: '成功',
-          description: 'スケジュール設定が完了しました',
-        })
+        alert('スケジュール設定が完了しました')
         fetchContents()
       }
     } catch (error) {
       console.error('Failed to schedule content:', error)
-      toast({
-        title: 'エラー',
-        description: 'スケジュール設定に失敗しました',
-        variant: 'destructive'
-      })
+      alert('スケジュール設定に失敗しました')
     }
   }
 
@@ -126,29 +113,16 @@ export default function GPTsContentsPage() {
       })
 
       if (response.ok) {
-        toast({
-          title: '成功',
-          description: 'コンテンツを削除しました',
-        })
         fetchContents()
       }
     } catch (error) {
       console.error('Failed to delete content:', error)
-      toast({
-        title: 'エラー',
-        description: 'コンテンツの削除に失敗しました',
-        variant: 'destructive'
-      })
     }
   }
 
   const copyToClipboard = (text: string, label?: string) => {
     navigator.clipboard.writeText(text)
     setCopySuccess(label || 'copied')
-    toast({
-      title: 'コピー完了',
-      description: 'クリップボードにコピーしました',
-    })
     setTimeout(() => setCopySuccess(null), 2000)
   }
 
@@ -161,18 +135,11 @@ export default function GPTsContentsPage() {
       if (response.ok) {
         const data = await response.json()
         setApiKey(data.apiKey)
-        toast({
-          title: '成功',
-          description: '新しいAPIキーを生成しました',
-        })
+        alert('新しいAPIキーを生成しました')
       }
     } catch (error) {
       console.error('Failed to generate API key:', error)
-      toast({
-        title: 'エラー',
-        description: 'APIキーの生成に失敗しました',
-        variant: 'destructive'
-      })
+      alert('APIキーの生成に失敗しました')
     }
   }
 
