@@ -78,6 +78,45 @@ export async function DELETE(
   }
 }
 
+// コンテンツを更新
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const body = await request.json()
+    const supabase = createClient()
+    
+    const { data, error } = await supabase
+      .from('scheduled_posts')
+      .update({
+        content: body.content,
+        platform: body.platform,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', params.id)
+      .select()
+      .single()
+    
+    if (error || !data) {
+      return NextResponse.json(
+        { error: 'Failed to update content' },
+        { status: 500, headers: getCorsHeaders() }
+      )
+    }
+    
+    return NextResponse.json(data, {
+      headers: getCorsHeaders()
+    })
+  } catch (error) {
+    console.error('Failed to update content:', error)
+    return NextResponse.json(
+      { error: 'Failed to update content' },
+      { status: 500, headers: getCorsHeaders() }
+    )
+  }
+}
+
 // OPTIONS メソッド - プリフライトリクエストに対応
 export async function OPTIONS() {
   return new NextResponse(null, {

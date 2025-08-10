@@ -13,16 +13,18 @@ interface GPTsContent {
   id: string
   content: string
   platform: 'x' | 'note' | 'wordpress'
-  metadata: {
+  metadata?: {
     title?: string
     tags?: string[]
     category?: string
     generatedBy?: string
     model?: string
     prompt?: string
+    source?: string
+    receivedAt?: string
   }
-  status: 'draft' | 'scheduled' | 'published'
-  received_at: string
+  status: 'draft' | 'scheduled' | 'published' | 'pending'
+  received_at?: string
   scheduled_for?: string
   created_at: string
 }
@@ -55,10 +57,10 @@ export default function GPTsContentsPage() {
 
   const fetchContents = async () => {
     try {
-      const response = await fetch('/api/gpts/contents')
+      const response = await fetch('/api/gpts/list')
       if (response.ok) {
         const data = await response.json()
-        setContents(data.contents || [])
+        setContents(data.posts || [])
       }
     } catch (error) {
       console.error('Failed to fetch contents:', error)
@@ -316,10 +318,10 @@ export default function GPTsContentsPage() {
                       </div>
                       <div>
                         <CardTitle className="text-base">
-                          {content.metadata.title || 'Untitled'}
+                          {content.metadata?.title || `${content.platform.toUpperCase()}投稿`}
                         </CardTitle>
                         <CardDescription className="text-xs">
-                          {new Date(content.received_at).toLocaleString('ja-JP')}
+                          {new Date(content.created_at || content.received_at || Date.now()).toLocaleString('ja-JP')}
                         </CardDescription>
                       </div>
                     </div>
@@ -335,11 +337,13 @@ export default function GPTsContentsPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-700 line-clamp-3 mb-4">
-                    {content.content}
-                  </p>
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap break-words max-h-32 overflow-y-auto border rounded p-2 bg-gray-50">
+                      {content.content}
+                    </p>
+                  </div>
                   
-                  {content.metadata.tags && content.metadata.tags.length > 0 && (
+                  {content.metadata?.tags && content.metadata.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-4">
                       {content.metadata.tags.map(tag => (
                         <Badge key={tag} variant="outline" className="text-xs">
@@ -351,9 +355,20 @@ export default function GPTsContentsPage() {
                   
                   <div className="flex justify-between items-center">
                     <div className="text-xs text-gray-500">
-                      {content.content.length}文字 | {content.metadata.model || 'Unknown model'}
+                      {content.content.length}文字 | {content.metadata?.model || 'GPTs'}
                     </div>
                     <div className="flex gap-1">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => copyToClipboard(content.content, content.id)}
+                      >
+                        {copySuccess === content.id ? (
+                          <CheckCircle className="h-3 w-3 text-green-600" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                      </Button>
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button 
