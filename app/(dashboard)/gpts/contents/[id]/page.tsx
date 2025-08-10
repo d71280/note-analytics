@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Calendar, Copy, Globe, FileText, Twitter, ArrowLeft, Save, Trash2 } from 'lucide-react'
-import { useToast } from '@/components/ui/use-toast'
 
 interface ContentDetail {
   id: string
@@ -36,11 +35,11 @@ const platformColors = {
 export default function ContentDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { toast } = useToast()
   const [content, setContent] = useState<ContentDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [editedContent, setEditedContent] = useState('')
   const [editedPlatform, setEditedPlatform] = useState<'x' | 'note' | 'wordpress'>('x')
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   useEffect(() => {
     fetchContent()
@@ -57,11 +56,8 @@ export default function ContentDetailPage() {
       }
     } catch (error) {
       console.error('Failed to fetch content:', error)
-      toast({
-        title: 'エラー',
-        description: 'コンテンツの取得に失敗しました',
-        variant: 'destructive'
-      })
+      setMessage({ type: 'error', text: 'コンテンツの取得に失敗しました' })
+      setTimeout(() => setMessage(null), 3000)
     } finally {
       setLoading(false)
     }
@@ -81,19 +77,14 @@ export default function ContentDetailPage() {
       })
 
       if (response.ok) {
-        toast({
-          title: '保存完了',
-          description: '変更を保存しました'
-        })
+        setMessage({ type: 'success', text: '変更を保存しました' })
+        setTimeout(() => setMessage(null), 3000)
         fetchContent()
       }
     } catch (error) {
       console.error('Failed to save changes:', error)
-      toast({
-        title: 'エラー',
-        description: '保存に失敗しました',
-        variant: 'destructive'
-      })
+      setMessage({ type: 'error', text: '保存に失敗しました' })
+      setTimeout(() => setMessage(null), 3000)
     }
   }
 
@@ -106,28 +97,22 @@ export default function ContentDetailPage() {
       })
 
       if (response.ok) {
-        toast({
-          title: '削除完了',
-          description: 'コンテンツを削除しました'
-        })
-        router.push('/gpts/contents')
+        setMessage({ type: 'success', text: 'コンテンツを削除しました' })
+        setTimeout(() => {
+          router.push('/gpts/contents')
+        }, 1000)
       }
     } catch (error) {
       console.error('Failed to delete content:', error)
-      toast({
-        title: 'エラー',
-        description: '削除に失敗しました',
-        variant: 'destructive'
-      })
+      setMessage({ type: 'error', text: '削除に失敗しました' })
+      setTimeout(() => setMessage(null), 3000)
     }
   }
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(editedContent)
-    toast({
-      title: 'コピー完了',
-      description: 'クリップボードにコピーしました'
-    })
+    setMessage({ type: 'success', text: 'クリップボードにコピーしました' })
+    setTimeout(() => setMessage(null), 2000)
   }
 
   if (loading) {
@@ -143,6 +128,13 @@ export default function ContentDetailPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
+      {message && (
+        <div className={`mb-4 p-3 rounded-lg ${
+          message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {message.text}
+        </div>
+      )}
       <Button
         variant="ghost"
         onClick={() => router.push('/gpts/contents')}
