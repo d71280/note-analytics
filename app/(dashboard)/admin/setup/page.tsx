@@ -13,8 +13,23 @@ export default function SetupPage() {
   const [anonKey, setAnonKey] = useState('')
   const [serviceKey, setServiceKey] = useState('')
   const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState<any>(null)
-  const [envStatus, setEnvStatus] = useState<any>(null)
+  const [results, setResults] = useState<{
+    success: boolean
+    error?: string
+    details?: string | Error
+    results?: {
+      envSetup?: boolean
+      tableCreation?: boolean
+      apiKeyGeneration?: boolean
+      errors?: string[]
+    }
+    nextSteps?: string[]
+    apiKeyTest?: Record<string, unknown>
+  } | null>(null)
+  const [envStatus, setEnvStatus] = useState<{
+    envFileExists?: boolean
+    currentEnv?: Record<string, string>
+  } | null>(null)
 
   const checkEnvironment = async () => {
     setLoading(true)
@@ -55,7 +70,7 @@ export default function SetupPage() {
       setResults({
         success: false,
         error: 'セットアップに失敗しました',
-        details: error
+        details: error instanceof Error ? error.message : String(error)
       })
     } finally {
       setLoading(false)
@@ -112,7 +127,7 @@ export default function SetupPage() {
                   {envStatus.envFileExists ? "存在" : "未作成"}
                 </Badge>
               </div>
-              {Object.entries(envStatus.currentEnv).map(([key, value]) => (
+              {envStatus.currentEnv && Object.entries(envStatus.currentEnv).map(([key, value]) => (
                 <div key={key} className="flex items-center justify-between">
                   <span>{key}:</span>
                   <Badge variant={value === '設定済み' ? "default" : "destructive"}>
@@ -211,7 +226,15 @@ export default function SetupPage() {
                       <span>セットアップに失敗しました</span>
                     </div>
                     {results.error && <div>エラー: {results.error}</div>}
-                    {results.details && <div>詳細: {results.details}</div>}
+                    {results.details && (
+                      <div>詳細: {
+                        typeof results.details === 'string' 
+                          ? results.details 
+                          : results.details instanceof Error 
+                            ? results.details.message 
+                            : 'Unknown error'
+                      }</div>
+                    )}
                     {results.results?.errors && (
                       <div>
                         <h4 className="font-semibold">エラー詳細:</h4>
