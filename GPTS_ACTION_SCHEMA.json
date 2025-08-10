@@ -1,0 +1,234 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Note Analytics Content API",
+    "version": "1.0.0",
+    "description": "GPTsから生成したコンテンツを受信してスケジュール管理するAPI"
+  },
+  "servers": [
+    {
+      "url": "https://note-analytics-platform.vercel.app"
+    }
+  ],
+  "paths": {
+    "/api/gpts/receive-content": {
+      "post": {
+        "summary": "コンテンツを受信",
+        "description": "GPTsで生成したコンテンツをアプリケーションに送信します",
+        "operationId": "receiveContent",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["content", "platform"],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "投稿内容のテキスト",
+                    "maxLength": 280
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": ["x", "note", "wordpress"],
+                    "description": "投稿先プラットフォーム"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "追加のメタデータ",
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "description": "内部管理用タイトル"
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "タグのリスト"
+                      },
+                      "category": {
+                        "type": "string",
+                        "description": "カテゴリー"
+                      },
+                      "generatedBy": {
+                        "type": "string",
+                        "default": "gpts",
+                        "description": "生成元"
+                      },
+                      "model": {
+                        "type": "string",
+                        "description": "使用したモデル"
+                      },
+                      "prompt": {
+                        "type": "string",
+                        "description": "生成時のプロンプト"
+                      }
+                    }
+                  },
+                  "scheduling": {
+                    "type": "object",
+                    "description": "スケジュール設定",
+                    "properties": {
+                      "scheduledFor": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "投稿予定日時（ISO 8601形式）"
+                      },
+                      "timezone": {
+                        "type": "string",
+                        "default": "Asia/Tokyo",
+                        "description": "タイムゾーン"
+                      }
+                    }
+                  }
+                }
+              },
+              "examples": {
+                "simple": {
+                  "value": {
+                    "content": "今日のAIトレンドについて：生成AIの進化が加速しています。",
+                    "platform": "x"
+                  }
+                },
+                "withMetadata": {
+                  "value": {
+                    "content": "ChatGPTの最新アップデートで音声機能が大幅に改善されました。",
+                    "platform": "x",
+                    "metadata": {
+                      "title": "AI最新情報",
+                      "tags": ["AI", "ChatGPT", "テクノロジー"],
+                      "category": "テクノロジー",
+                      "model": "gpt-4"
+                    }
+                  }
+                },
+                "withScheduling": {
+                  "value": {
+                    "content": "明日の朝、AIに関する重要な発表があります。お楽しみに！",
+                    "platform": "x",
+                    "scheduling": {
+                      "scheduledFor": "2024-01-21T09:00:00Z",
+                      "timezone": "Asia/Tokyo"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "コンテンツ受信成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "処理成功フラグ"
+                    },
+                    "contentId": {
+                      "type": "string",
+                      "description": "保存されたコンテンツのID"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "処理結果のメッセージ"
+                    },
+                    "platform": {
+                      "type": "string",
+                      "description": "プラットフォーム"
+                    },
+                    "contentLength": {
+                      "type": "integer",
+                      "description": "コンテンツの文字数"
+                    },
+                    "scheduled": {
+                      "type": "boolean",
+                      "description": "スケジュール設定済みフラグ"
+                    },
+                    "scheduledFor": {
+                      "type": "string",
+                      "description": "投稿予定日時"
+                    },
+                    "webUrl": {
+                      "type": "string",
+                      "description": "管理画面のURL"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "リクエストエラー",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "認証エラー",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "サーバーエラー",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "API認証キー"
+      }
+    }
+  }
+}
