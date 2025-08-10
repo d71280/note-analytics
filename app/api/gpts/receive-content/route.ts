@@ -50,7 +50,7 @@ function validateApiKey(request: NextRequest): boolean {
 }
 
 // OPTIONS メソッド - プリフライトリクエストに対応
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS() {
   console.log('=== GPTs CORS Preflight Request ===')
   
   return new NextResponse(null, {
