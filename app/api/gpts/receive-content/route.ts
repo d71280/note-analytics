@@ -20,13 +20,23 @@ interface GPTsContent {
   }
 }
 
-// APIキー認証
+// APIキー認証（GPTsのBearer tokenとx-api-key両方をサポート）
 function validateApiKey(request: NextRequest): boolean {
   const apiKey = request.headers.get('x-api-key')
+  const authHeader = request.headers.get('authorization')
   const validApiKey = process.env.GPTS_API_KEY || 'gpts_test_key_2024_note_analytics_x_integration'
+  const gptsKey = 'gpts_aacce86a2a444bb06d9f5cb0c12b9e721e56760e610c1f8455b10666a8fe8dae'
   
-  // テスト用キーまたは環境変数のキーと一致するか確認
-  return apiKey === validApiKey || apiKey === 'gpts_test_key_2024_note_analytics_x_integration'
+  // GPTsからのBearer tokenも受け付ける
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7)
+    if (token === validApiKey || token === 'gpts_test_key_2024_note_analytics_x_integration' || token === gptsKey) {
+      return true
+    }
+  }
+  
+  // x-api-keyヘッダーでの認証も維持
+  return apiKey === validApiKey || apiKey === 'gpts_test_key_2024_note_analytics_x_integration' || apiKey === gptsKey
 }
 
 export async function POST(request: NextRequest) {
