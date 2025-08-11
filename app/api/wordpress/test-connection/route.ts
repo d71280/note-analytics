@@ -2,146 +2,70 @@ import { NextResponse } from 'next/server'
 
 export async function POST() {
   try {
-    // 環境変数から直接取得（UIからの値は無視）
-    const url = process.env.WP_SITE_URL
-    const username = process.env.WP_USERNAME  
-    const password = process.env.WP_APP_PASSWORD
-    
-    if (!url || !username || !password) {
-      return NextResponse.json(
-        { error: 'WordPress認証情報が環境変数に設定されていません' },
-        { status: 500 }
-      )
-    }
-    
-    console.log('WordPress connection test:', { 
-      url, 
-      username,
-      passwordLength: password.length,
-      hasPassword: !!password 
-    })
-    
-    // Basic認証用のBase64エンコード  
-    const credentials = Buffer.from(`${username}:${password}`).toString('base64')
-    
-    // WordPress REST APIのusersエンドポイントで接続テスト
-    // まず認証なしでREST APIの存在確認
-    const apiCheckUrl = `${url}/wp-json/wp/v2`
-    try {
-      const apiCheckResponse = await fetch(apiCheckUrl, {
-        method: 'GET',
-        headers: {
-          'User-Agent': 'Note-Analytics-Platform/1.0'
+    // 環境変数から直接取得
+    const wpUrl = process.env.WP_SITE_URL
+    const wpUsername = process.env.WP_USERNAME
+    const wpPassword = process.env.WP_APP_PASSWORD
+
+    if (!wpUrl || !wpUsername || !wpPassword) {
+      return NextResponse.json({
+        success: false,
+        error: 'WordPress認証情報が設定されていません',
+        missing: {
+          url: !wpUrl,
+          username: !wpUsername,
+          password: !wpPassword
         }
-      })
-      console.log('API Check Response Status:', apiCheckResponse.status)
-      if (apiCheckResponse.status === 403) {
-        const errorText = await apiCheckResponse.text()
-        console.log('API blocked without auth:', errorText)
-      }
-    } catch (error) {
-      console.error('API Check Error:', error)
+      }, { status: 500 })
     }
-    
-    // 認証ヘッダーのデバッグ
-    console.log('Auth header:', `Basic ${credentials.substring(0, 20)}...`)
-    
-    // まずpostsエンドポイントで接続確認
-    const testUrl = `${url}/wp-json/wp/v2/posts?per_page=1`
-    // 複数の認証形式を試す
-    const headers1 = {
-      'Authorization': `Basic ${credentials}`,
-      'Content-Type': 'application/json',
-      'User-Agent': 'Note-Analytics-Platform/1.0'
-    }
-    
-    const testResponse = await fetch(testUrl, {
+
+    // Basic認証用のBase64エンコード
+    const credentials = Buffer.from(`${wpUsername}:${wpPassword}`).toString('base64')
+
+    console.log('Testing WordPress authentication...')
+    console.log('Site URL:', wpUrl)
+    console.log('Username:', wpUsername)
+
+    // test-authと同じようにusers/meエンドポイントでテスト
+    const response = await fetch(`${wpUrl}/wp-json/wp/v2/users/me`, {
       method: 'GET',
-      headers: headers1
-    })
-    
-    console.log('Test response with Basic auth:', {
-      status: testResponse.status,
-      statusText: testResponse.statusText,
-      headers: Object.fromEntries(testResponse.headers.entries())
-    })
-    
-    if (testResponse.ok) {
-      // 接続成功、さらにusers/meでユーザー情報を取得
-      const userResponse = await fetch(`${url}/wp-json/wp/v2/users/me`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json'
-        }
-      })
-      
-      if (userResponse.ok) {
-        const userData = await userResponse.json()
-        return NextResponse.json({
-          success: true,
-          message: `接続成功！ユーザー: ${userData.name}`,
-          user: userData.name
-        })
-      } else {
-        // postsは取得できるがusers/meが取得できない場合
-        return NextResponse.json({
-          success: true,
-          message: 'WordPress APIに接続できました',
-          note: '認証は成功しましたが、ユーザー情報の取得に制限があります'
-        })
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/json'
       }
-    } else if (testResponse.status === 403) {
-      // 403の場合、アプリケーションパスワードの問題かもしれない
-      const errorText = await testResponse.text()
-      console.error('WordPress 403 error details:', errorText)
-      return NextResponse.json(
-        { 
-          error: '認証に失敗しました（403 Forbidden）',
-          help: 'WordPress管理画面 → ユーザー → プロフィール → アプリケーションパスワードで生成したパスワードを使用してください',
-          details: errorText,
-          debugInfo: {
-            url: testUrl,
-            username: username,
-            passwordLength: password.length
-          }
-        },
-        { status: 403 }
-      )
-    } else {
-      const errorText = await testResponse.text()
-      console.error('WordPress connection test failed:', errorText)
-      
-      if (testResponse.status === 401) {
-        return NextResponse.json(
-          { error: '認証に失敗しました。ユーザー名とパスワードを確認してください' },
-          { status: 401 }
-        )
-      } else if (testResponse.status === 404) {
-        return NextResponse.json(
-          { error: 'WordPress REST APIが見つかりません。URLを確認してください' },
-          { status: 404 }
-        )
-      } else {
-        return NextResponse.json(
-          { error: `接続に失敗しました (${testResponse.status})` },
-          { status: testResponse.status }
-        )
-      }
+    })
+
+    const responseText = await response.text()
+    console.log('Response status:', response.status)
+    console.log('Response body:', responseText)
+
+    if (!response.ok) {
+      return NextResponse.json({
+        success: false,
+        error: '認証に失敗しました',
+        status: response.status,
+        details: responseText
+      }, { status: response.status })
     }
+
+    const userData = JSON.parse(responseText)
+
+    return NextResponse.json({
+      success: true,
+      message: 'WordPress認証成功',
+      user: {
+        id: userData.id,
+        name: userData.name,
+        slug: userData.slug
+      }
+    })
+
   } catch (error) {
     console.error('WordPress connection test error:', error)
-    
-    if (error instanceof Error && error.message.includes('fetch')) {
-      return NextResponse.json(
-        { error: 'サイトに接続できません。URLを確認してください' },
-        { status: 500 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: '接続テストに失敗しました' },
-      { status: 500 }
-    )
+    return NextResponse.json({
+      success: false,
+      error: '接続テスト中にエラーが発生しました',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 })
   }
 }
