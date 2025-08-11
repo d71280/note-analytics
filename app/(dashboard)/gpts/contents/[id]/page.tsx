@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Copy, Globe, FileText, Twitter, ArrowLeft, Save, Trash2 } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Copy, Globe, FileText, Twitter, ArrowLeft, Save, Trash2, Eye, Code } from 'lucide-react'
 
 interface ContentDetail {
   id: string
@@ -18,6 +19,50 @@ interface ContentDetail {
   status: string
   created_at: string
   scheduled_for?: string
+}
+
+// マークダウンをHTMLに変換する関数
+function renderMarkdown(markdown: string): string {
+  let html = markdown
+    // 見出し
+    .replace(/^#### (.*$)/gim, '<h4 class="text-lg font-semibold mt-4 mb-2">$1</h4>')
+    .replace(/^### (.*$)/gim, '<h3 class="text-xl font-semibold mt-4 mb-2">$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold mt-4 mb-2">$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold mt-4 mb-3">$1</h1>')
+    // 太字
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold">$1</strong>')
+    .replace(/__(.+?)__/g, '<strong class="font-bold">$1</strong>')
+    // イタリック
+    .replace(/\*([^\*\n]+?)\*/g, '<em class="italic">$1</em>')
+    .replace(/_([^_\n]+?)_/g, '<em class="italic">$1</em>')
+    // コードブロック
+    .replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-100 p-3 rounded-lg overflow-x-auto my-3"><code>$1</code></pre>')
+    .replace(/`(.+?)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-sm">$1</code>')
+    // リスト
+    .replace(/^\* (.+)/gim, '<li class="ml-6 list-disc">$1</li>')
+    .replace(/^- (.+)/gim, '<li class="ml-6 list-disc">$1</li>')
+    .replace(/^\d+\. (.+)/gim, '<li class="ml-6 list-decimal">$1</li>')
+    // 引用
+    .replace(/^> (.+)/gim, '<blockquote class="border-l-4 border-gray-300 pl-4 italic my-3">$1</blockquote>')
+    // 水平線
+    .replace(/^---$/gim, '<hr class="my-4 border-gray-300">')
+    .replace(/^\*\*\*$/gim, '<hr class="my-4 border-gray-300">')
+    // リンク
+    .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" class="text-blue-600 hover:underline">$1</a>')
+    // 改行
+    .replace(/\n\n/g, '</p><p class="mb-3">')
+    .replace(/\n/g, '<br>')
+  
+  // リストタグの整形
+  html = html.replace(/(<li class="ml-6 list-disc">.*<\/li>)/s, '<ul class="my-3">$1</ul>')
+  html = html.replace(/(<li class="ml-6 list-decimal">.*<\/li>)/s, '<ol class="my-3">$1</ol>')
+  
+  // 段落タグで囲む
+  if (!html.startsWith('<')) {
+    html = `<p class="mb-3">${html}</p>`
+  }
+  
+  return html
 }
 
 const platformIcons = {
@@ -190,12 +235,44 @@ export default function ContentDetailPage() {
                 {editedContent.length}文字
               </div>
             </div>
-            <Textarea
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
-              className="min-h-[300px] font-mono text-sm"
-              placeholder="コンテンツを入力..."
-            />
+            
+            {/* マークダウン対応プラットフォームの場合はタブ表示 */}
+            {(editedPlatform === 'note' || editedPlatform === 'wordpress') ? (
+              <Tabs defaultValue="edit" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="edit">
+                    <Code className="h-4 w-4 mr-2" />
+                    編集
+                  </TabsTrigger>
+                  <TabsTrigger value="preview">
+                    <Eye className="h-4 w-4 mr-2" />
+                    プレビュー
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="edit">
+                  <Textarea
+                    value={editedContent}
+                    onChange={(e) => setEditedContent(e.target.value)}
+                    className="min-h-[400px] font-mono text-sm"
+                    placeholder="マークダウン形式で入力...\n\n# 見出し1\n## 見出し2\n\n**太字**、*イタリック*\n\n- リスト項目1\n- リスト項目2"
+                  />
+                </TabsContent>
+                <TabsContent value="preview">
+                  <div 
+                    className="min-h-[400px] p-4 border rounded-lg bg-white prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(editedContent) }}
+                  />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <Textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                className="min-h-[300px] font-mono text-sm"
+                placeholder="コンテンツを入力..."
+                maxLength={280} // Xの場合は280文字制限
+              />
+            )}
           </div>
 
           {content.metadata && Object.keys(content.metadata).length > 0 && (

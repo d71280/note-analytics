@@ -20,13 +20,57 @@ export async function OPTIONS() {
   })
 }
 
+// マークダウンをHTMLに変換する関数
+function convertMarkdownToHtml(markdown: string): string {
+  // 基本的なマークダウン変換
+  let html = markdown
+    // 見出し
+    .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    // 太字
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.+?)__/g, '<strong>$1</strong>')
+    // イタリック
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/_(.+?)_/g, '<em>$1</em>')
+    // コードブロック
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+    // リスト
+    .replace(/^\* (.+)/gim, '<li>$1</li>')
+    .replace(/^- (.+)/gim, '<li>$1</li>')
+    .replace(/^\d+\. (.+)/gim, '<li>$1</li>')
+    // 引用
+    .replace(/^> (.+)/gim, '<blockquote>$1</blockquote>')
+    // 水平線
+    .replace(/^---$/gim, '<hr>')
+    .replace(/^\*\*\*$/gim, '<hr>')
+    // リンク
+    .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2">$1</a>')
+    // 改行
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+  
+  // リストタグの整形
+  html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+  
+  // 段落タグで囲む
+  if (!html.startsWith('<')) {
+    html = `<p>${html}</p>`
+  }
+  
+  return html
+}
+
 // WordPress専用のコンテンツ受信エンドポイント
 export async function POST(request: NextRequest) {
   console.log('=== WordPress GPTs Content Receive API Start ===')
   
   try {
     const body = await request.json()
-    const { content, metadata, scheduling } = body
+    const { content, metadata, scheduling, format = 'markdown' } = body
     
     // 必須フィールドの検証
     if (!content) {
@@ -87,11 +131,15 @@ export async function POST(request: NextRequest) {
     
     const supabase = createClient()
     
+    // マークダウン形式の場合はHTMLに変換して保存
+    const processedContent = format === 'markdown' ? convertMarkdownToHtml(content) : content
+    const originalContent = content // 元のマークダウンも保存
+    
     // WordPressプラットフォーム固定で保存
     const { data: savedContent, error: saveError } = await supabase
       .from('scheduled_posts')
       .insert({
-        content,
+        content: processedContent, // HTML形式で保存
         platform: 'wordpress', // WordPress固定
         scheduled_for: scheduling?.scheduledFor || null,
         status: scheduling?.scheduledFor ? 'pending' : 'draft',
@@ -103,7 +151,10 @@ export async function POST(request: NextRequest) {
           receivedAt: new Date().toISOString(),
           needsScheduling: !scheduling?.scheduledFor,
           seoRecommended: contentLength >= 3000, // SEO推奨長さ
-          excerpt: metadata?.excerpt || content.substring(0, 160) // 抜粋
+          excerpt: metadata?.excerpt || content.substring(0, 160), // 抜粋
+          format: format,
+          originalContent: originalContent, // 元のマークダウンも保存
+          isMarkdown: format === 'markdown'
         }
       })
       .select()
@@ -195,7 +246,13 @@ export async function GET() {
                   properties: {
                     content: {
                       type: 'string',
-                      description: 'WordPress記事本文（推奨: 3000文字以上、最小: 1000文字、最大: 50000文字）'
+                      description: 'WordPress記事本文（マークダウン形式対応、推奨: 3000文字以上、最小: 1000文字、最大: 50000文字）'
+                    },
+                    format: {
+                      type: 'string',
+                      enum: ['markdown', 'plain'],
+                      default: 'markdown',
+                      description: 'コンテンツのフォーマット（markdownまたはplain）'
                     },
                     metadata: {
                       type: 'object',

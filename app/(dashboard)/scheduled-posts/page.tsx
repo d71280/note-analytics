@@ -495,28 +495,58 @@ export default function ScheduledPostsPage() {
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>投稿を編集</DialogTitle>
+            <DialogTitle className="text-xl">投稿を編集</DialogTitle>
             <DialogDescription>
               内容を編集して保存してください
             </DialogDescription>
           </DialogHeader>
           {editingPost && (
             <div className="space-y-4 mt-4">
-              <div>
-                <p className="text-sm text-gray-600 mb-2">
+              <div className="flex items-center gap-4 pb-3 border-b">
+                <div className="flex items-center gap-2">
+                  <div className={`p-2 rounded-lg ${
+                    editingPost.platform === 'x' ? 'bg-blue-500' :
+                    editingPost.platform === 'note' ? 'bg-green-500' :
+                    'bg-purple-500'
+                  } text-white`}>
+                    {React.createElement(platformIcons[editingPost.platform as keyof typeof platformIcons], { className: 'h-4 w-4' })}
+                  </div>
+                  <span className="font-semibold">
+                    {platformNames[editingPost.platform as keyof typeof platformNames]}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600">
                   投稿予定: {format(new Date(editingPost.scheduled_for || editingPost.scheduled_at || Date.now()), 'M月d日 HH:mm', { locale: ja })}
                 </p>
+              </div>
+              
+              <div>
                 <Textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  rows={6}
-                  maxLength={platformNames[editingPost.platform as keyof typeof platformNames] === 'X (Twitter)' ? 280 : 2000}
+                  rows={15}
+                  maxLength={
+                    editingPost.platform === 'x' ? 280 :
+                    editingPost.platform === 'note' ? 10000 :
+                    50000
+                  }
+                  className="min-h-[400px] text-base"
+                  placeholder="ここに内容を入力..."
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  {editContent.length}/{platformNames[editingPost.platform as keyof typeof platformNames] === 'X (Twitter)' ? 280 : 2000}文字
-                </p>
+                <div className="flex justify-between items-center mt-2">
+                  <p className="text-sm text-gray-500">
+                    {editContent.length}/{editingPost.platform === 'x' ? 280 : editingPost.platform === 'note' ? 10000 : 50000}文字
+                  </p>
+                  <div className="text-xs text-gray-400">
+                    {
+                      editingPost.platform === 'x' ? '最大280文字' :
+                      editingPost.platform === 'note' ? '推奨1500-2500文字' :
+                      '推奨3000文字以上'
+                    }
+                  </div>
+                </div>
               </div>
               
               <div className="flex justify-end gap-2">
