@@ -66,6 +66,7 @@ export default function ScheduledPostsPage() {
   const [isDeletingFailed, setIsDeletingFailed] = useState(false)
   const [selectedPosts, setSelectedPosts] = useState<Set<string>>(new Set())
   const [isDeletingSelected, setIsDeletingSelected] = useState(false)
+  const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending')
 
   useEffect(() => {
     fetchScheduledPosts()
@@ -305,7 +306,16 @@ export default function ScheduledPostsPage() {
       wordpress: []
     }
     
-    posts.forEach(post => {
+    // タブに応じてフィルタリング
+    const filteredPosts = posts.filter(post => {
+      if (activeTab === 'pending') {
+        return post.status === 'pending' || post.status === 'draft' || post.status === 'scheduled'
+      } else {
+        return post.status === 'posted' || post.status === 'failed'
+      }
+    })
+    
+    filteredPosts.forEach(post => {
       if (grouped[post.platform]) {
         grouped[post.platform].push(post)
       }
@@ -323,6 +333,14 @@ export default function ScheduledPostsPage() {
   }
 
   const groupedPosts = groupPostsByPlatform()
+  
+  // 各タブの投稿数を計算
+  const pendingCount = posts.filter(post => 
+    post.status === 'pending' || post.status === 'draft' || post.status === 'scheduled'
+  ).length
+  const completedCount = posts.filter(post => 
+    post.status === 'posted' || post.status === 'failed'
+  ).length
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -357,7 +375,7 @@ export default function ScheduledPostsPage() {
                 )}
               </Button>
             )}
-            {posts.some(p => p.status === 'failed') && (
+            {activeTab === 'completed' && posts.some(p => p.status === 'failed') && (
               <Button
                 onClick={handleDeleteFailedPosts}
                 variant="destructive"
@@ -389,6 +407,46 @@ export default function ScheduledPostsPage() {
         </div>
       </div>
 
+      {/* タブナビゲーション */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                activeTab === 'pending'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Clock className="h-4 w-4" />
+              投稿待ち
+              {pendingCount > 0 && (
+                <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-xs">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('completed')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                activeTab === 'completed'
+                  ? 'border-green-500 text-green-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <CheckSquare className="h-4 w-4" />
+              投稿完了
+              {completedCount > 0 && (
+                <span className="bg-green-100 text-green-600 px-2 py-0.5 rounded-full text-xs">
+                  {completedCount}
+                </span>
+              )}
+            </button>
+          </nav>
+        </div>
+      </div>
+
       {posts.length === 0 ? (
         <Card className="text-center py-12">
           <CardContent>
@@ -397,6 +455,28 @@ export default function ScheduledPostsPage() {
             <p className="text-sm text-gray-500 mt-2">
               GPTs連携ページから投稿をスケジュールしてください
             </p>
+          </CardContent>
+        </Card>
+      ) : Object.values(groupedPosts).every(posts => posts.length === 0) ? (
+        <Card className="text-center py-12">
+          <CardContent>
+            {activeTab === 'pending' ? (
+              <>
+                <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-lg text-gray-600">投稿待ちの投稿はありません</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  スケジュールされた投稿がここに表示されます
+                </p>
+              </>
+            ) : (
+              <>
+                <CheckSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-lg text-gray-600">投稿完了した投稿はありません</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  投稿済みの投稿がここに表示されます
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -461,36 +541,47 @@ export default function ScheduledPostsPage() {
                                 )}
                               </div>
                             </div>
-                            {post.status === 'pending' && (
+                            {(post.status === 'pending' || post.status === 'draft' || post.status === 'scheduled') ? (
                               <div className="flex gap-1 ml-2 flex-shrink-0">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handlePostNow(post)}
-                                disabled={isPosting === post.id}
-                                className="text-blue-600 hover:text-blue-700"
-                              >
-                                {isPosting === post.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Send className="h-4 w-4" />
-                                )}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleEdit(post)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleDelete(post.id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handlePostNow(post)}
+                                  disabled={isPosting === post.id}
+                                  className="text-blue-600 hover:text-blue-700"
+                                >
+                                  {isPosting === post.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Send className="h-4 w-4" />
+                                  )}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEdit(post)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(post.id)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex gap-1 ml-2 flex-shrink-0">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(post.id)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
                             )}
                           </div>
