@@ -76,11 +76,13 @@ export async function POST() {
 
     // 403 = 認証は成功したが権限不足
     if (response.status === 403) {
+      const responseText = await response.text()
       return NextResponse.json({
         success: false,
         error: 'アクセス権限がありません',
         status: response.status,
-        info: 'ユーザーに投稿の読み取り権限があるか確認してください'
+        info: 'ユーザーに投稿の読み取り権限があるか確認してください',
+        details: responseText.substring(0, 200)
       }, { status: 403 })
     }
 
