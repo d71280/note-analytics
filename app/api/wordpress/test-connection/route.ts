@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { url, username, password } = await request.json()
+    // 環境変数から直接取得（UIからの値は無視）
+    const url = process.env.WP_SITE_URL
+    const username = process.env.WP_USERNAME  
+    const password = process.env.WP_APP_PASSWORD
     
     if (!url || !username || !password) {
       return NextResponse.json(
-        { error: '必要な情報が不足しています' },
-        { status: 400 }
+        { error: 'WordPress認証情報が環境変数に設定されていません' },
+        { status: 500 }
       )
     }
     

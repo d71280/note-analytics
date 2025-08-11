@@ -93,7 +93,7 @@ export default function SettingsPage() {
       const response = await fetch('/api/wordpress/test-connection', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(wordpressSettings)
+        body: JSON.stringify({}) // 環境変数を使用するため空のボディを送信
       })
       
       const data = await response.json()
