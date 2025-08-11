@@ -4,6 +4,8 @@ import { useState, useEffect, createElement } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Calendar, Clock, Edit, Trash2, Save, X as XIcon, Twitter, FileText, Globe, Loader2, Send, CheckSquare, Square } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { format } from 'date-fns'
@@ -57,6 +59,7 @@ export default function ScheduledPostsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [editingPost, setEditingPost] = useState<ScheduledPost | null>(null)
   const [editContent, setEditContent] = useState('')
+  const [editScheduledTime, setEditScheduledTime] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isPosting, setIsPosting] = useState<string | null>(null)
@@ -90,6 +93,10 @@ export default function ScheduledPostsPage() {
   const handleEdit = (post: ScheduledPost) => {
     setEditingPost(post)
     setEditContent(post.content)
+    const scheduledTime = post.scheduled_for || post.scheduled_at || new Date().toISOString()
+    // 日時をローカルフォーマットに変換
+    const localDateTime = new Date(scheduledTime).toISOString().slice(0, 16)
+    setEditScheduledTime(localDateTime)
     setIsDialogOpen(true)
   }
 
@@ -98,13 +105,17 @@ export default function ScheduledPostsPage() {
     
     setIsSaving(true)
     try {
-      const response = await fetch('/api/x/schedule/update', {
+      // 更新用のデータを準備
+      const updateData = {
+        id: editingPost.id,
+        content: editContent,
+        scheduled_for: new Date(editScheduledTime).toISOString()
+      }
+
+      const response = await fetch('/api/scheduled-posts/update', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: editingPost.id,
-          content: editContent
-        })
+        body: JSON.stringify(updateData)
       })
 
       if (response.ok) {
@@ -522,19 +533,37 @@ export default function ScheduledPostsPage() {
                 </p>
               </div>
               
-              <div>
-                <Textarea
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  rows={15}
-                  maxLength={
-                    editingPost.platform === 'x' ? 280 :
-                    editingPost.platform === 'note' ? 10000 :
-                    50000
-                  }
-                  className="min-h-[400px] text-base"
-                  placeholder="ここに内容を入力..."
-                />
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="scheduled-time">投稿予定時刻</Label>
+                  <Input
+                    id="scheduled-time"
+                    type="datetime-local"
+                    value={editScheduledTime}
+                    onChange={(e) => setEditScheduledTime(e.target.value)}
+                    min={new Date().toISOString().slice(0, 16)}
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    現在より後の時刻を選択してください
+                  </p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="content">投稿内容</Label>
+                  <Textarea
+                    id="content"
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    rows={15}
+                    maxLength={
+                      editingPost.platform === 'x' ? 280 :
+                      editingPost.platform === 'note' ? 10000 :
+                      50000
+                    }
+                    className="min-h-[400px] text-base mt-1"
+                    placeholder="ここに内容を入力..."
+                  />
                 <div className="flex justify-between items-center mt-2">
                   <p className="text-sm text-gray-500">
                     {editContent.length}/{editingPost.platform === 'x' ? 280 : editingPost.platform === 'note' ? 10000 : 50000}文字
