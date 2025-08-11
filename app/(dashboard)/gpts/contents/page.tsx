@@ -124,13 +124,13 @@ export default function GPTsContentsPage() {
 
 
       {/* コンテンツ一覧 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="space-y-4">
         {loading ? (
-          <div className="col-span-full text-center py-8">
+          <div className="text-center py-8">
             読み込み中...
           </div>
         ) : contents.length === 0 ? (
-          <div className="col-span-full text-center py-8">
+          <div className="text-center py-8">
             <p className="text-gray-500">まだコンテンツがありません</p>
             <p className="text-sm text-gray-400 mt-2">
               GPTsから生成されたコンテンツがここに表示されます
@@ -143,131 +143,125 @@ export default function GPTsContentsPage() {
             
             return (
               <Card key={content.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-lg ${colorClass} text-white`}>
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">
-                          {content.metadata?.title || `${content.platform.toUpperCase()}投稿`}
-                        </CardTitle>
-                        <CardDescription className="text-xs">
-                          {new Date(content.created_at || content.received_at || Date.now()).toLocaleString('ja-JP')}
-                        </CardDescription>
-                      </div>
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    {/* プラットフォームアイコン */}
+                    <div className={`p-3 rounded-lg ${colorClass} text-white flex-shrink-0`}>
+                      <Icon className="h-5 w-5" />
                     </div>
-                    <Badge variant={
-                      content.status === 'published' ? 'default' :
-                      content.status === 'scheduled' ? 'secondary' :
-                      'outline'
-                    }>
-                      {content.status === 'published' ? '公開済み' :
-                       content.status === 'scheduled' ? 'スケジュール済み' :
-                       '下書き'}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-4">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap break-words max-h-32 overflow-y-auto border rounded p-2 bg-gray-50">
-                      {content.content}
-                    </p>
-                  </div>
-                  
-                  {content.metadata?.tags && content.metadata.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {content.metadata.tags.map(tag => (
-                        <Badge key={tag} variant="outline" className="text-xs">
-                          {tag}
+                    
+                    {/* コンテンツ本文 */}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-semibold text-lg">
+                            {content.metadata?.title || `${content.platform.toUpperCase()}投稿`}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {new Date(content.created_at || content.received_at || Date.now()).toLocaleString('ja-JP')}
+                          </p>
+                        </div>
+                        <Badge variant={
+                          content.status === 'published' ? 'default' :
+                          content.status === 'scheduled' ? 'secondary' :
+                          'outline'
+                        }>
+                          {content.status === 'published' ? '公開済み' :
+                           content.status === 'scheduled' ? 'スケジュール済み' :
+                           '下書き'}
                         </Badge>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div className="flex justify-between items-center">
-                    <div className="text-xs text-gray-500">
-                      {content.content.length}文字 | {content.metadata?.model || 'GPTs'}
-                    </div>
-                    <div className="flex gap-1">
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => copyToClipboard(content.content, content.id)}
-                      >
-                        {copySuccess === content.id ? (
-                          <CheckCircle className="h-3 w-3 text-green-600" />
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </Button>
-                      <Dialog>
-                        <DialogTrigger asChild>
+                      </div>
+                      
+                      <p className="text-gray-700 mb-3 line-clamp-3">
+                        {content.content}
+                      </p>
+                      
+                      {content.metadata?.tags && content.metadata.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {content.metadata.tags.map(tag => (
+                            <Badge key={tag} variant="outline" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-500">
+                          {content.content.length}文字 | {content.metadata?.model || 'GPTs'}
+                        </div>
+                        
+                        {/* アクションボタン */}
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => copyToClipboard(content.content, content.id)}
+                          >
+                            {copySuccess === content.id ? (
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                          
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                disabled={content.status !== 'draft'}
+                              >
+                                <Calendar className="h-4 w-4 mr-1" />
+                                スケジュール
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>スケジュール設定</DialogTitle>
+                                <DialogDescription>
+                                  このコンテンツの配信日時を設定します
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4 mt-4">
+                                <div>
+                                  <Label>配信日</Label>
+                                  <Input 
+                                    type="date" 
+                                    value={scheduleDate}
+                                    onChange={(e) => setScheduleDate(e.target.value)}
+                                    className="mt-2"
+                                  />
+                                </div>
+                                <div>
+                                  <Label>配信時刻</Label>
+                                  <Input 
+                                    type="time" 
+                                    value={scheduleTime}
+                                    onChange={(e) => setScheduleTime(e.target.value)}
+                                    className="mt-2"
+                                  />
+                                </div>
+                                <Button 
+                                  onClick={() => scheduleContent(content.id)}
+                                  className="w-full"
+                                >
+                                  スケジュール設定
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                          
                           <Button 
                             size="sm" 
                             variant="outline"
-                            disabled={content.status !== 'draft'}
+                            onClick={() => deleteContent(content.id)}
+                            className="text-red-600 hover:text-red-700"
                           >
-                            <Calendar className="h-3 w-3" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>スケジュール設定</DialogTitle>
-                            <DialogDescription>
-                              このコンテンツの配信日時を設定します
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 mt-4">
-                            <div>
-                              <Label>配信日</Label>
-                              <Input 
-                                type="date" 
-                                value={scheduleDate}
-                                onChange={(e) => setScheduleDate(e.target.value)}
-                                className="mt-2"
-                              />
-                            </div>
-                            <div>
-                              <Label>配信時刻</Label>
-                              <Input 
-                                type="time" 
-                                value={scheduleTime}
-                                onChange={(e) => setScheduleTime(e.target.value)}
-                                className="mt-2"
-                              />
-                            </div>
-                            <Button 
-                              onClick={() => scheduleContent(content.id)}
-                              className="w-full"
-                            >
-                              スケジュール設定
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                      
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => copyToClipboard(content.content, `content-${content.id}`)}
-                      >
-                        {copySuccess === `content-${content.id}` ? (
-                          <CheckCircle className="h-3 w-3 text-green-600" />
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </Button>
-                      
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => deleteContent(content.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
