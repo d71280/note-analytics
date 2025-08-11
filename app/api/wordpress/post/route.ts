@@ -21,10 +21,10 @@ export async function POST(request: NextRequest) {
     //   .select('*')
     //   .single()
 
-    // 暫定的にハードコード（後で環境変数or DBから取得）
-    const wpUrl = 'https://muchino-chi.com'
-    const wpUsername = process.env.WP_USERNAME || ''
-    const wpPassword = process.env.WP_APP_PASSWORD || ''
+    // 環境変数から取得
+    const wpUrl = process.env.WORDPRESS_SITE_URL || 'https://muchino-chi.com'
+    const wpUsername = process.env.WORDPRESS_ID || ''
+    const wpPassword = process.env.WORDPRESS_PASSWORD || ''
 
     if (!wpUsername || !wpPassword) {
       return NextResponse.json(

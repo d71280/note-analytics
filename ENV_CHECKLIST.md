@@ -15,8 +15,9 @@
 - [ ] `X_ACCESS_TOKEN_SECRET` - X Developer Portalから取得
 
 ### WordPress 投稿機能
-- [ ] `WP_USERNAME` - WordPressのユーザー名
-- [ ] `WP_APP_PASSWORD` - WordPressアプリケーションパスワード
+- [ ] `WORDPRESS_SITE_URL` - WordPressサイトのURL
+- [ ] `WORDPRESS_ID` - WordPressのユーザー名
+- [ ] `WORDPRESS_PASSWORD` - WordPressアプリケーションパスワード
 
 ### note 投稿機能（非公式）
 - [ ] `NOTE_EMAIL` - noteログインメールアドレス
@@ -43,8 +44,9 @@ X_ACCESS_TOKEN
 X_ACCESS_TOKEN_SECRET
 
 # WordPress投稿用（使用する場合）
-WP_USERNAME
-WP_APP_PASSWORD
+WORDPRESS_SITE_URL
+WORDPRESS_ID
+WORDPRESS_PASSWORD
 
 # note投稿用（使用する場合）
 NOTE_EMAIL
