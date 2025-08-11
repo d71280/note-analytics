@@ -487,23 +487,6 @@ export default function ScheduledPostsPage() {
                             </div>
                           )}
                         </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-gray-600 line-clamp-3">
-                          {post.content}
-                        </p>
-                        {post.error_message && (
-                          <p className="text-xs text-red-600 mt-2">
-                            エラー: {post.error_message}
-                          </p>
-                        )}
-                        {post.posted_at && (
-                          <p className="text-xs text-gray-500 mt-2">
-                            投稿日時: {format(new Date(post.posted_at), 'M月d日 HH:mm', { locale: ja })}
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
                   ))}
                 </div>
               </div>
@@ -524,7 +507,7 @@ export default function ScheduledPostsPage() {
             <div className="space-y-4 mt-4">
               <div>
                 <p className="text-sm text-gray-600 mb-2">
-                  投稿予定: {format(new Date(editingPost.scheduled_at), 'M月d日 HH:mm', { locale: ja })}
+                  投稿予定: {format(new Date(editingPost.scheduled_for || editingPost.scheduled_at || Date.now()), 'M月d日 HH:mm', { locale: ja })}
                 </p>
                 <Textarea
                   value={editContent}
