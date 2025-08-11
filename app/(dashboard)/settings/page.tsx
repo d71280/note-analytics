@@ -31,6 +31,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchApiKey()
+    fetchWordPressConfig()
   }, [])
 
   const fetchApiKey = async () => {
@@ -42,6 +43,24 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch API key:', error)
+    }
+  }
+
+  const fetchWordPressConfig = async () => {
+    try {
+      const response = await fetch('/api/wordpress/get-config')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.config) {
+          setWordpressSettings({
+            url: data.config.url,
+            username: data.config.username,
+            password: data.config.password
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch WordPress config:', error)
     }
   }
 
@@ -439,21 +458,25 @@ export default function SettingsPage() {
             <Input
               type="url"
               value={wordpressSettings.url}
-              onChange={(e) => setWordpressSettings({...wordpressSettings, url: e.target.value})}
+              readOnly
+              className="bg-gray-50"
               placeholder="https://your-site.com"
             />
-            <p className="text-xs text-gray-500 mt-1">WordPress REST APIが有効なサイトのURLを入力</p>
+            <p className="text-xs text-gray-500 mt-1">
+              {wordpressSettings.url ? `環境変数から読み込み: ${wordpressSettings.url}` : 'WordPress REST APIが有効なサイトのURLを入力'}
+            </p>
           </div>
           
           <div>
             <Label>ユーザー名</Label>
             <Input
               value={wordpressSettings.username}
-              onChange={(e) => setWordpressSettings({...wordpressSettings, username: e.target.value})}
+              readOnly
+              className="bg-gray-50"
               placeholder="admin"
             />
             <p className="text-xs text-gray-500 mt-1">
-              WordPressのログインユーザー名
+              {wordpressSettings.username ? `環境変数から読み込み: ${wordpressSettings.username}` : 'WordPressのログインユーザー名'}
             </p>
           </div>
           
@@ -462,11 +485,12 @@ export default function SettingsPage() {
             <Input
               type="password"
               value={wordpressSettings.password}
-              onChange={(e) => setWordpressSettings({...wordpressSettings, password: e.target.value})}
+              readOnly
+              className="bg-gray-50"
               placeholder="xxxx xxxx xxxx xxxx xxxx xxxx"
             />
             <p className="text-xs text-gray-500 mt-1">
-              上記の手順で生成したアプリケーションパスワード（スペースなし）
+              {wordpressSettings.password ? '環境変数から読み込み済み（アプリケーションパスワード設定済み）' : '上記の手順で生成したアプリケーションパスワード（スペースなし）'}
             </p>
           </div>
           
