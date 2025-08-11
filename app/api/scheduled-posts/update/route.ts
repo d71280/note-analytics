@@ -16,7 +16,7 @@ export async function PUT(request: NextRequest) {
     const supabase = createClient()
 
     // 更新するデータを構築
-    const updateData: any = {}
+    const updateData: Record<string, unknown> = {}
     if (scheduled_for !== undefined) updateData.scheduled_for = scheduled_for
     if (content !== undefined) updateData.content = content
     if (metadata !== undefined) updateData.metadata = metadata

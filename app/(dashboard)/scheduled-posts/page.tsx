@@ -576,6 +576,7 @@ export default function ScheduledPostsPage() {
                     }
                   </div>
                 </div>
+                </div>
               </div>
               
               <div className="flex justify-end gap-2">
