@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+export const runtime = 'edge' // Edge Functionを使用
+
 // WordPress投稿作成
 export async function POST(request: NextRequest) {
   try {
@@ -43,8 +45,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Basic認証用のBase64エンコード
-    const credentials = Buffer.from(`${wpUsername}:${wpPassword}`).toString('base64')
+    // Basic認証用のBase64エンコード - EdgeランタイムではBufferが使えないのでbtoa使用
+    const credentials = btoa(`${wpUsername}:${wpPassword}`)
 
     // 投稿データの構築
     const postData: Record<string, unknown> = {

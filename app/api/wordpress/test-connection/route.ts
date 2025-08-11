@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 
+export const runtime = 'edge' // Edge Functionを使用
+
 export async function POST() {
   try {
     // 環境変数から直接取得
@@ -19,8 +21,8 @@ export async function POST() {
       }, { status: 500 })
     }
 
-    // Basic認証用のBase64エンコード
-    const credentials = Buffer.from(`${wpUsername}:${wpPassword}`).toString('base64')
+    // Basic認証用のBase64エンコード - EdgeランタイムではBufferが使えないのでbtoa使用
+    const credentials = btoa(`${wpUsername}:${wpPassword}`)
 
     console.log('Testing WordPress authentication...')
     console.log('Site URL:', wpUrl)
