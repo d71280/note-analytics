@@ -10,14 +10,14 @@ import XSettings from './x-settings'
 
 export default function SettingsPage() {
   const [noteSettings, setNoteSettings] = useState({
-    email: 'muchinochikaigi@gmail.com',
-    password: 'sky05410',
+    email: '',
+    password: '',
     apiKey: ''
   })
   const [wordpressSettings, setWordpressSettings] = useState({
-    url: 'https://muchino-chi.com',
-    username: 'admin_muchinochi',
-    password: '69Kushimoto'
+    url: '',
+    username: '',
+    password: ''
   })
   const [apiKey, setApiKey] = useState('')
   const [showApiKey, setShowApiKey] = useState(false)

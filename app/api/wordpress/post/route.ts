@@ -109,7 +109,7 @@ export async function PATCH(request: NextRequest) {
     const credentials = Buffer.from(`${wpUsername}:${wpPassword}`).toString('base64')
 
     const wpResponse = await fetch(`${wpUrl}/wp-json/wp/v2/posts/${postId}`, {
-      method: 'POST', // WordPressのREST APIは更新にPOSTを使用
+      method: 'POST', // WordPressのREST APIは更新にPOSTを使用（仕様通り）
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Basic ${credentials}`
