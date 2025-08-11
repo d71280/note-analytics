@@ -38,7 +38,8 @@ export async function POST() {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; NoteAnalyticsPlatform/1.0)'
       },
       body: JSON.stringify(testPost)
     })

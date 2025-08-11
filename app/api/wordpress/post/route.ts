@@ -85,7 +85,8 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${credentials}`
+        'Authorization': `Basic ${credentials}`,
+        'User-Agent': 'Mozilla/5.0 (compatible; NoteAnalyticsPlatform/1.0)'
       },
       body: JSON.stringify(postData)
     })
@@ -147,7 +148,8 @@ export async function PATCH(request: NextRequest) {
       method: 'POST', // WordPressのREST APIは更新にPOSTを使用（仕様通り）
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${credentials}`
+        'Authorization': `Basic ${credentials}`,
+        'User-Agent': 'Mozilla/5.0 (compatible; NoteAnalyticsPlatform/1.0)'
       },
       body: JSON.stringify({
         title: title,
@@ -203,7 +205,8 @@ export async function DELETE(request: NextRequest) {
     const wpResponse = await fetch(`${wpUrl}/wp-json/wp/v2/posts/${postId}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Basic ${credentials}`
+        'Authorization': `Basic ${credentials}`,
+        'User-Agent': 'Mozilla/5.0 (compatible; NoteAnalyticsPlatform/1.0)'
       }
     })
 
