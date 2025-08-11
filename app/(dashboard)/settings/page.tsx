@@ -151,27 +151,108 @@ export default function SettingsPage() {
         <CardContent className="space-y-6">
           <div>
             <Label className="text-base font-semibold mb-2 block">APIエンドポイント</Label>
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <Input 
-                  readOnly 
-                  value={typeof window !== 'undefined' ? `${window.location.origin}/api/gpts/receive-content` : 'https://note-analytics.vercel.app/api/gpts/receive-content'}
-                  className="pr-10 font-mono text-sm bg-gray-50"
-                />
+            
+            {/* プラットフォーム別エンドポイント */}
+            <div className="space-y-2 mb-3">
+              {/* X専用 */}
+              <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+                <div className="flex items-center gap-2 flex-1">
+                  <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">X</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs font-semibold">X (Twitter)専用</div>
+                    <Input 
+                      readOnly 
+                      value={typeof window !== 'undefined' ? `${window.location.origin}/api/gpts/receive-x` : 'https://note-analytics.vercel.app/api/gpts/receive-x'}
+                      className="mt-1 font-mono text-xs bg-white"
+                    />
+                  </div>
+                </div>
                 <Button 
                   size="icon"
                   variant="ghost"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                  onClick={() => copyToClipboard(typeof window !== 'undefined' ? `${window.location.origin}/api/gpts/receive-content` : 'https://note-analytics.vercel.app/api/gpts/receive-content', 'endpoint')}
+                  className="h-8 w-8"
+                  onClick={() => copyToClipboard(typeof window !== 'undefined' ? `${window.location.origin}/api/gpts/receive-x` : 'https://note-analytics.vercel.app/api/gpts/receive-x', 'x-endpoint')}
                 >
-                  {copySuccess === 'endpoint' ? (
-                    <CheckCircle className="h-3 w-3 text-green-600" />
+                  {copySuccess === 'x-endpoint' ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
                   ) : (
-                    <Copy className="h-3 w-3" />
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              
+              {/* Note専用 */}
+              <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg">
+                <div className="flex items-center gap-2 flex-1">
+                  <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">N</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs font-semibold">Note専用</div>
+                    <Input 
+                      readOnly 
+                      value={typeof window !== 'undefined' ? `${window.location.origin}/api/gpts/receive-note` : 'https://note-analytics.vercel.app/api/gpts/receive-note'}
+                      className="mt-1 font-mono text-xs bg-white"
+                    />
+                  </div>
+                </div>
+                <Button 
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={() => copyToClipboard(typeof window !== 'undefined' ? `${window.location.origin}/api/gpts/receive-note` : 'https://note-analytics.vercel.app/api/gpts/receive-note', 'note-endpoint')}
+                >
+                  {copySuccess === 'note-endpoint' ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              
+              {/* WordPress専用 */}
+              <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+                <div className="flex items-center gap-2 flex-1">
+                  <div className="w-8 h-8 bg-purple-500 rounded flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">W</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs font-semibold">WordPress専用</div>
+                    <Input 
+                      readOnly 
+                      value={typeof window !== 'undefined' ? `${window.location.origin}/api/gpts/receive-wordpress` : 'https://note-analytics.vercel.app/api/gpts/receive-wordpress'}
+                      className="mt-1 font-mono text-xs bg-white"
+                    />
+                  </div>
+                </div>
+                <Button 
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={() => copyToClipboard(typeof window !== 'undefined' ? `${window.location.origin}/api/gpts/receive-wordpress` : 'https://note-analytics.vercel.app/api/gpts/receive-wordpress', 'wp-endpoint')}
+                >
+                  {copySuccess === 'wp-endpoint' ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
                   )}
                 </Button>
               </div>
             </div>
+            
+            {/* 自動振り分け */}
+            <details className="text-xs text-gray-500">
+              <summary className="cursor-pointer hover:text-gray-700">自動振り分けエンドポイント（文字数で判定）</summary>
+              <div className="mt-2 p-2 bg-gray-50 rounded">
+                <Input 
+                  readOnly 
+                  value={typeof window !== 'undefined' ? `${window.location.origin}/api/gpts/receive-content` : 'https://note-analytics.vercel.app/api/gpts/receive-content'}
+                  className="font-mono text-xs bg-white"
+                />
+              </div>
+            </details>
           </div>
 
           <div>
