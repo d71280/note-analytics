@@ -86,7 +86,7 @@ export default function SettingsPage() {
           message: response.ok ? '接続成功！' : data.error || '接続に失敗しました'
         }
       }))
-    } catch (error) {
+    } catch {
       setConnectionStatus(prev => ({
         ...prev,
         wordpress: {
@@ -117,7 +117,7 @@ export default function SettingsPage() {
           message: response.ok ? '接続成功！' : data.error || '接続に失敗しました'
         }
       }))
-    } catch (error) {
+    } catch {
       setConnectionStatus(prev => ({
         ...prev,
         note: {
