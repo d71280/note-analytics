@@ -11,7 +11,9 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Basic認証用のBase64エンコード
+    console.log('WordPress connection test:', { url, username: username.substring(0, 5) + '...' })
+    
+    // Basic認証用のBase64エンコード  
     const credentials = Buffer.from(`${username}:${password}`).toString('base64')
     
     // WordPress REST APIのusersエンドポイントで接続テスト
