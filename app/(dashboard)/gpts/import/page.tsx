@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { CheckCircle, Copy, AlertCircle, Upload } from 'lucide-react'
 
@@ -111,7 +111,6 @@ export default function GPTsImportPage() {
     
     try {
       // データベースに保存
-      const supabase = createClient()
       const { data, error: saveError } = await supabase
         .from('scheduled_posts')
         .insert({
