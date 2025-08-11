@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Copy, Globe, FileText, Twitter, Trash2, CheckCircle, Clock, CheckSquare, Square } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -360,7 +359,6 @@ export default function GPTsContentsPage() {
             const colorClass = platformColors[platform as keyof typeof platformColors]
             const draftContents = platformContents.filter(c => c.status === 'draft')
             const allSelected = draftContents.every(c => selectedContents.has(c.id))
-            const someSelected = draftContents.some(c => selectedContents.has(c.id))
             
             return (
               <div key={platform}>
