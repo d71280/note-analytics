@@ -415,6 +415,25 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* WordPressアプリケーションパスワードの説明 */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div className="text-sm text-blue-800">
+                <p className="font-semibold mb-2">アプリケーションパスワードの取得方法</p>
+                <ol className="space-y-1 ml-4">
+                  <li>1. WordPress管理画面にログイン</li>
+                  <li>2. 「ユーザー」→「プロフィール」を開く</li>
+                  <li>3. 「アプリケーションパスワード」までスクロール</li>
+                  <li>4. 「新しいアプリケーションパスワード名」に「Note Analytics」と入力</li>
+                  <li>5. 「新しいアプリケーションパスワードを追加」をクリック</li>
+                  <li>6. 表示されたパスワードをコピー（スペースは削除して使用）</li>
+                </ol>
+                <p className="mt-2 text-xs">※ 通常のログインパスワードではなく、専用のアプリケーションパスワードが必要です</p>
+              </div>
+            </div>
+          </div>
+          
           <div>
             <Label>サイトURL</Label>
             <Input
@@ -433,6 +452,9 @@ export default function SettingsPage() {
               onChange={(e) => setWordpressSettings({...wordpressSettings, username: e.target.value})}
               placeholder="admin"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              WordPressのログインユーザー名
+            </p>
           </div>
           
           <div>
@@ -441,10 +463,10 @@ export default function SettingsPage() {
               type="password"
               value={wordpressSettings.password}
               onChange={(e) => setWordpressSettings({...wordpressSettings, password: e.target.value})}
-              placeholder="••••••••"
+              placeholder="xxxx xxxx xxxx xxxx xxxx xxxx"
             />
             <p className="text-xs text-gray-500 mt-1">
-              WordPressの「ユーザー」→「プロフィール」→「アプリケーションパスワード」から生成
+              上記の手順で生成したアプリケーションパスワード（スペースなし）
             </p>
           </div>
           
