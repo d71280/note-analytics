@@ -5,7 +5,24 @@ import { createClient } from '@/lib/supabase/server'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { content, title, platform, postId } = body
+    const { 
+      content, 
+      title, 
+      platform, 
+      postId,
+      status = 'publish',
+      categories = [],
+      tags = [],
+      excerpt,
+      featured_media,
+      author,
+      comment_status = 'open',
+      ping_status = 'open',
+      sticky = false,
+      template,
+      format = 'standard',
+      meta = {}
+    } = body
 
     if (platform !== 'wordpress') {
       return NextResponse.json(
@@ -13,13 +30,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    // Supabaseから設定を取得（実装予定）
-    // const supabase = createClient()
-    // const { data: settings } = await supabase
-    //   .from('wordpress_settings')
-    //   .select('*')
-    //   .single()
 
     // 環境変数から取得
     const wpUrl = process.env.WP_SITE_URL || 'https://muchino-chi.com'
@@ -36,6 +46,40 @@ export async function POST(request: NextRequest) {
     // Basic認証用のBase64エンコード
     const credentials = Buffer.from(`${wpUsername}:${wpPassword}`).toString('base64')
 
+    // 投稿データの構築
+    const postData: any = {
+      title: title || 'Untitled',
+      content: content,
+      status: status,
+      comment_status: comment_status,
+      ping_status: ping_status,
+      sticky: sticky,
+      format: format
+    }
+
+    // オプションフィールドの追加
+    if (excerpt) postData.excerpt = excerpt
+    if (author) postData.author = author
+    if (template) postData.template = template
+    if (featured_media) postData.featured_media = featured_media
+    if (categories.length > 0) postData.categories = categories
+    if (tags.length > 0) postData.tags = tags
+    
+    // メタフィールドの追加（SEO等）
+    if (Object.keys(meta).length > 0 || title || content) {
+      postData.meta = {
+        ...meta,
+        _aioseo_title: meta._aioseo_title || title,
+        _aioseo_description: meta._aioseo_description || content?.substring(0, 160)
+      }
+    }
+
+    console.log('Posting to WordPress:', {
+      url: `${wpUrl}/wp-json/wp/v2/posts`,
+      title: postData.title,
+      status: postData.status
+    })
+
     // WordPress REST APIにPOST
     const wpResponse = await fetch(`${wpUrl}/wp-json/wp/v2/posts`, {
       method: 'POST',
@@ -43,16 +87,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
         'Authorization': `Basic ${credentials}`
       },
-      body: JSON.stringify({
-        title: title || 'Untitled',
-        content: content,
-        status: 'publish', // または 'draft' で下書き保存
-        // カスタムフィールドが必要な場合
-        meta: {
-          _aioseo_title: title,
-          _aioseo_description: content.substring(0, 160)
-        }
-      })
+      body: JSON.stringify(postData)
     })
 
     if (!wpResponse.ok) {
