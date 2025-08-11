@@ -21,13 +21,38 @@ export async function POST() {
       }
     }
 
-    // 内部APIを呼び出し
-    const response = await fetch('http://localhost:3000/api/wordpress/post', {
+    // 環境変数から直接認証情報を取得
+    const wpUrl = process.env.WP_SITE_URL
+    const wpUsername = process.env.WP_USERNAME
+    const wpPassword = process.env.WP_APP_PASSWORD
+
+    if (!wpUrl || !wpUsername || !wpPassword) {
+      return NextResponse.json({
+        success: false,
+        error: 'WordPress認証情報が設定されていません'
+      }, { status: 500 })
+    }
+
+    const credentials = Buffer.from(`${wpUsername}:${wpPassword}`).toString('base64')
+
+    // WordPress REST APIに直接POST
+    const response = await fetch(`${wpUrl}/wp-json/wp/v2/posts`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${credentials}`
       },
-      body: JSON.stringify(testPost)
+      body: JSON.stringify({
+        title: testPost.title,
+        content: testPost.content,
+        status: testPost.status,
+        excerpt: testPost.excerpt,
+        format: testPost.format,
+        comment_status: testPost.comment_status,
+        ping_status: testPost.ping_status,
+        sticky: testPost.sticky,
+        meta: testPost.meta
+      })
     })
 
     const result = await response.json()
