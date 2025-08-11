@@ -4,10 +4,10 @@ export async function GET() {
   try {
     // 環境変数から設定を取得
     const config = {
-      url: process.env.WP_SITE_URL || '',
-      username: process.env.WP_USERNAME || '',
-      hasPassword: !!process.env.WP_APP_PASSWORD,
-      password: process.env.WP_APP_PASSWORD ? '••••••••••••••••••••' : '' // パスワードはマスク表示
+      url: process.env.WORDPRESS_SITE_URL || process.env.WP_SITE_URL || '',
+      username: process.env.WORDPRESS_ID || process.env.WP_USERNAME || '',
+      hasPassword: !!(process.env.WORDPRESS_PASSWORD || process.env.WP_APP_PASSWORD),
+      password: (process.env.WORDPRESS_PASSWORD || process.env.WP_APP_PASSWORD) ? '••••••••••••••••••••' : '' // パスワードはマスク表示
     }
 
     return NextResponse.json({

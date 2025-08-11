@@ -1,32 +1,27 @@
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  // 環境変数の存在確認（値はマスク表示）
-  const wpUrl = process.env.WP_SITE_URL
-  const wpUsername = process.env.WP_USERNAME
-  const wpPassword = process.env.WP_APP_PASSWORD
-  
+  const wpUrl = process.env.WORDPRESS_SITE_URL || process.env.WP_SITE_URL
+  const wpUsername = process.env.WORDPRESS_ID || process.env.WP_USERNAME
+  const wpPassword = process.env.WORDPRESS_PASSWORD || process.env.WP_APP_PASSWORD
+
   return NextResponse.json({
     environment: process.env.NODE_ENV,
-    vercelUrl: process.env.VERCEL_URL,
     wordpress: {
-      url: {
-        exists: !!wpUrl,
-        value: wpUrl || 'NOT SET',
-      },
-      username: {
-        exists: !!wpUsername,
-        value: wpUsername || 'NOT SET',
-      },
-      password: {
-        exists: !!wpPassword,
-        length: wpPassword?.length || 0,
-        preview: wpPassword ? `${wpPassword.substring(0, 4)}...` : 'NOT SET'
-      }
+      url: wpUrl ? '設定済み' : '未設定',
+      username: wpUsername ? '設定済み' : '未設定',
+      password: wpPassword ? '設定済み' : '未設定',
+      urlValue: wpUrl || null,
+      usernameValue: wpUsername || null,
+      passwordValue: wpPassword ? '***' : null
     },
-    debug: {
-      allEnvKeys: Object.keys(process.env).filter(key => key.startsWith('WP_')),
-      nodeVersion: process.version
+    allEnvVars: {
+      WORDPRESS_SITE_URL: process.env.WORDPRESS_SITE_URL ? '設定済み' : '未設定',
+      WORDPRESS_ID: process.env.WORDPRESS_ID ? '設定済み' : '未設定',
+      WORDPRESS_PASSWORD: process.env.WORDPRESS_PASSWORD ? '設定済み' : '未設定',
+      WP_SITE_URL: process.env.WP_SITE_URL ? '設定済み' : '未設定',
+      WP_USERNAME: process.env.WP_USERNAME ? '設定済み' : '未設定',
+      WP_APP_PASSWORD: process.env.WP_APP_PASSWORD ? '設定済み' : '未設定'
     }
   })
 }

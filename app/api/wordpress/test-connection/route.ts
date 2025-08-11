@@ -3,9 +3,9 @@ import { NextResponse } from 'next/server'
 export async function POST() {
   try {
     // 環境変数から直接取得
-    const wpUrl = process.env.WP_SITE_URL
-    const wpUsername = process.env.WP_USERNAME
-    const wpPassword = process.env.WP_APP_PASSWORD
+    const wpUrl = process.env.WORDPRESS_SITE_URL || process.env.WP_SITE_URL
+    const wpUsername = process.env.WORDPRESS_ID || process.env.WP_USERNAME
+    const wpPassword = process.env.WORDPRESS_PASSWORD || process.env.WP_APP_PASSWORD
 
     if (!wpUrl || !wpUsername || !wpPassword) {
       return NextResponse.json({
