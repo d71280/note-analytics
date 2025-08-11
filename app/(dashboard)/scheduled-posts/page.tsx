@@ -139,7 +139,7 @@ export default function ScheduledPostsPage() {
     if (!confirm('この投稿を削除してもよろしいですか？')) return
 
     try {
-      const response = await fetch(`/api/x/scheduled-posts/delete?id=${id}`, {
+      const response = await fetch(`/api/scheduled-posts/delete?id=${id}`, {
         method: 'DELETE',
         credentials: 'include'
       })
@@ -168,7 +168,7 @@ export default function ScheduledPostsPage() {
         return
       }
 
-      const response = await fetch('/api/x/scheduled-posts/delete', {
+      const response = await fetch('/api/scheduled-posts/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids, status: 'failed' }),
@@ -193,7 +193,7 @@ export default function ScheduledPostsPage() {
     if (!confirm('すべての投稿を削除してもよろしいですか？この操作は取り消せません。')) return
 
     try {
-      const response = await fetch('/api/x/scheduled-posts/delete-all?confirm=true', {
+      const response = await fetch('/api/scheduled-posts/delete-all?confirm=true', {
         method: 'DELETE',
         credentials: 'include'
       })
@@ -233,7 +233,7 @@ export default function ScheduledPostsPage() {
 
     setIsDeletingSelected(true)
     try {
-      const response = await fetch('/api/x/scheduled-posts/delete', {
+      const response = await fetch('/api/scheduled-posts/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: Array.from(selectedPosts) })
