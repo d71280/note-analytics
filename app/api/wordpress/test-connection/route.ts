@@ -11,7 +11,12 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    console.log('WordPress connection test:', { url, username: username.substring(0, 5) + '...' })
+    console.log('WordPress connection test:', { 
+      url, 
+      username,
+      passwordLength: password.length,
+      hasPassword: !!password 
+    })
     
     // Basic認証用のBase64エンコード  
     const credentials = Buffer.from(`${username}:${password}`).toString('base64')
@@ -27,19 +32,35 @@ export async function POST(request: NextRequest) {
         }
       })
       console.log('API Check Response Status:', apiCheckResponse.status)
+      if (apiCheckResponse.status === 403) {
+        const errorText = await apiCheckResponse.text()
+        console.log('API blocked without auth:', errorText)
+      }
     } catch (error) {
       console.error('API Check Error:', error)
     }
     
+    // 認証ヘッダーのデバッグ
+    console.log('Auth header:', `Basic ${credentials.substring(0, 20)}...`)
+    
     // まずpostsエンドポイントで接続確認
     const testUrl = `${url}/wp-json/wp/v2/posts?per_page=1`
+    // 複数の認証形式を試す
+    const headers1 = {
+      'Authorization': `Basic ${credentials}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'Note-Analytics-Platform/1.0'
+    }
+    
     const testResponse = await fetch(testUrl, {
       method: 'GET',
-      headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'Note-Analytics-Platform/1.0'
-      }
+      headers: headers1
+    })
+    
+    console.log('Test response with Basic auth:', {
+      status: testResponse.status,
+      statusText: testResponse.statusText,
+      headers: Object.fromEntries(testResponse.headers.entries())
     })
     
     if (testResponse.ok) {
