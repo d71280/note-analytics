@@ -11,6 +11,7 @@ export async function GET() {
     wpUsername: process.env.WP_USERNAME ? '***SET***' : 'NOT_SET',
     wpPassword: process.env.WP_APP_PASSWORD ? '***SET***' : 'NOT_SET',
     passwordLength: password.length,
-    passwordHasSpace: password.includes(' ')
+    passwordHasSpace: password.includes(' '),
+    timestamp: new Date().toISOString()
   })
 }
