@@ -87,17 +87,42 @@ export async function POST(request: NextRequest) {
     }
     
     const body: GPTsContent = await request.json()
-    const { content, platform, metadata, scheduling } = body
+    let { content, platform, metadata, scheduling } = body
     
     // 必須フィールドの検証
-    if (!content || !platform) {
+    if (!content) {
       return NextResponse.json(
-        { error: 'Content and platform are required' },
+        { error: 'Content is required' },
         { 
           status: 400,
           headers: getCorsHeaders()
         }
       )
+    }
+    
+    // 文字数による自動プラットフォーム振り分け
+    const contentLength = content.length
+    if (!platform) {
+      if (contentLength <= 280) {
+        platform = 'x'
+        console.log(`Auto-assigned platform: X (${contentLength} chars)`)
+      } else if (contentLength >= 1500 && contentLength <= 2500) {
+        platform = 'note'
+        console.log(`Auto-assigned platform: Note (${contentLength} chars)`)
+      } else if (contentLength >= 3000) {
+        platform = 'wordpress'
+        console.log(`Auto-assigned platform: WordPress/Blog (${contentLength} chars)`)
+      } else {
+        // デフォルトで最も近いプラットフォームを選択
+        if (contentLength < 1500) {
+          platform = 'x'
+        } else if (contentLength < 3000) {
+          platform = 'note'
+        } else {
+          platform = 'wordpress'
+        }
+        console.log(`Auto-assigned platform by proximity: ${platform} (${contentLength} chars)`)
+      }
     }
     
     // 文字数制限の検証
@@ -260,16 +285,16 @@ export async function GET() {
               'application/json': {
                 schema: {
                   type: 'object',
-                  required: ['content', 'platform'],
+                  required: ['content'],
                   properties: {
                     content: {
                       type: 'string',
-                      description: 'The generated content text'
+                      description: 'The generated content text. Platform will be auto-assigned based on length: ≤280 chars for X, 1500-2500 for Note, ≥3000 for Blog'
                     },
                     platform: {
                       type: 'string',
                       enum: ['x', 'note', 'wordpress'],
-                      description: 'Target platform for the content'
+                      description: 'Target platform (optional - auto-assigned by content length if not specified)'
                     },
                     metadata: {
                       type: 'object',

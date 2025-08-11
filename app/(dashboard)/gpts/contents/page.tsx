@@ -46,13 +46,10 @@ export default function GPTsContentsPage() {
   const [loading, setLoading] = useState(true)
   const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleTime, setScheduleTime] = useState('')
-  const [apiKey, setApiKey] = useState('')
-  const [showApiKey, setShowApiKey] = useState(false)
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
 
   useEffect(() => {
     fetchContents()
-    fetchApiKey()
   }, [])
 
   const fetchContents = async () => {
@@ -66,18 +63,6 @@ export default function GPTsContentsPage() {
       console.error('Failed to fetch contents:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchApiKey = async () => {
-    try {
-      const response = await fetch('/api/gpts/api-key')
-      if (response.ok) {
-        const data = await response.json()
-        setApiKey(data.apiKey || '')
-      }
-    } catch (error) {
-      console.error('Failed to fetch API key:', error)
     }
   }
 
@@ -128,23 +113,6 @@ export default function GPTsContentsPage() {
     setTimeout(() => setCopySuccess(null), 2000)
   }
 
-  const generateNewApiKey = async () => {
-    try {
-      const response = await fetch('/api/gpts/api-key', {
-        method: 'POST'
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setApiKey(data.apiKey)
-        alert('新しいAPIキーを生成しました')
-      }
-    } catch (error) {
-      console.error('Failed to generate API key:', error)
-      alert('APIキーの生成に失敗しました')
-    }
-  }
-
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
@@ -154,141 +122,6 @@ export default function GPTsContentsPage() {
         </p>
       </div>
 
-      {/* API設定セクション */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>GPTs連携設定</CardTitle>
-          <CardDescription>
-            GPTsから受信したコンテンツを管理し、スケジュール配信を設定します
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-semibold text-sm mb-2">GPTs連携設定</h3>
-            <p className="text-sm text-gray-600">
-              GPTsのActionsに設定するAPIエンドポイントとキー
-            </p>
-          </div>
-
-          <div>
-            <Label className="text-base font-semibold mb-2 block">APIエンドポイント</Label>
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <Input 
-                  readOnly 
-                  value={typeof window !== 'undefined' ? `${window.location.origin}/api/gpts/receive-content` : 'https://note-analytics-o5pl33kmd-daiki-akiyama-9051s-projects.vercel.app/api/gpts/receive-content'}
-                  className="pr-10 font-mono text-sm bg-gray-50"
-                />
-                <Button 
-                  size="icon"
-                  variant="ghost"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                  onClick={() => copyToClipboard(typeof window !== 'undefined' ? `${window.location.origin}/api/gpts/receive-content` : 'https://note-analytics-o5pl33kmd-daiki-akiyama-9051s-projects.vercel.app/api/gpts/receive-content', 'endpoint')}
-                >
-                  {copySuccess === 'endpoint' ? (
-                    <CheckCircle className="h-3 w-3 text-green-600" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <Label className="text-base font-semibold mb-2 block">APIキー</Label>
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <Input 
-                  readOnly 
-                  type={showApiKey ? 'text' : 'password'}
-                  value={apiKey || '••••••••••••••••'}
-                  placeholder="APIキーが設定されていません"
-                  className="pr-20 font-mono bg-gray-50"
-                />
-                <Button 
-                  size="sm"
-                  variant="ghost"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2 text-xs"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                >
-                  {showApiKey ? '隠す' : '表示'}
-                </Button>
-              </div>
-              <Button 
-                size="sm"
-                variant="outline"
-                onClick={() => copyToClipboard(apiKey, 'apikey')}
-                disabled={!apiKey}
-              >
-                {copySuccess === 'apikey' ? (
-                  <>
-                    <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
-                    コピー済
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 mr-1" />
-                    コピー
-                  </>
-                )}
-              </Button>
-              <Button 
-                size="sm"
-                onClick={generateNewApiKey}
-              >
-                新規生成
-              </Button>
-            </div>
-            {apiKey && (
-              <p className="text-xs text-gray-500 mt-1">
-                ✅ APIキーが設定されています
-              </p>
-            )}
-          </div>
-
-          <div className="border-t pt-4">
-            <h3 className="font-semibold mb-3">🔧 GPTsの設定方法：</h3>
-            <ol className="space-y-2">
-              <li className="flex gap-2">
-                <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-semibold">1</span>
-                <div>
-                  <p className="text-sm font-medium">GPTsの「Configure」→ 「Add actions」を選択</p>
-                </div>
-              </li>
-              <li className="flex gap-2">
-                <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-semibold">2</span>
-                <div>
-                  <p className="text-sm font-medium">上記のAPIエンドポイントをServer URLに設定</p>
-                </div>
-              </li>
-              <li className="flex gap-2">
-                <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-semibold">3</span>
-                <div>
-                  <p className="text-sm font-medium">Authentication TypeをAPI Keyに設定</p>
-                </div>
-              </li>
-              <li className="flex gap-2">
-                <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-semibold">4</span>
-                <div>
-                  <p className="text-sm font-medium">Header nameを「x-api-key」に設定</p>
-                </div>
-              </li>
-              <li className="flex gap-2">
-                <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-semibold">5</span>
-                <div>
-                  <p className="text-sm font-medium">API Keyに上記のキーを入力</p>
-                </div>
-              </li>
-            </ol>
-            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-xs text-amber-800">
-                ⚠️ まだコンテンツがありません。GPTsから生成されたコンテンツがここに表示されます。
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* コンテンツ一覧 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
