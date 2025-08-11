@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, createElement } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -511,7 +511,7 @@ export default function ScheduledPostsPage() {
                     editingPost.platform === 'note' ? 'bg-green-500' :
                     'bg-purple-500'
                   } text-white`}>
-                    {React.createElement(platformIcons[editingPost.platform as keyof typeof platformIcons], { className: 'h-4 w-4' })}
+                    {createElement(platformIcons[editingPost.platform as keyof typeof platformIcons], { className: 'h-4 w-4' })}
                   </div>
                   <span className="font-semibold">
                     {platformNames[editingPost.platform as keyof typeof platformNames]}

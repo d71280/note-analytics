@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
     //   .single()
 
     // 環境変数から取得
-    const wpUrl = process.env.WORDPRESS_SITE_URL || 'https://muchino-chi.com'
-    const wpUsername = process.env.WORDPRESS_ID || ''
-    const wpPassword = process.env.WORDPRESS_PASSWORD || ''
+    const wpUrl = process.env.WP_SITE_URL || 'https://muchino-chi.com'
+    const wpUsername = process.env.WP_ID || ''
+    const wpPassword = process.env.WP_PASSWORD || ''
 
     if (!wpUsername || !wpPassword) {
       return NextResponse.json(
