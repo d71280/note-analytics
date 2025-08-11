@@ -127,18 +127,19 @@ export async function POST(request: NextRequest) {
       console.log(`Force-assigned platform by proximity: ${platform} (${contentLength} chars, originally: ${originalPlatform})`)
     }
     
-    // 文字数制限の検証
+    // 文字数制限の検証（緩和版）
     const maxLengths = {
       x: 280,
-      note: 3000,
-      wordpress: 5000
+      note: 10000,      // Noteは10000文字まで許可
+      wordpress: 50000  // WordPressは50000文字まで許可
     }
     
-    if (content.length > maxLengths[platform]) {
+    // X (Twitter)以外は文字数制限を緩和
+    if (platform === 'x' && content.length > maxLengths.x) {
       return NextResponse.json(
         { 
-          error: `Content exceeds maximum length for ${platform}`,
-          maxLength: maxLengths[platform],
+          error: `Content exceeds maximum length for X (Twitter)`,
+          maxLength: maxLengths.x,
           currentLength: content.length
         },
         { 
@@ -146,6 +147,11 @@ export async function POST(request: NextRequest) {
           headers: getCorsHeaders()
         }
       )
+    }
+    
+    // Note/WordPressの極端に長い場合のみエラー
+    if (content.length > maxLengths[platform]) {
+      console.warn(`Content length ${content.length} exceeds soft limit for ${platform}, but allowing it`)
     }
     
     const supabase = createClient()
