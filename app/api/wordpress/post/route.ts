@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const credentials = Buffer.from(`${wpUsername}:${wpPassword}`).toString('base64')
 
     // 投稿データの構築
-    const postData: any = {
+    const postData: Record<string, unknown> = {
       title: title || 'Untitled',
       content: content,
       status: status,
