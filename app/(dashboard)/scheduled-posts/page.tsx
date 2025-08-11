@@ -13,13 +13,15 @@ interface ScheduledPost {
   id: string
   content: string
   platform: 'x' | 'note' | 'wordpress'
-  scheduled_at: string
-  status: 'pending' | 'posted' | 'failed'
-  order_index: number
-  interval_minutes: number
+  scheduled_for?: string
+  scheduled_at?: string
+  status: 'pending' | 'posted' | 'failed' | 'draft' | 'scheduled'
+  order_index?: number
+  interval_minutes?: number
   error_message?: string
   posted_at?: string
   created_at: string
+  metadata?: any
 }
 
 const platformIcons = {
@@ -37,13 +39,17 @@ const platformNames = {
 const statusLabels = {
   pending: '投稿待ち',
   posted: '投稿済み',
-  failed: '失敗'
+  failed: '失敗',
+  draft: '下書き',
+  scheduled: 'スケジュール済み'
 }
 
 const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800',
   posted: 'bg-green-100 text-green-800',
-  failed: 'bg-red-100 text-red-800'
+  failed: 'bg-red-100 text-red-800',
+  draft: 'bg-gray-100 text-gray-800',
+  scheduled: 'bg-blue-100 text-blue-800'
 }
 
 export default function ScheduledPostsPage() {
@@ -67,7 +73,7 @@ export default function ScheduledPostsPage() {
 
   const fetchScheduledPosts = async () => {
     try {
-      const response = await fetch('/api/x/schedule', {
+      const response = await fetch('/api/scheduled-posts', {
         credentials: 'include'
       })
       if (response.ok) {
@@ -382,73 +388,72 @@ export default function ScheduledPostsPage() {
             <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-lg text-gray-600">スケジュールされた投稿はありません</p>
             <p className="text-sm text-gray-500 mt-2">
-              コンテンツ生成&配信ページから投稿をスケジュールしてください
+              GPTs連携ページから投稿をスケジュールしてください
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {Object.entries(groupedPosts).map(([platform, platformPosts]) => {
             if (platformPosts.length === 0) return null
             
             const Icon = platformIcons[platform as keyof typeof platformIcons]
             
             return (
-              <div key={platform}>
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
-                    <Icon className="h-5 w-5" />
-                    {platformNames[platform as keyof typeof platformNames]}
-                  </h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleSelectAll}
-                  >
-                    {selectedPosts.size === posts.length ? (
-                      <>
-                        <CheckSquare className="mr-2 h-4 w-4" />
-                        すべて選択解除
-                      </>
-                    ) : (
-                      <>
-                        <Square className="mr-2 h-4 w-4" />
-                        すべて選択
-                      </>
-                    )}
-                  </Button>
-                </div>
-                
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {platformPosts.map((post) => (
-                    <Card key={post.id} className="hover:shadow-lg transition-shadow">
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-start gap-2">
-                            <button
-                              onClick={() => toggleSelectPost(post.id)}
-                              className="mt-1"
-                            >
-                              {selectedPosts.has(post.id) ? (
-                                <CheckSquare className="h-5 w-5 text-blue-600" />
-                              ) : (
-                                <Square className="h-5 w-5 text-gray-400" />
-                              )}
-                            </button>
-                          </div>
-                          <div className="flex-1">
-                            <CardTitle className="text-sm">
-                              {format(new Date(post.scheduled_at), 'M月d日 HH:mm', { locale: ja })}
-                            </CardTitle>
-                            <CardDescription className="flex items-center gap-2 mt-1">
-                              <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[post.status]}`}>
-                                {statusLabels[post.status]}
-                              </span>
-                              <span className="text-xs">
-                                {post.interval_minutes}分間隔
-                              </span>
-                            </CardDescription>
-                          </div>
+              <div key={platform} className="space-y-4">
+                <Card>
+                  <CardHeader className="bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-xl font-semibold flex items-center gap-2">
+                        <div className={`p-2 rounded-lg ${
+                          platform === 'x' ? 'bg-blue-500' :
+                          platform === 'note' ? 'bg-green-500' :
+                          'bg-purple-500'
+                        } text-white`}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        {platformNames[platform as keyof typeof platformNames]}
+                        <span className="text-sm text-gray-500 ml-2">({platformPosts.length}件)</span>
+                      </h2>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      {platformPosts.map((post) => (
+                        <div key={post.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-start gap-3 flex-1">
+                              <button
+                                onClick={() => toggleSelectPost(post.id)}
+                                className="mt-1 flex-shrink-0"
+                              >
+                                {selectedPosts.has(post.id) ? (
+                                  <CheckSquare className="h-5 w-5 text-blue-600" />
+                                ) : (
+                                  <Square className="h-5 w-5 text-gray-400" />
+                                )}
+                              </button>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className={`px-2 py-1 text-xs rounded-full ${statusColors[post.status]}`}>
+                                    {statusLabels[post.status]}
+                                  </span>
+                                  {(post.scheduled_for || post.scheduled_at) && (
+                                    <span className="text-sm text-gray-500">
+                                      {format(new Date(post.scheduled_for || post.scheduled_at || Date.now()), 'M月d日 HH:mm', { locale: ja })}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-700 line-clamp-2">
+                                  {post.content}
+                                </p>
+                                {post.error_message && (
+                                  <p className="text-xs text-red-600 mt-2">
+                                    エラー: {post.error_message}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
                           {post.status === 'pending' && (
                             <div className="flex gap-1">
                               <Button
