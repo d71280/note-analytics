@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // 環境変数から直接取得（UIからの値は無視）
     const url = process.env.WP_SITE_URL
