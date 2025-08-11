@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
 
     // 環境変数から取得
     const wpUrl = process.env.WP_SITE_URL || 'https://muchino-chi.com'
-    const wpUsername = process.env.WP_ID || ''
-    const wpPassword = process.env.WP_PASSWORD || ''
+    const wpUsername = process.env.WP_USERNAME || ''
+    const wpPassword = process.env.WP_APP_PASSWORD || ''
 
     if (!wpUsername || !wpPassword) {
       return NextResponse.json(
@@ -102,7 +102,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json()
     const { postId, content, title } = body
 
-    const wpUrl = 'https://muchino-chi.com'
+    const wpUrl = process.env.WP_SITE_URL || 'https://muchino-chi.com'
     const wpUsername = process.env.WP_USERNAME || ''
     const wpPassword = process.env.WP_APP_PASSWORD || ''
 
@@ -159,7 +159,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const wpUrl = 'https://muchino-chi.com'
+    const wpUrl = process.env.WP_SITE_URL || 'https://muchino-chi.com'
     const wpUsername = process.env.WP_USERNAME || ''
     const wpPassword = process.env.WP_APP_PASSWORD || ''
 
