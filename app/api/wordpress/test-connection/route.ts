@@ -17,6 +17,20 @@ export async function POST(request: NextRequest) {
     const credentials = Buffer.from(`${username}:${password}`).toString('base64')
     
     // WordPress REST APIのusersエンドポイントで接続テスト
+    // まず認証なしでREST APIの存在確認
+    const apiCheckUrl = `${url}/wp-json/wp/v2`
+    try {
+      const apiCheckResponse = await fetch(apiCheckUrl, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Note-Analytics-Platform/1.0'
+        }
+      })
+      console.log('API Check Response Status:', apiCheckResponse.status)
+    } catch (error) {
+      console.error('API Check Error:', error)
+    }
+    
     // まずpostsエンドポイントで接続確認
     const testUrl = `${url}/wp-json/wp/v2/posts?per_page=1`
     const testResponse = await fetch(testUrl, {
