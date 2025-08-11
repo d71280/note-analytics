@@ -26,23 +26,42 @@ export async function POST() {
     console.log('Site URL:', wpUrl)
     console.log('Username:', wpUsername)
 
-    // 投稿の取得で認証をテスト（users/meは権限問題があるため）
-    const response = await fetch(`${wpUrl}/wp-json/wp/v2/posts?status=draft,publish&per_page=1`, {
-      method: 'GET',
+    // シンプルに投稿作成の権限をテスト（実際に使用する機能）
+    // 空のタイトルで下書きを作成してすぐ削除
+    const testPost = {
+      title: 'Connection Test',
+      content: 'This is a test post',
+      status: 'draft'
+    }
+
+    const response = await fetch(`${wpUrl}/wp-json/wp/v2/posts`, {
+      method: 'POST',
       headers: {
         'Authorization': `Basic ${credentials}`,
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify(testPost)
     })
 
     console.log('Response status:', response.status)
 
-    // 認証成功 = 200 OK または 空の配列でも200
-    if (response.ok) {
+    // 認証成功 = 201 Created（投稿が作成された）
+    if (response.status === 201) {
+      // テスト投稿を削除
+      const createdPost = await response.json()
+      if (createdPost.id) {
+        await fetch(`${wpUrl}/wp-json/wp/v2/posts/${createdPost.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Basic ${credentials}`
+          }
+        })
+      }
+      
       return NextResponse.json({
         success: true,
         message: 'WordPress認証成功！',
-        info: '投稿の取得権限が確認されました'
+        info: '投稿の作成・削除権限が確認されました'
       })
     }
 
