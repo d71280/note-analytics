@@ -87,7 +87,8 @@ export async function POST(request: NextRequest) {
     }
     
     const body: GPTsContent = await request.json()
-    let { content, platform, metadata, scheduling } = body
+    const { content, metadata, scheduling } = body
+    let { platform } = body
     
     // 必須フィールドの検証
     if (!content) {
