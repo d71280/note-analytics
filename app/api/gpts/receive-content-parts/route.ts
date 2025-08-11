@@ -25,11 +25,11 @@ function cleanupOldSessions() {
   const now = Date.now()
   const thirtyMinutes = 30 * 60 * 1000
   
-  for (const [sessionId, data] of contentParts.entries()) {
+  contentParts.forEach((data, sessionId) => {
     if (now - data.timestamp > thirtyMinutes) {
       contentParts.delete(sessionId)
     }
-  }
+  })
 }
 
 // OPTIONS メソッド - プリフライトリクエストに対応
