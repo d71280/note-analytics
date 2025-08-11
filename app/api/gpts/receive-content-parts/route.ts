@@ -16,7 +16,7 @@ function getCorsHeaders() {
 const contentParts = new Map<string, {
   parts: string[]
   totalParts: number
-  metadata?: any
+  metadata?: Record<string, unknown>
   timestamp: number
 }>()
 
