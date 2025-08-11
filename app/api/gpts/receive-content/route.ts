@@ -101,29 +101,30 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // 文字数による自動プラットフォーム振り分け
+    // 文字数による自動プラットフォーム振り分け（既存のplatformパラメータを上書き）
     const contentLength = content.length
-    if (!platform) {
-      if (contentLength <= 280) {
+    const originalPlatform = platform
+    
+    // 文字数に基づいて強制的にプラットフォームを設定
+    if (contentLength <= 280) {
+      platform = 'x'
+      console.log(`Force-assigned platform: X (${contentLength} chars, originally: ${originalPlatform})`)
+    } else if (contentLength >= 1500 && contentLength <= 2500) {
+      platform = 'note'
+      console.log(`Force-assigned platform: Note (${contentLength} chars, originally: ${originalPlatform})`)
+    } else if (contentLength >= 3000) {
+      platform = 'wordpress'
+      console.log(`Force-assigned platform: WordPress/Blog (${contentLength} chars, originally: ${originalPlatform})`)
+    } else {
+      // デフォルトで最も近いプラットフォームを選択
+      if (contentLength < 1500) {
         platform = 'x'
-        console.log(`Auto-assigned platform: X (${contentLength} chars)`)
-      } else if (contentLength >= 1500 && contentLength <= 2500) {
+      } else if (contentLength < 3000) {
         platform = 'note'
-        console.log(`Auto-assigned platform: Note (${contentLength} chars)`)
-      } else if (contentLength >= 3000) {
-        platform = 'wordpress'
-        console.log(`Auto-assigned platform: WordPress/Blog (${contentLength} chars)`)
       } else {
-        // デフォルトで最も近いプラットフォームを選択
-        if (contentLength < 1500) {
-          platform = 'x'
-        } else if (contentLength < 3000) {
-          platform = 'note'
-        } else {
-          platform = 'wordpress'
-        }
-        console.log(`Auto-assigned platform by proximity: ${platform} (${contentLength} chars)`)
+        platform = 'wordpress'
       }
+      console.log(`Force-assigned platform by proximity: ${platform} (${contentLength} chars, originally: ${originalPlatform})`)
     }
     
     // 文字数制限の検証
