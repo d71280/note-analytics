@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Calendar, Clock, Edit, Trash2, Save, X as XIcon, Twitter, FileText, Globe, Loader2, Send, CheckSquare, Square } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -21,7 +21,7 @@ interface ScheduledPost {
   error_message?: string
   posted_at?: string
   created_at: string
-  metadata?: Record<string, unknown>
+  metadata?: any
 }
 
 const platformIcons = {
@@ -210,6 +210,13 @@ export default function ScheduledPostsPage() {
     setSelectedPosts(newSelected)
   }
 
+  const toggleSelectAll = () => {
+    if (selectedPosts.size === posts.length) {
+      setSelectedPosts(new Set())
+    } else {
+      setSelectedPosts(new Set(posts.map(p => p.id)))
+    }
+  }
 
   const handleDeleteSelected = async () => {
     if (selectedPosts.size === 0) {
@@ -447,8 +454,8 @@ export default function ScheduledPostsPage() {
                                 )}
                               </div>
                             </div>
-                            {post.status === 'pending' && (
-                              <div className="flex gap-1 ml-2 flex-shrink-0">
+                          {post.status === 'pending' && (
+                            <div className="flex gap-1">
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -477,9 +484,8 @@ export default function ScheduledPostsPage() {
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
-                              </div>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
