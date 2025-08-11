@@ -5,16 +5,14 @@ export const runtime = 'edge' // Edge Functionを使用
 
 export async function GET(request: NextRequest) {
   try {
-    // Vercel Cronからのリクエストか確認
-    const authHeader = request.headers.get('authorization')
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    console.log('Manual cron test started')
     
     const supabase = createClient()
     
     // 現在時刻より前のスケジュールされた投稿を取得
     const now = new Date().toISOString()
+    console.log('Current time:', now)
+    
     const { data: pendingPosts, error: fetchError } = await supabase
       .from('scheduled_posts')
       .select('*')
@@ -26,13 +24,19 @@ export async function GET(request: NextRequest) {
     if (fetchError) {
       console.error('Failed to fetch pending posts:', fetchError)
       return NextResponse.json(
-        { error: 'Failed to fetch pending posts' },
+        { error: 'Failed to fetch pending posts', details: fetchError },
         { status: 500 }
       )
     }
     
+    console.log(`Found ${pendingPosts?.length || 0} pending posts`)
+    
     if (!pendingPosts || pendingPosts.length === 0) {
-      return NextResponse.json({ message: 'No pending posts' })
+      return NextResponse.json({ 
+        message: 'No pending posts',
+        currentTime: now,
+        checked: true
+      })
     }
     
     const results = []
@@ -41,6 +45,7 @@ export async function GET(request: NextRequest) {
     for (const post of pendingPosts) {
       try {
         console.log(`Processing ${post.platform} post: ${post.id}`)
+        console.log(`Scheduled for: ${post.scheduled_for}`)
         
         // プラットフォームに応じたAPIエンドポイントを呼び出す
         let apiEndpoint = ''
@@ -64,13 +69,16 @@ export async function GET(request: NextRequest) {
             requestBody = {
               content: post.content,
               title: post.metadata?.title || 'WordPress投稿',
-              platform: 'wordpress'
+              platform: 'wordpress',
+              status: 'draft'
             }
             break
           default:
             console.error(`Unknown platform: ${post.platform}`)
             continue
         }
+        
+        console.log(`Calling API: ${apiEndpoint}`)
         
         // APIを呼び出し
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${request.headers.get('host')}`
@@ -81,32 +89,37 @@ export async function GET(request: NextRequest) {
           },
           body: JSON.stringify(requestBody)
         })
+        
+        console.log(`Response status: ${response.status}`)
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('Post successful:', data)
           
-          if (response.ok) {
-            const data = await response.json()
-            
-            // ステータスを更新
-            await supabase
-              .from('scheduled_posts')
-              .update({ 
-                status: 'posted',
-                posted_at: new Date().toISOString(),
-                metadata: {
-                  ...post.metadata,
-                  response: data
-                }
-              })
-              .eq('id', post.id)
-            
-            results.push({
-              id: post.id,
+          // ステータスを更新
+          await supabase
+            .from('scheduled_posts')
+            .update({ 
               status: 'posted',
-              platform: post.platform
+              posted_at: new Date().toISOString(),
+              metadata: {
+                ...post.metadata,
+                response: data
+              }
             })
-          } else {
-            const errorData = await response.text()
-            throw new Error(`X API error: ${errorData}`)
-          }
+            .eq('id', post.id)
+          
+          results.push({
+            id: post.id,
+            status: 'posted',
+            platform: post.platform,
+            response: data
+          })
+        } else {
+          const errorData = await response.text()
+          console.error('API error:', errorData)
+          throw new Error(`API error: ${errorData}`)
+        }
         
       } catch (postError) {
         console.error(`Failed to post ${post.id}:`, postError)
@@ -130,14 +143,18 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
+      currentTime: now,
       processed: results.length,
       results
     })
     
   } catch (error) {
-    console.error('Cron process error:', error)
+    console.error('Cron test error:', error)
     return NextResponse.json(
-      { error: 'Failed to process posts' },
+      { 
+        error: 'Failed to process posts',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }
