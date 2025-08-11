@@ -55,10 +55,18 @@ export async function POST(request: NextRequest) {
       }
     } else if (testResponse.status === 403) {
       // 403の場合、アプリケーションパスワードの問題かもしれない
+      const errorText = await testResponse.text()
+      console.error('WordPress 403 error details:', errorText)
       return NextResponse.json(
         { 
-          error: '認証に失敗しました。アプリケーションパスワードを使用しているか確認してください',
-          help: 'WordPress管理画面 → ユーザー → プロフィール → アプリケーションパスワードで生成したパスワードを使用してください'
+          error: '認証に失敗しました（403 Forbidden）',
+          help: 'WordPress管理画面 → ユーザー → プロフィール → アプリケーションパスワードで生成したパスワードを使用してください',
+          details: errorText,
+          debugInfo: {
+            url: testUrl,
+            username: username,
+            passwordLength: password.length
+          }
         },
         { status: 403 }
       )
