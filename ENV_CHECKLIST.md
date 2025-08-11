@@ -20,8 +20,8 @@
 - [ ] `WORDPRESS_PASSWORD` - WordPressアプリケーションパスワード
 
 ### note 投稿機能（非公式）
-- [ ] `NOTE_EMAIL` - noteログインメールアドレス
-- [ ] `NOTE_PASSWORD` - noteログインパスワード
+- [ ] `NOTE_LOGIN_MAILADRESS` または `NOTE_EMAIL` - noteログインメールアドレス
+- [ ] `NOTE_LOGIN_PASSWORD` または `NOTE_PASSWORD` - noteログインパスワード
 
 ### AI機能（オプション）
 - [ ] `OPENAI_API_KEY` または `OPEN_AI_KEY` - OpenAI APIキー
@@ -49,8 +49,8 @@ WORDPRESS_ID
 WORDPRESS_PASSWORD
 
 # note投稿用（使用する場合）
-NOTE_EMAIL
-NOTE_PASSWORD
+NOTE_LOGIN_MAILADRESS # または NOTE_EMAIL
+NOTE_LOGIN_PASSWORD # または NOTE_PASSWORD
 ```
 
 ## 設定方法

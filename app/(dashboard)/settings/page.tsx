@@ -10,19 +10,24 @@ import XSettings from './x-settings'
 
 export default function SettingsPage() {
   const [noteSettings, setNoteSettings] = useState({
-    email: '',
-    password: '',
+    email: 'muchinochikaigi@gmail.com',
+    password: 'sky05410',
     apiKey: ''
   })
   const [wordpressSettings, setWordpressSettings] = useState({
-    url: '',
-    username: '',
-    password: ''
+    url: 'https://muchino-chi.com',
+    username: 'admin_muchinochi',
+    password: '69Kushimoto'
   })
   const [apiKey, setApiKey] = useState('')
   const [showApiKey, setShowApiKey] = useState(false)
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [testingConnection, setTestingConnection] = useState(false)
+  const [connectionStatus, setConnectionStatus] = useState<{
+    wordpress?: { success: boolean; message: string }
+    note?: { success: boolean; message: string }
+  }>({})
 
   useEffect(() => {
     fetchApiKey()
@@ -61,6 +66,68 @@ export default function SettingsPage() {
     navigator.clipboard.writeText(text)
     setCopySuccess(label || 'copied')
     setTimeout(() => setCopySuccess(null), 2000)
+  }
+
+  const testWordPressConnection = async () => {
+    setTestingConnection(true)
+    try {
+      const response = await fetch('/api/wordpress/test-connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(wordpressSettings)
+      })
+      
+      const data = await response.json()
+      
+      setConnectionStatus(prev => ({
+        ...prev,
+        wordpress: {
+          success: response.ok,
+          message: response.ok ? '接続成功！' : data.error || '接続に失敗しました'
+        }
+      }))
+    } catch (error) {
+      setConnectionStatus(prev => ({
+        ...prev,
+        wordpress: {
+          success: false,
+          message: '接続テストに失敗しました'
+        }
+      }))
+    } finally {
+      setTestingConnection(false)
+    }
+  }
+
+  const testNoteConnection = async () => {
+    setTestingConnection(true)
+    try {
+      const response = await fetch('/api/note/test-connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(noteSettings)
+      })
+      
+      const data = await response.json()
+      
+      setConnectionStatus(prev => ({
+        ...prev,
+        note: {
+          success: response.ok,
+          message: response.ok ? '接続成功！' : data.error || '接続に失敗しました'
+        }
+      }))
+    } catch (error) {
+      setConnectionStatus(prev => ({
+        ...prev,
+        note: {
+          success: false,
+          message: '接続テストに失敗しました'
+        }
+      }))
+    } finally {
+      setTestingConnection(false)
+    }
   }
 
   const saveSettings = async () => {
@@ -229,6 +296,32 @@ export default function SettingsPage() {
               placeholder="••••••••"
             />
           </div>
+          
+          <div className="flex items-center gap-4">
+            <Button 
+              onClick={testNoteConnection}
+              disabled={testingConnection}
+              variant="outline"
+            >
+              {testingConnection ? '接続テスト中...' : '接続テスト'}
+            </Button>
+            
+            {connectionStatus.note && (
+              <div className={`text-sm ${connectionStatus.note.success ? 'text-green-600' : 'text-red-600'}`}>
+                {connectionStatus.note.success ? (
+                  <div className="flex items-center gap-1">
+                    <CheckCircle className="h-4 w-4" />
+                    {connectionStatus.note.message}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {connectionStatus.note.message}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
       
@@ -272,6 +365,32 @@ export default function SettingsPage() {
             <p className="text-xs text-gray-500 mt-1">
               WordPressの「ユーザー」→「プロフィール」→「アプリケーションパスワード」から生成
             </p>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <Button 
+              onClick={testWordPressConnection}
+              disabled={testingConnection}
+              variant="outline"
+            >
+              {testingConnection ? '接続テスト中...' : '接続テスト'}
+            </Button>
+            
+            {connectionStatus.wordpress && (
+              <div className={`text-sm ${connectionStatus.wordpress.success ? 'text-green-600' : 'text-red-600'}`}>
+                {connectionStatus.wordpress.success ? (
+                  <div className="flex items-center gap-1">
+                    <CheckCircle className="h-4 w-4" />
+                    {connectionStatus.wordpress.message}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {connectionStatus.wordpress.message}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

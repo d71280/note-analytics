@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 環境変数から認証情報を取得
-    const noteEmail = process.env.NOTE_EMAIL || ''
-    const notePassword = process.env.NOTE_PASSWORD || ''
+    const noteEmail = process.env.NOTE_LOGIN_MAILADRESS || process.env.NOTE_EMAIL || ''
+    const notePassword = process.env.NOTE_LOGIN_PASSWORD || process.env.NOTE_PASSWORD || ''
 
     if (!noteEmail || !notePassword) {
       return NextResponse.json(
