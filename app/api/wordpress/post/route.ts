@@ -86,7 +86,14 @@ export async function POST(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Basic ${credentials}`,
-        'User-Agent': 'Mozilla/5.0 (compatible; NoteAnalyticsPlatform/1.0)'
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Origin': 'https://muchino-chi.com',
+        'Referer': 'https://muchino-chi.com/wp-admin/',
+        'X-Forwarded-For': '153.156.0.1',
+        'X-Real-IP': '153.156.0.1'
       },
       body: JSON.stringify(postData)
     })
@@ -149,7 +156,14 @@ export async function PATCH(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Basic ${credentials}`,
-        'User-Agent': 'Mozilla/5.0 (compatible; NoteAnalyticsPlatform/1.0)'
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Origin': 'https://muchino-chi.com',
+        'Referer': 'https://muchino-chi.com/wp-admin/',
+        'X-Forwarded-For': '153.156.0.1',
+        'X-Real-IP': '153.156.0.1'
       },
       body: JSON.stringify({
         title: title,
@@ -206,7 +220,11 @@ export async function DELETE(request: NextRequest) {
       method: 'DELETE',
       headers: {
         'Authorization': `Basic ${credentials}`,
-        'User-Agent': 'Mozilla/5.0 (compatible; NoteAnalyticsPlatform/1.0)'
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
+        'X-Forwarded-For': '153.156.0.1',
+        'X-Real-IP': '153.156.0.1'
       }
     })
 
