@@ -28,6 +28,11 @@ export async function POST(request: NextRequest) {
     const notePassword = process.env.NOTE_LOGIN_PASSWORD || process.env.NOTE_PASSWORD || ''
 
     if (!noteEmail || !notePassword) {
+      console.error('Note credentials not configured:', {
+        emailExists: !!noteEmail,
+        passwordExists: !!notePassword,
+        envVars: Object.keys(process.env).filter(key => key.includes('NOTE'))
+      })
       return NextResponse.json(
         { error: 'note credentials not configured' },
         { status: 500 }
@@ -121,7 +126,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('note post error:', error)
     return NextResponse.json(
-      { error: 'Failed to post to note' },
+      { error: 'Failed to post to note', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
