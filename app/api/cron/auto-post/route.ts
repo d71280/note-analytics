@@ -239,7 +239,9 @@ async function postToX(content: string, metadata?: Record<string, unknown>) {
       ? 'https://note-analytics.vercel.app'
       : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000')
     
-    logger.debug('postToX: Using base URL', { baseUrl, NODE_ENV: process.env.NODE_ENV })
+    logger.debug('postToX: Using base URL', { 
+      metadata: { baseUrl, NODE_ENV: process.env.NODE_ENV }
+    })
     
     const response = await fetch(`${baseUrl}/api/x/post`, {
       method: 'POST',
@@ -273,7 +275,9 @@ async function postToNote(content: string, metadata?: Record<string, unknown>) {
       ? 'https://note-analytics.vercel.app'
       : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000')
     
-    logger.debug('postToNote: Using base URL', { baseUrl, NODE_ENV: process.env.NODE_ENV })
+    logger.debug('postToNote: Using base URL', { 
+      metadata: { baseUrl, NODE_ENV: process.env.NODE_ENV }
+    })
     
     const response = await fetch(`${baseUrl}/api/note/post`, {
       method: 'POST',
@@ -307,7 +311,9 @@ async function postToWordPress(content: string, metadata?: Record<string, unknow
       ? 'https://note-analytics.vercel.app'
       : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000')
     
-    logger.debug('postToWordPress: Using base URL', { baseUrl, NODE_ENV: process.env.NODE_ENV })
+    logger.debug('postToWordPress: Using base URL', { 
+      metadata: { baseUrl, NODE_ENV: process.env.NODE_ENV }
+    })
     
     const response = await fetch(`${baseUrl}/api/wordpress/post`, {
       method: 'POST',
