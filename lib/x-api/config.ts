@@ -2,7 +2,7 @@
 export function getXApiConfig() {
   // 複数の環境変数名をサポート（互換性のため）
   const apiKey = process.env.X_API_KEY || process.env.TWITTER_API_KEY
-  const apiSecret = process.env.X_API_KEY_SECRET || process.env.X_API_SECRET || process.env.TWITTER_API_KEY_SECRET
+  const apiSecret = process.env.X_API_SECRET || process.env.X_API_KEY_SECRET || process.env.TWITTER_API_KEY_SECRET
   const accessToken = process.env.X_ACCESS_TOKEN || process.env.TWITTER_ACCESS_TOKEN
   const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET || process.env.TWITTER_ACCESS_TOKEN_SECRET
   const bearerToken = process.env.X_BEARER_TOKEN || process.env.TWITTER_BEARER_TOKEN
