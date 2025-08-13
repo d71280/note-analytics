@@ -26,8 +26,8 @@ export async function postToXDirect(content: string, metadata?: Record<string, u
     // OAuth 1.0a設定
     const oauth = new OAuth({
       consumer: {
-        key: config.apiKey,
-        secret: config.apiKeySecret,
+        key: config.api_key,
+        secret: config.api_key_secret,
       },
       signature_method: 'HMAC-SHA1',
       hash_function(base_string, key) {
@@ -39,8 +39,8 @@ export async function postToXDirect(content: string, metadata?: Record<string, u
     })
 
     const token = {
-      key: config.accessToken,
-      secret: config.accessTokenSecret,
+      key: config.access_token,
+      secret: config.access_token_secret,
     }
 
     // リクエストデータ
