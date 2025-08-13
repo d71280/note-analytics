@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 // スケジュール投稿のデバッグ用エンドポイント
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = createClient()
     const now = new Date()
@@ -22,14 +22,14 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. pendingステータスの投稿を取得
-    const { data: pendingPosts, error: pendingError } = await supabase
+    const { data: pendingPosts } = await supabase
       .from('scheduled_posts')
       .select('*')
       .eq('status', 'pending')
       .order('scheduled_for', { ascending: true })
 
     // 3. 投稿時刻が過ぎているpending投稿を取得（cronが処理すべき投稿）
-    const { data: readyPosts, error: readyError } = await supabase
+    const { data: readyPosts } = await supabase
       .from('scheduled_posts')
       .select('*')
       .eq('status', 'pending')
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
 }
 
 // 手動でcronジョブをトリガーするテスト用エンドポイント
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // cronジョブを手動実行
     const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/cron/auto-post`, {
