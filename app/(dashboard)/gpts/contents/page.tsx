@@ -169,7 +169,9 @@ export default function GPTsContentsPage() {
         for (const contentId of contentIds) {
           const scheduledFor = new Date(scheduledTime).toISOString()
           
-          await fetch(`/api/gpts/contents/${contentId}/schedule`, {
+          console.log('Scheduling content:', { contentId, scheduledFor, platform })
+          
+          const response = await fetch(`/api/gpts/contents/${contentId}/schedule`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -178,14 +180,26 @@ export default function GPTsContentsPage() {
             })
           })
 
+          if (!response.ok) {
+            const errorData = await response.json()
+            console.error('Failed to schedule content:', contentId, errorData)
+            alert(`スケジュール設定に失敗しました: ${errorData.error || 'Unknown error'}`)
+            continue
+          }
+
+          const result = await response.json()
+          console.log('Scheduled successfully:', result)
+
           // 次の投稿時間を計算
           scheduledTime = new Date(scheduledTime.getTime() + intervalMinutes * 60 * 1000)
         }
       }
 
+      // 成功した場合のみメッセージを表示
       alert('スケジュール設定が完了しました')
       setSelectedContents(new Set())
-      fetchContents()
+      // データを再取得
+      await fetchContents()
     } catch (error) {
       console.error('Failed to schedule contents:', error)
       alert('スケジュール設定に失敗しました')
