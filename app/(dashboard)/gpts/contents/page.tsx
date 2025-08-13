@@ -139,6 +139,8 @@ export default function GPTsContentsPage() {
     }
 
     setIsScheduling(true)
+    let successCount = 0
+    let failCount = 0
 
     try {
       // 選択されたコンテンツをプラットフォームごとにグループ化
@@ -159,6 +161,7 @@ export default function GPTsContentsPage() {
         const settings = scheduleSettings[platform]
         if (!settings.startDate || !settings.startTime) {
           alert(`${platformNames[platform as keyof typeof platformNames]}の開始日時を設定してください`)
+          failCount += contentIds.length
           continue
         }
 
@@ -167,42 +170,72 @@ export default function GPTsContentsPage() {
 
         // 各コンテンツに対して等間隔でスケジュール
         for (const contentId of contentIds) {
-          const scheduledFor = new Date(scheduledTime).toISOString()
-          
-          console.log('Scheduling content:', { contentId, scheduledFor, platform })
-          
-          const response = await fetch(`/api/gpts/contents/${contentId}/schedule`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              scheduledFor,
-              intervalMinutes: contentIds.indexOf(contentId) * intervalMinutes 
+          try {
+            const scheduledFor = new Date(scheduledTime).toISOString()
+            
+            console.log('Scheduling content:', { contentId, scheduledFor, platform })
+            
+            // タイムアウト付きのfetch
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 10000) // 10秒タイムアウト
+            
+            const response = await fetch(`/api/gpts/contents/${contentId}/schedule`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                scheduledFor,
+                intervalMinutes: contentIds.indexOf(contentId) * intervalMinutes 
+              }),
+              signal: controller.signal
             })
-          })
+            
+            clearTimeout(timeoutId)
 
-          if (!response.ok) {
-            const errorData = await response.json()
-            console.error('Failed to schedule content:', contentId, errorData)
-            alert(`スケジュール設定に失敗しました: ${errorData.error || 'Unknown error'}`)
-            continue
+            if (!response.ok) {
+              let errorMessage = 'Unknown error'
+              try {
+                const errorData = await response.json()
+                errorMessage = errorData.error || errorData.details || errorMessage
+              } catch (e) {
+                console.error('Failed to parse error response:', e)
+              }
+              console.error('Failed to schedule content:', contentId, errorMessage)
+              failCount++
+            } else {
+              const result = await response.json()
+              console.log('Scheduled successfully:', result)
+              successCount++
+            }
+
+            // 次の投稿時間を計算
+            scheduledTime = new Date(scheduledTime.getTime() + intervalMinutes * 60 * 1000)
+          } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') {
+              console.error('Request timeout for content:', contentId)
+            } else {
+              console.error('Failed to schedule content:', contentId, error)
+            }
+            failCount++
           }
-
-          const result = await response.json()
-          console.log('Scheduled successfully:', result)
-
-          // 次の投稿時間を計算
-          scheduledTime = new Date(scheduledTime.getTime() + intervalMinutes * 60 * 1000)
         }
       }
 
-      // 成功した場合のみメッセージを表示
-      alert('スケジュール設定が完了しました')
-      setSelectedContents(new Set())
-      // データを再取得
-      await fetchContents()
+      // 結果を表示
+      if (successCount > 0 && failCount === 0) {
+        alert(`スケジュール設定が完了しました（${successCount}件）`)
+        setSelectedContents(new Set())
+        // データを再取得
+        await fetchContents()
+      } else if (successCount > 0 && failCount > 0) {
+        alert(`一部のスケジュール設定に失敗しました\n成功: ${successCount}件\n失敗: ${failCount}件`)
+        setSelectedContents(new Set())
+        await fetchContents()
+      } else {
+        alert(`スケジュール設定に失敗しました（${failCount}件）`)
+      }
     } catch (error) {
       console.error('Failed to schedule contents:', error)
-      alert('スケジュール設定に失敗しました')
+      alert('スケジュール設定中にエラーが発生しました')
     } finally {
       setIsScheduling(false)
     }
