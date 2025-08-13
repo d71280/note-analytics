@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
+import { postToXDirect, postToNoteDirect, postToWordPressDirect } from '@/lib/post-to-platforms'
 
 // Vercel Cronジョブから定期的に呼び出される自動投稿処理
 export async function GET(request: NextRequest) {
@@ -95,13 +96,14 @@ export async function GET(request: NextRequest) {
           
           switch (post.platform) {
             case 'x':
-              postResult = await postToX(post.content, post.metadata)
+              // 直接関数を呼び出す（内部API経由ではなく）
+              postResult = await postToXDirect(post.content, post.metadata)
               break
             case 'note':
-              postResult = await postToNote(post.content, post.metadata)
+              postResult = await postToNoteDirect(post.content, post.metadata)
               break
             case 'wordpress':
-              postResult = await postToWordPress(post.content, post.metadata)
+              postResult = await postToWordPressDirect(post.content, post.metadata)
               break
             default:
               throw new Error(`Unknown platform: ${post.platform}`)
