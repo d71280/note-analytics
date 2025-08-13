@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, scheduled_for, content, metadata } = body
+    const { id, scheduled_for, content, metadata, status } = body
 
     if (!id) {
       return NextResponse.json(
@@ -20,6 +20,7 @@ export async function PUT(request: NextRequest) {
     if (scheduled_for !== undefined) updateData.scheduled_for = scheduled_for
     if (content !== undefined) updateData.content = content
     if (metadata !== undefined) updateData.metadata = metadata
+    if (status !== undefined) updateData.status = status
 
     // スケジュール投稿を更新
     const { data, error } = await supabase

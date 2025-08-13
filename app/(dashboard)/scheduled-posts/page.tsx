@@ -275,18 +275,29 @@ export default function ScheduledPostsPage() {
 
       if (response.ok) {
         // 投稿成功したらステータスを更新
-        await fetch('/api/x/schedule/update-status', {
+        const updateResponse = await fetch('/api/scheduled-posts/update', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: post.id,
             status: 'posted',
-            posted_at: new Date().toISOString()
+            metadata: {
+              ...post.metadata,
+              posted_at: new Date().toISOString(),
+              posted_manually: true
+            }
           })
         })
         
-        await fetchScheduledPosts()
-        alert('投稿しました！')
+        if (updateResponse.ok) {
+          await fetchScheduledPosts()
+          // 投稿完了タブに切り替え
+          setActiveTab('completed')
+          alert('投稿が完了しました！')
+        } else {
+          console.error('Failed to update post status')
+          alert('投稿は成功しましたが、ステータスの更新に失敗しました')
+        }
       } else {
         const error = await response.json()
         alert(`投稿に失敗しました: ${error.error || 'Unknown error'}`)
