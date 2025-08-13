@@ -8,13 +8,30 @@ export async function GET(request: NextRequest) {
   const logEnd = logger.measurePerformance('auto-post-cron')
   
   try {
-    // Cron認証チェック
+    // Vercel Cronからのアクセスをチェック
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
     
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    // Vercel cronからの呼び出しを判定
+    const isVercelCron = request.headers.get('user-agent')?.includes('vercel-cron') || false
+    
+    // 開発環境または手動テストの場合
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const isManualTest = request.headers.get('x-manual-test') === 'true'
+    
+    // 認証をスキップする条件：
+    // 1. Vercel cronからの呼び出し
+    // 2. CRON_SECRETが設定されていない
+    // 3. 開発環境
+    // 4. 手動テスト
+    const skipAuth = isVercelCron || !cronSecret || isDevelopment || isManualTest
+    
+    if (!skipAuth && authHeader !== `Bearer ${cronSecret}`) {
       logger.warning('Unauthorized cron access attempt', {
-        action: 'cron_auth_failed'
+        action: 'cron_auth_failed',
+        authHeader: authHeader ? 'present' : 'missing',
+        isVercelCron,
+        userAgent: request.headers.get('user-agent')
       })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
