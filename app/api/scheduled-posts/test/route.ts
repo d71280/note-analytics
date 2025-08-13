@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 }
 
 // 即座に投稿を実行するテストエンドポイント
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 手動で自動投稿処理を実行
     const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/cron/auto-post`, {
