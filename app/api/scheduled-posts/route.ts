@@ -8,7 +8,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from('scheduled_posts')
       .select('*')
-      .order('scheduled_for', { ascending: true })
+      .order('scheduled_for', { ascending: false, nullsFirst: false })
     
     if (error) {
       console.error('Failed to fetch scheduled posts:', error)
