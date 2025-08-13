@@ -64,57 +64,90 @@ export async function GET(request: NextRequest) {
     for (const post of scheduledPosts) {
       results.processed++
       
-      try {
-        // プラットフォーム別の投稿処理
-        let postResult = null
-        
-        switch (post.platform) {
-          case 'x':
-            postResult = await postToX(post.content, post.metadata)
-            break
-          case 'note':
-            postResult = await postToNote(post.content, post.metadata)
-            break
-          case 'wordpress':
-            postResult = await postToWordPress(post.content, post.metadata)
-            break
-          default:
-            throw new Error(`Unknown platform: ${post.platform}`)
-        }
+      let retryCount = 0
+      const maxRetries = 3
+      let lastError: Error | null = null
+      
+      // リトライループ
+      while (retryCount < maxRetries) {
+        try {
+          // プラットフォーム別の投稿処理
+          let postResult = null
+          
+          switch (post.platform) {
+            case 'x':
+              postResult = await postToX(post.content, post.metadata)
+              break
+            case 'note':
+              postResult = await postToNote(post.content, post.metadata)
+              break
+            case 'wordpress':
+              postResult = await postToWordPress(post.content, post.metadata)
+              break
+            default:
+              throw new Error(`Unknown platform: ${post.platform}`)
+          }
 
-        if (postResult.success) {
-          // 投稿成功 - ステータスを更新
-          await supabase
-            .from('scheduled_posts')
-            .update({
-              status: 'posted',
-              metadata: {
-                ...post.metadata,
-                posted_at: now.toISOString(),
-                post_id: 'postId' in postResult ? postResult.postId : undefined
+          if (postResult.success) {
+            // 投稿成功 - ステータスを更新
+            await supabase
+              .from('scheduled_posts')
+              .update({
+                status: 'posted',
+                metadata: {
+                  ...post.metadata,
+                  posted_at: now.toISOString(),
+                  post_id: 'postId' in postResult ? postResult.postId : undefined,
+                  retry_count: retryCount
+                }
+              })
+              .eq('id', post.id)
+
+            results.posted++
+            
+            logger.info(`Successfully posted to ${post.platform}`, {
+              action: 'post_success',
+              metadata: { 
+                postId: post.id, 
+                platform: post.platform,
+                retryCount 
               }
             })
-            .eq('id', post.id)
 
-          results.posted++
+            // 分析データを記録
+            await recordAnalytics(post.id, post.platform)
+            
+            break // 成功したらループを抜ける
+            
+          } else {
+            throw new Error(postResult.error || 'Unknown error')
+          }
           
-          logger.info(`Successfully posted to ${post.platform}`, {
-            action: 'post_success',
-            metadata: { postId: post.id, platform: post.platform }
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error('Unknown error')
+          retryCount++
+          
+          logger.warning(`Retry ${retryCount}/${maxRetries} for post ${post.id}`, {
+            action: 'post_retry',
+            metadata: { 
+              postId: post.id, 
+              platform: post.platform,
+              error: lastError.message
+            }
           })
-
-          // 分析データを記録
-          await recordAnalytics(post.id, post.platform)
           
-        } else {
-          throw new Error(postResult.error || 'Unknown error')
+          if (retryCount < maxRetries) {
+            // 指数バックオフで待機
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000))
+          }
         }
-        
-      } catch (error) {
-        // 投稿失敗 - エラーを記録
+      }
+      
+      // すべてのリトライが失敗した場合
+      if (retryCount >= maxRetries && lastError) {
         results.failed++
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        results.errors.push(`Post ${post.id}: ${errorMessage}`)
+        const errorMessage = lastError.message
+        results.errors.push(`Post ${post.id}: ${errorMessage} (after ${maxRetries} retries)`)
         
         await supabase
           .from('scheduled_posts')
@@ -123,12 +156,13 @@ export async function GET(request: NextRequest) {
             metadata: {
               ...post.metadata,
               failed_at: now.toISOString(),
-              error: errorMessage
+              error: errorMessage,
+              retry_count: retryCount
             }
           })
           .eq('id', post.id)
 
-        logger.error(`Failed to post to ${post.platform}`, error, {
+        logger.error(`Failed to post to ${post.platform} after ${maxRetries} retries`, lastError, {
           action: 'post_failed',
           metadata: { postId: post.id, platform: post.platform }
         })
@@ -199,16 +233,56 @@ async function postToX(content: string, metadata?: Record<string, unknown>) {
   }
 }
 
-// Noteへの投稿（未実装）
+// Noteへの投稿
 async function postToNote(content: string, metadata?: Record<string, unknown>) {
-  logger.warning('Note posting not implemented', { metadata })
-  return { success: false, error: 'Note posting not implemented' }
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/note/post`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content,
+        title: (metadata?.title as string) || 'スケジュール投稿',
+        metadata
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      return { success: true, postId: data.id }
+    } else {
+      const error = await response.json()
+      return { success: false, error: error.error || 'Failed to post to Note' }
+    }
+  } catch (error) {
+    logger.error('Failed to post to Note', error)
+    return { success: false, error: 'Network error' }
+  }
 }
 
-// WordPressへの投稿（未実装）
+// WordPressへの投稿
 async function postToWordPress(content: string, metadata?: Record<string, unknown>) {
-  logger.warning('WordPress posting not implemented', { metadata })
-  return { success: false, error: 'WordPress posting not implemented' }
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/wordpress/post`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content,
+        title: (metadata?.title as string) || 'スケジュール投稿',
+        metadata
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      return { success: true, postId: data.id }
+    } else {
+      const error = await response.json()
+      return { success: false, error: error.error || 'Failed to post to WordPress' }
+    }
+  } catch (error) {
+    logger.error('Failed to post to WordPress', error)
+    return { success: false, error: 'Network error' }
+  }
 }
 
 // 分析データの記録

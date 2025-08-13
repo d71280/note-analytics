@@ -506,7 +506,13 @@ export default function ScheduledPostsPage() {
                   </CardHeader>
                   <CardContent className="p-4">
                     <div className="space-y-3">
-                      {platformPosts.map((post) => (
+                      {platformPosts
+                        .sort((a, b) => {
+                          const dateA = new Date(a.scheduled_for || a.scheduled_at || a.created_at).getTime()
+                          const dateB = new Date(b.scheduled_for || b.scheduled_at || b.created_at).getTime()
+                          return dateB - dateA // 新しい順（降順）
+                        })
+                        .map((post) => (
                         <div key={post.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
                           <div className="flex justify-between items-start">
                             <div className="flex items-start gap-3 flex-1">
