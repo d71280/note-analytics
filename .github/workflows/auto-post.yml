@@ -1,0 +1,35 @@
+name: Auto Post Schedule
+
+on:
+  schedule:
+    # 毎時0分と30分に実行（日本時間で考える場合はUTC+9時間）
+    # 例：UTC 0:00 = JST 9:00
+    - cron: '0,30 * * * *'
+    
+    # その他の設定例：
+    # 毎日朝9時と夜9時（JST）に実行したい場合
+    # - cron: '0 0,12 * * *'  # UTC 0:00, 12:00 = JST 9:00, 21:00
+    
+    # 平日の朝9時（JST）のみ
+    # - cron: '0 0 * * 1-5'  # UTC 0:00 Mon-Fri = JST 9:00 Mon-Fri
+    
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  trigger-auto-post:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Auto Post
+        run: |
+          curl -X POST https://note-analytics.vercel.app/api/test/trigger-cron \
+            -H "Content-Type: application/json" \
+            -H "X-Manual-Test: true" \
+            --fail \
+            --show-error
+        continue-on-error: true
+      
+      - name: Check Status
+        if: always()
+        run: |
+          curl -s https://note-analytics.vercel.app/api/test/schedule-debug | jq '.summary'
