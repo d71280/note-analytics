@@ -41,7 +41,7 @@ export async function POST(
       .from('scheduled_posts')
       .update({
         scheduled_for: scheduledFor,
-        status: 'pending'
+        status: 'pending' // cronジョブが検索するステータス
       })
       .eq('id', params.id)
       .select()
