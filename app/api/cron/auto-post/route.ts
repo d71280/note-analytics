@@ -228,7 +228,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// X（Twitter）への投稿
+// X（Twitter）への投稿（現在は未使用、直接関数を使用）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function postToX(content: string, metadata?: Record<string, unknown>) {
   try {
     // Vercel環境での内部API呼び出しは、同じプロセス内で実行
@@ -263,7 +264,8 @@ async function postToX(content: string, metadata?: Record<string, unknown>) {
   }
 }
 
-// Noteへの投稿
+// Noteへの投稿（現在は未使用、直接関数を使用）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function postToNote(content: string, metadata?: Record<string, unknown>) {
   try {
     const isProduction = process.env.NODE_ENV === 'production'
@@ -296,7 +298,8 @@ async function postToNote(content: string, metadata?: Record<string, unknown>) {
   }
 }
 
-// WordPressへの投稿
+// WordPressへの投稿（現在は未使用、直接関数を使用）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function postToWordPress(content: string, metadata?: Record<string, unknown>) {
   try {
     const isProduction = process.env.NODE_ENV === 'production'

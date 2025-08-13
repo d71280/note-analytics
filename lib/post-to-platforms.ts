@@ -110,6 +110,7 @@ export async function postToXDirect(content: string, metadata?: Record<string, u
 }
 
 // Noteへの直接投稿（現在は未実装）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function postToNoteDirect(content: string, metadata?: Record<string, unknown>) {
   try {
     // Note APIの実装が必要
@@ -128,6 +129,7 @@ export async function postToNoteDirect(content: string, metadata?: Record<string
 }
 
 // WordPressへの直接投稿（現在は未実装）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function postToWordPressDirect(content: string, metadata?: Record<string, unknown>) {
   try {
     // WordPress APIの実装が必要
