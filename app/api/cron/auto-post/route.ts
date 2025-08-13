@@ -229,7 +229,12 @@ export async function GET(request: NextRequest) {
 // X（Twitter）への投稿
 async function postToX(content: string, metadata?: Record<string, unknown>) {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/x/post`, {
+    // Vercel環境では自動的に設定されるVERCEL_URLを使用
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_APP_URL || 'https://note-analytics.vercel.app'
+    
+    const response = await fetch(`${baseUrl}/api/x/post`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -255,7 +260,11 @@ async function postToX(content: string, metadata?: Record<string, unknown>) {
 // Noteへの投稿
 async function postToNote(content: string, metadata?: Record<string, unknown>) {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/note/post`, {
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_APP_URL || 'https://note-analytics.vercel.app'
+    
+    const response = await fetch(`${baseUrl}/api/note/post`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -281,7 +290,11 @@ async function postToNote(content: string, metadata?: Record<string, unknown>) {
 // WordPressへの投稿
 async function postToWordPress(content: string, metadata?: Record<string, unknown>) {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/wordpress/post`, {
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_APP_URL || 'https://note-analytics.vercel.app'
+    
+    const response = await fetch(`${baseUrl}/api/wordpress/post`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
