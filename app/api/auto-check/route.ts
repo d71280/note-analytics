@@ -37,7 +37,11 @@ export async function GET() {
     
     console.log(`[Auto Check] Found ${readyPosts.length} posts to publish`)
     
-    const results = {
+    const results: {
+      success: Array<{ id: string; platform: string; url?: string }>;
+      failed: Array<{ id: string; platform: string; error: string; retries?: number }>;
+      total: number;
+    } = {
       success: [],
       failed: [],
       total: readyPosts.length
