@@ -29,9 +29,11 @@ export async function GET(request: NextRequest) {
     if (!skipAuth && authHeader !== `Bearer ${cronSecret}`) {
       logger.warning('Unauthorized cron access attempt', {
         action: 'cron_auth_failed',
-        authHeader: authHeader ? 'present' : 'missing',
-        isVercelCron,
-        userAgent: request.headers.get('user-agent')
+        metadata: {
+          authHeader: authHeader ? 'present' : 'missing',
+          isVercelCron,
+          userAgent: request.headers.get('user-agent')
+        }
       })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
