@@ -64,6 +64,7 @@ export default function GPTsContentsPage() {
   const [selectedContents, setSelectedContents] = useState<Set<string>>(new Set())
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
   const [isScheduling, setIsScheduling] = useState(false)
+  const [isDeletingOld, setIsDeletingOld] = useState(false)
   
   // プラットフォームごとのスケジュール設定
   const [scheduleSettings, setScheduleSettings] = useState<{
@@ -257,6 +258,35 @@ export default function GPTsContentsPage() {
     }
   }
 
+  const deleteOldContents = async () => {
+    if (!confirm('30日以上前の古いGPTsコンテンツを削除しますか？')) return
+
+    setIsDeletingOld(true)
+    try {
+      const response = await fetch('/api/gpts/delete-old', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ deleteCount: 20 })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        alert(`${result.deleted}件の古いコンテンツを削除しました`)
+        fetchContents()
+      } else {
+        const error = await response.json()
+        alert(`削除に失敗しました: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Failed to delete old contents:', error)
+      alert('削除中にエラーが発生しました')
+    } finally {
+      setIsDeletingOld(false)
+    }
+  }
+
   const copyToClipboard = (text: string, label?: string) => {
     navigator.clipboard.writeText(text)
     setCopySuccess(label || 'copied')
@@ -273,10 +303,28 @@ export default function GPTsContentsPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">GPTs連携コンテンツ</h1>
-        <p className="text-gray-600 mt-2">
-          GPTsから受信したコンテンツを管理し、スケジュール配信を設定します
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">GPTs連携コンテンツ</h1>
+            <p className="text-gray-600 mt-2">
+              GPTsから受信したコンテンツを管理し、スケジュール配信を設定します
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={deleteOldContents}
+              disabled={isDeletingOld || contents.length === 0}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeletingOld ? '削除中...' : '古いコンテンツを削除'}
+            </Button>
+            <div className="text-sm text-gray-500 flex items-center">
+              全{contents.length}件
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* スケジュール設定パネル */}

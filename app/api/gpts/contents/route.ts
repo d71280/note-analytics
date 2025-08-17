@@ -52,7 +52,7 @@ export async function GET() {
       .from('scheduled_posts')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(50)
+      .limit(100)
     
     if (error) {
       console.error('Failed to fetch contents:', error)

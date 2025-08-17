@@ -120,6 +120,40 @@ export async function POST(request: NextRequest) {
     
     const supabase = createClient()
     
+    // 保存前に古いコンテンツを削除（上限管理）
+    const { data: countData } = await supabase
+      .from('scheduled_posts')
+      .select('id, metadata', { count: 'exact' })
+      .or('metadata->>source.eq.gpts,metadata->>source.eq.gpts-note,metadata->>source.like.%gpts%')
+    
+    const gptsCount = countData?.length || 0
+    console.log(`Current GPTs contents count: ${gptsCount}`)
+    
+    // 45件を超えたら古いものを10件削除
+    if (gptsCount >= 45) {
+      console.log('Deleting old GPTs contents to make space...')
+      
+      const { data: oldContents } = await supabase
+        .from('scheduled_posts')
+        .select('id, created_at, metadata')
+        .order('created_at', { ascending: true })
+        .limit(20)
+      
+      const gptsOldContents = (oldContents || []).filter(c => 
+        c.metadata?.source?.includes('gpts')
+      ).slice(0, 10)
+      
+      if (gptsOldContents.length > 0) {
+        const idsToDelete = gptsOldContents.map(c => c.id)
+        await supabase
+          .from('scheduled_posts')
+          .delete()
+          .in('id', idsToDelete)
+        
+        console.log(`Deleted ${idsToDelete.length} old GPTs contents`)
+      }
+    }
+    
     // マークダウン形式の場合はHTMLに変換して保存
     const processedContent = format === 'markdown' ? convertMarkdownToHtml(content) : content
     const originalContent = content // 元のマークダウンも保存
