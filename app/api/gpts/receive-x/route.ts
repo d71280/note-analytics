@@ -26,6 +26,28 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   console.log('=== X (Twitter) GPTs Content Receive API Start ===')
   
+  // APIキー認証（オプション）
+  const authHeader = request.headers.get('authorization')
+  const apiKey = request.headers.get('x-api-key')
+  
+  // 環境変数でAPIキーが設定されている場合は検証
+  const expectedApiKey = process.env.GPTS_API_KEY
+  if (expectedApiKey) {
+    // Bearer token または X-API-Key ヘッダーで認証
+    const providedKey = authHeader?.replace('Bearer ', '') || apiKey
+    
+    if (!providedKey || providedKey !== expectedApiKey) {
+      console.log('API Key validation failed')
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Invalid or missing API key' },
+        { 
+          status: 401,
+          headers: getCorsHeaders()
+        }
+      )
+    }
+  }
+  
   try {
     const body = await request.json()
     const { content, metadata, scheduling } = body
@@ -176,6 +198,25 @@ export async function GET() {
         url: process.env.NEXT_PUBLIC_APP_URL || 'https://note-analytics.vercel.app'
       }
     ],
+    components: {
+      securitySchemes: {
+        ApiKeyAuth: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'X-API-Key',
+          description: 'APIキー認証（環境変数GPTS_API_KEYが設定されている場合に必要）'
+        },
+        BearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          description: 'Bearer Token認証（環境変数GPTS_API_KEYが設定されている場合に必要）'
+        }
+      }
+    },
+    security: process.env.GPTS_API_KEY ? [
+      { ApiKeyAuth: [] },
+      { BearerAuth: [] }
+    ] : [],
     paths: {
       '/api/gpts/receive-x': {
         post: {
