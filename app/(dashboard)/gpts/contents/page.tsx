@@ -65,7 +65,31 @@ export default function GPTsContentsPage() {
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
   const [isScheduling, setIsScheduling] = useState(false)
   const [isDeletingOld, setIsDeletingOld] = useState(false)
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<{
+    statistics: {
+      total: number
+      gptsCount: number
+      availableSlots: number
+      shouldCleanup: boolean
+      recommendedDeleteCount: number
+      byPlatform: Record<string, number>
+      byStatus: Record<string, number>
+      byAge: {
+        today: number
+        thisWeek: number
+        thisMonth: number
+        older: number
+      }
+    }
+    limits: {
+      max: number
+      current: number
+      available: number
+      threshold: number
+      deleteSize: number
+    }
+    recommendation: string
+  } | null>(null)
   
   // プラットフォームごとのスケジュール設定
   const [scheduleSettings, setScheduleSettings] = useState<{

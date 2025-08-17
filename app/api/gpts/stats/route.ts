@@ -34,8 +34,8 @@ export async function GET() {
     const now = new Date()
     const detailedStats = {
       ...stats,
-      byPlatform: {},
-      byStatus: {},
+      byPlatform: {} as Record<string, number>,
+      byStatus: {} as Record<string, number>,
       byAge: {
         today: 0,
         thisWeek: 0,

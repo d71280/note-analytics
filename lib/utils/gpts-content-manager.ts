@@ -13,7 +13,7 @@ export const GPTS_CONTENT_LIMITS = {
 /**
  * GPTs由来のコンテンツかどうかをチェック
  */
-export function isGPTsContent(metadata: any): boolean {
+export function isGPTsContent(metadata: Record<string, unknown> | null | undefined): boolean {
   const source = metadata?.source
   if (!source) return false
   
@@ -21,7 +21,7 @@ export function isGPTsContent(metadata: any): boolean {
          source === 'gpts-note' || 
          source === 'gpts-x' || 
          source === 'gpts-wordpress' ||
-         source.includes('gpts')
+         (typeof source === 'string' && source.includes('gpts'))
 }
 
 /**
@@ -63,8 +63,8 @@ export interface ContentStats {
  * コンテンツ統計を計算
  */
 export function calculateContentStats(
-  contents: any[],
-  gptsContents?: any[]
+  contents: Array<{ metadata?: Record<string, unknown> }>,
+  gptsContents?: Array<{ metadata?: Record<string, unknown> }>
 ): ContentStats {
   const gptsCount = gptsContents?.length || 
     contents.filter(c => isGPTsContent(c.metadata)).length
