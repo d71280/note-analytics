@@ -26,26 +26,42 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   console.log('=== X (Twitter) GPTs Content Receive API Start ===')
   
-  // APIキー認証（オプション）
+  // GPTs API Key認証チェック
   const authHeader = request.headers.get('authorization')
-  const apiKey = request.headers.get('x-api-key')
+  const apiKeyHeader = request.headers.get('x-api-key')
   
-  // 環境変数でAPIキーが設定されている場合は検証
+  // 環境変数でAPIキーが設定されている場合のみ認証を要求
   const expectedApiKey = process.env.GPTS_API_KEY
   if (expectedApiKey) {
-    // Bearer token または X-API-Key ヘッダーで認証
-    const providedKey = authHeader?.replace('Bearer ', '') || apiKey
+    // GPTsはBearer tokenまたはX-API-Keyヘッダーで送信
+    const providedKey = authHeader?.replace('Bearer ', '') || apiKeyHeader
     
-    if (!providedKey || providedKey !== expectedApiKey) {
-      console.log('API Key validation failed')
+    if (!providedKey) {
+      console.log('Missing API key')
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Invalid or missing API key' },
+        { error: 'Authentication required' },
         { 
           status: 401,
+          headers: {
+            ...getCorsHeaders(),
+            'WWW-Authenticate': 'Bearer realm="GPTs API"'
+          }
+        }
+      )
+    }
+    
+    if (providedKey !== expectedApiKey) {
+      console.log('Invalid API key provided')
+      return NextResponse.json(
+        { error: 'Invalid API key' },
+        { 
+          status: 403,
           headers: getCorsHeaders()
         }
       )
     }
+    
+    console.log('API key validated successfully')
   }
   
   try {
