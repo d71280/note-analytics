@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { autoCleanupOldContents } from '@/lib/utils/auto-cleanup'
 
 // CORS設定のヘルパー関数
 function getCorsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': '*',
-    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
     'Access-Control-Max-Age': '86400',
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Type': 'application/json',
   }
 }
 
@@ -71,6 +73,12 @@ export async function POST(request: NextRequest) {
     
     const supabase = createClient()
     
+    // 保存前に古いコンテンツを自動削除（上限管理: 500件）
+    const cleanupResult = await autoCleanupOldContents(supabase)
+    if (cleanupResult.deleted > 0) {
+      console.log(`Auto-cleanup: Deleted ${cleanupResult.deleted} old GPTs contents`)
+    }
+    
     // Xプラットフォーム固定で保存
     const { data: savedContent, error: saveError } = await supabase
       .from('scheduled_posts')
@@ -120,8 +128,8 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // 成功レスポンス
-    return NextResponse.json({
+    // 成功レスポンス（簡潔なJSONでCORBを回避）
+    const responseData = {
       success: true,
       contentId: savedContent.id,
       message: 'X content received successfully',
@@ -130,9 +138,12 @@ export async function POST(request: NextRequest) {
       qualityNote,
       charactersRemaining: 280 - contentLength,
       scheduled: !!scheduling?.scheduledFor,
-      scheduledFor: scheduling?.scheduledFor,
-      webUrl: `${process.env.NEXT_PUBLIC_APP_URL}/gpts/contents/${savedContent.id}`
-    }, {
+      scheduledFor: scheduling?.scheduledFor || null,
+      webUrl: savedContent.id ? `https://note-analytics.vercel.app/gpts/contents/${savedContent.id}` : null
+    }
+    
+    return new NextResponse(JSON.stringify(responseData), {
+      status: 200,
       headers: getCorsHeaders()
     })
     
