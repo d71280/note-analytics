@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 
 // 超シンプルなCORS設定
 const headers = {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       status: 200,
       headers
     })
-  } catch (error) {
+  } catch {
     return new Response('ERROR', {
       status: 400,
       headers
