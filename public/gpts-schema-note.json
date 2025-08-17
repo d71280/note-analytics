@@ -1,0 +1,309 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Note Analytics Platform API",
+    "version": "2.0.0",
+    "description": "Note記事を受信して管理するためのAPI"
+  },
+  "servers": [
+    {
+      "url": "https://note-analytics.vercel.app",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/api/gpts/receive-note": {
+      "post": {
+        "summary": "Note記事を送信",
+        "description": "Note用に最適化された記事を受信します。500文字以上推奨、最大10000文字まで。",
+        "operationId": "sendNoteArticle",
+        "tags": ["Note"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["content"],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Note記事の本文（マークダウン形式対応）。500文字以上を推奨、1500-2500文字が理想的。",
+                    "minLength": 500,
+                    "maxLength": 10000
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": ["markdown", "plain"],
+                    "default": "markdown",
+                    "description": "コンテンツのフォーマット。markdownを推奨。"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "記事のメタデータ",
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "description": "記事のタイトル",
+                        "maxLength": 100
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "ハッシュタグ（#記号なしで指定）",
+                        "maxItems": 10
+                      },
+                      "category": {
+                        "type": "string",
+                        "description": "カテゴリー"
+                      },
+                      "description": {
+                        "type": "string",
+                        "description": "記事の説明文",
+                        "maxLength": 200
+                      }
+                    }
+                  },
+                  "scheduling": {
+                    "type": "object",
+                    "description": "投稿スケジュール設定（オプション）",
+                    "properties": {
+                      "scheduledFor": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "投稿予定日時（ISO 8601形式）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "記事が正常に受信されました",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "処理の成功/失敗"
+                    },
+                    "contentId": {
+                      "type": "string",
+                      "description": "保存された記事のID"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "処理結果のメッセージ"
+                    },
+                    "platform": {
+                      "type": "string",
+                      "enum": ["note"],
+                      "description": "プラットフォーム（常にnote）"
+                    },
+                    "contentLength": {
+                      "type": "integer",
+                      "description": "記事の文字数"
+                    },
+                    "qualityNote": {
+                      "type": "string",
+                      "description": "記事の品質に関するアドバイス"
+                    },
+                    "scheduled": {
+                      "type": "boolean",
+                      "description": "スケジュール設定の有無"
+                    },
+                    "scheduledFor": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "投稿予定日時"
+                    },
+                    "webUrl": {
+                      "type": "string",
+                      "description": "管理画面のURL"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "リクエストエラー（文字数不足など）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "エラーの種類"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "エラーメッセージ"
+                    },
+                    "currentLength": {
+                      "type": "integer",
+                      "description": "現在の文字数"
+                    },
+                    "recommendedMin": {
+                      "type": "integer",
+                      "description": "推奨最小文字数"
+                    },
+                    "recommendedMax": {
+                      "type": "integer",
+                      "description": "推奨最大文字数"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "サーバーエラー",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "エラーメッセージ"
+                    },
+                    "details": {
+                      "type": "string",
+                      "description": "詳細情報"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "options": {
+        "summary": "CORS プリフライトリクエスト",
+        "description": "ブラウザからのCORSプリフライトリクエストに対応",
+        "operationId": "noteOptionsRequest",
+        "responses": {
+          "200": {
+            "description": "CORS設定を返す"
+          }
+        }
+      }
+    },
+    "/api/gpts/stats": {
+      "get": {
+        "summary": "統計情報を取得",
+        "description": "保存されているGPTsコンテンツの統計情報を取得します",
+        "operationId": "getContentStats",
+        "tags": ["Statistics"],
+        "responses": {
+          "200": {
+            "description": "統計情報",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statistics": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "description": "総コンテンツ数"
+                        },
+                        "gptsCount": {
+                          "type": "integer",
+                          "description": "GPTs由来のコンテンツ数"
+                        },
+                        "availableSlots": {
+                          "type": "integer",
+                          "description": "残り保存可能数"
+                        },
+                        "shouldCleanup": {
+                          "type": "boolean",
+                          "description": "クリーンアップ推奨フラグ"
+                        }
+                      }
+                    },
+                    "limits": {
+                      "type": "object",
+                      "properties": {
+                        "max": {
+                          "type": "integer",
+                          "description": "最大保存数（500）"
+                        },
+                        "current": {
+                          "type": "integer",
+                          "description": "現在の保存数"
+                        },
+                        "available": {
+                          "type": "integer",
+                          "description": "残り保存可能数"
+                        }
+                      }
+                    },
+                    "recommendation": {
+                      "type": "string",
+                      "description": "推奨アクション"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "NoteContent": {
+        "type": "object",
+        "required": ["content"],
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 500,
+            "maxLength": 10000
+          },
+          "format": {
+            "type": "string",
+            "enum": ["markdown", "plain"],
+            "default": "markdown"
+          }
+        }
+      },
+      "ContentMetadata": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10
+          },
+          "category": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      }
+    }
+  }
+}
