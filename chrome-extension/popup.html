@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Note Analytics Connector</title>
+  <style>
+    body {
+      width: 350px;
+      min-height: 400px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    h1 {
+      font-size: 18px;
+      margin: 0;
+      color: #333;
+    }
+    .status {
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .status.info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    .status.warning {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover:not(:disabled) {
+      background-color: #0056b3;
+    }
+    button:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+      opacity: 0.65;
+    }
+    button.secondary {
+      background-color: #6c757d;
+    }
+    button.secondary:hover:not(:disabled) {
+      background-color: #545b62;
+    }
+    .content-info {
+      background-color: #f8f9fa;
+      padding: 12px;
+      border-radius: 4px;
+      margin: 12px 0;
+      font-size: 13px;
+    }
+    .content-info h3 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      color: #495057;
+    }
+    .content-info p {
+      margin: 4px 0;
+      color: #6c757d;
+    }
+    .settings {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e5e5;
+    }
+    .settings label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+      color: #495057;
+    }
+    .settings input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+    .settings button {
+      margin-top: 8px;
+    }
+    #loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #007bff;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Note Analytics Connector</h1>
+  </div>
+  
+  <div id="status" class="status info" style="display: none;"></div>
+  
+  <div id="content-info" class="content-info" style="display: none;">
+    <h3>取得した記事情報</h3>
+    <p id="article-title"></p>
+    <p id="article-length"></p>
+  </div>
+  
+  <div id="loading" style="display: none;">
+    <div class="spinner"></div>
+    <p style="margin-top: 12px; color: #6c757d;">処理中...</p>
+  </div>
+  
+  <div id="main-content">
+    <button id="get-content">記事内容を取得</button>
+    <button id="send-content" style="display: none;">Vercelアプリに送信</button>
+    <button id="clear" class="secondary" style="display: none;">クリア</button>
+  </div>
+  
+  <div class="settings">
+    <label for="api-url">API URL:</label>
+    <input type="text" id="api-url" placeholder="https://your-app.vercel.app">
+    <button id="save-settings" class="secondary">設定を保存</button>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
