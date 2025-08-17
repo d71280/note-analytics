@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Note記事投稿ツール</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            resize: vertical;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        .counter {
+            text-align: right;
+            margin: 10px 0;
+            color: #666;
+        }
+        .counter.error {
+            color: #f44336;
+        }
+        .counter.success {
+            color: #4CAF50;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .result.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #4CAF50;
+            display: block;
+        }
+        .result.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Note記事投稿ツール</h1>
+        <p>記事を作成してNote Analyticsに送信します（500文字以上）</p>
+        
+        <textarea id="content" placeholder="ここに記事を入力してください..."></textarea>
+        <div class="counter" id="counter">0 / 500 文字</div>
+        
+        <button id="submit" disabled>記事を送信</button>
+        
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const textarea = document.getElementById('content');
+        const counter = document.getElementById('counter');
+        const submitBtn = document.getElementById('submit');
+        const result = document.getElementById('result');
+        
+        // 文字数カウント
+        textarea.addEventListener('input', () => {
+            const length = textarea.value.length;
+            counter.textContent = `${length} / 500 文字`;
+            
+            if (length < 500) {
+                counter.className = 'counter error';
+                submitBtn.disabled = true;
+            } else if (length > 10000) {
+                counter.className = 'counter error';
+                counter.textContent = `${length} / 10000 文字（最大文字数超過）`;
+                submitBtn.disabled = true;
+            } else {
+                counter.className = 'counter success';
+                submitBtn.disabled = false;
+            }
+        });
+        
+        // 送信処理
+        submitBtn.addEventListener('click', async () => {
+            const content = textarea.value;
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '送信中...';
+            result.className = 'result';
+            
+            try {
+                const response = await fetch('https://note-analytics.vercel.app/api/gpts/receive-note', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: content,
+                        format: 'plain',
+                        metadata: {
+                            title: content.substring(0, 50) + '...',
+                            source: 'direct-post'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <strong>✅ 送信成功！</strong><br>
+                        ID: ${data.contentId}<br>
+                        文字数: ${data.contentLength}文字<br>
+                        ${data.qualityNote || ''}
+                    `;
+                    textarea.value = '';
+                    counter.textContent = '0 / 500 文字';
+                } else {
+                    throw new Error(data.error || '送信に失敗しました');
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `<strong>❌ エラー:</strong> ${error.message}`;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '記事を送信';
+            }
+        });
+    </script>
+</body>
+</html>
