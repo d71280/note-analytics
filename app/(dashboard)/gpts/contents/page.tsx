@@ -65,6 +65,7 @@ export default function GPTsContentsPage() {
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
   const [isScheduling, setIsScheduling] = useState(false)
   const [isDeletingOld, setIsDeletingOld] = useState(false)
+  const [stats, setStats] = useState<any>(null)
   
   // プラットフォームごとのスケジュール設定
   const [scheduleSettings, setScheduleSettings] = useState<{
@@ -81,6 +82,7 @@ export default function GPTsContentsPage() {
 
   useEffect(() => {
     fetchContents()
+    fetchStats()
     // デフォルト日付を今日に設定
     const today = new Date().toISOString().split('T')[0]
     setScheduleSettings(prev => ({
@@ -101,6 +103,18 @@ export default function GPTsContentsPage() {
       console.error('Failed to fetch contents:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/gpts/stats')
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch stats:', error)
     }
   }
 
@@ -275,6 +289,7 @@ export default function GPTsContentsPage() {
         const result = await response.json()
         alert(`${result.deleted}件の古いコンテンツを削除しました`)
         fetchContents()
+        fetchStats()
       } else {
         const error = await response.json()
         alert(`削除に失敗しました: ${error.error}`)
@@ -320,8 +335,20 @@ export default function GPTsContentsPage() {
               <Trash2 className="h-4 w-4" />
               {isDeletingOld ? '削除中...' : '古いコンテンツを削除'}
             </Button>
-            <div className="text-sm text-gray-500 flex items-center">
-              全{contents.length}件
+            <div className="flex items-center gap-4">
+              {stats && (
+                <div className="text-sm text-gray-500">
+                  <span className={`font-medium ${stats.limits.available < 50 ? 'text-orange-500' : 'text-green-500'}`}>
+                    {stats.limits.current}/500件
+                  </span>
+                  <span className="ml-2">
+                    (残り{stats.limits.available}件)
+                  </span>
+                </div>
+              )}
+              <div className="text-sm text-gray-500">
+                表示: {contents.length}件
+              </div>
             </div>
           </div>
         </div>

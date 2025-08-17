@@ -6,12 +6,12 @@ export async function GET() {
   try {
     const supabase = createClient()
     
-    // scheduled_postsテーブルから最新100件を取得
+    // scheduled_postsテーブルから最新500件を取得
     const { data, error } = await supabase
       .from('scheduled_posts')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(100)
+      .limit(500)
     
     if (error) {
       console.error('Failed to fetch posts:', error)
