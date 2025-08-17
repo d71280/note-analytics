@@ -7,9 +7,10 @@ function getCorsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': '*',
-    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
     'Access-Control-Max-Age': '86400',
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Type': 'application/json',
   }
 }
 
@@ -181,7 +182,7 @@ export async function POST(request: NextRequest) {
     }
     
     // 成功レスポンス
-    return NextResponse.json({
+    const responseData = {
       success: true,
       contentId: savedContent.id,
       message: 'Note content received successfully',
@@ -189,9 +190,12 @@ export async function POST(request: NextRequest) {
       contentLength,
       qualityNote,
       scheduled: !!scheduling?.scheduledFor,
-      scheduledFor: scheduling?.scheduledFor,
-      webUrl: `${process.env.NEXT_PUBLIC_APP_URL}/gpts/contents/${savedContent.id}`
-    }, {
+      scheduledFor: scheduling?.scheduledFor || null,
+      webUrl: savedContent.id ? `https://note-analytics.vercel.app/gpts/contents/${savedContent.id}` : null
+    }
+    
+    return new NextResponse(JSON.stringify(responseData), {
+      status: 200,
       headers: getCorsHeaders()
     })
     
