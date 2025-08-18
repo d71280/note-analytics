@@ -2,10 +2,6 @@
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 30
-    },
-    "app/api/gpts/**/*.ts": {
-      "maxDuration": 30,
-      "runtime": "nodejs20.x"
     }
   },
   "headers": [
