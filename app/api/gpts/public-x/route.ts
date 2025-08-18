@@ -7,7 +7,8 @@ function getCorsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, openai-conversation-id, openai-ephemeral-user-id',
+    'Access-Control-Allow-Credentials': 'true',
     'Content-Type': 'application/json',
   }
 }
@@ -17,6 +18,30 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: getCorsHeaders(),
+  })
+}
+
+// GETエンドポイント（承認回避用）
+export async function GET(request: NextRequest) {
+  console.log('=== Public X GPTs GET Test ===')
+  
+  const searchParams = request.nextUrl.searchParams
+  const content = searchParams.get('content')
+  
+  if (!content) {
+    return NextResponse.json(
+      { error: 'Content parameter is required' },
+      { status: 400, headers: getCorsHeaders() }
+    )
+  }
+  
+  // 簡単なテスト応答
+  return NextResponse.json({
+    success: true,
+    received: content,
+    message: 'GET endpoint working'
+  }, {
+    headers: getCorsHeaders()
   })
 }
 
