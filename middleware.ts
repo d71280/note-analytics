@@ -4,14 +4,24 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   // GPTs APIエンドポイントへのアクセスを許可
   if (request.nextUrl.pathname.startsWith('/api/gpts/')) {
+    // User-Agentをチェック
+    const userAgent = request.headers.get('user-agent') || ''
+    console.log('User-Agent:', userAgent)
+    
+    // ChatGPT/OpenAIからのアクセスを明示的に許可
+    const isFromChatGPT = userAgent.toLowerCase().includes('chatgpt') || 
+                          userAgent.toLowerCase().includes('openai') ||
+                          request.headers.get('openai-conversation-id') !== null ||
+                          request.headers.get('chatgpt-conversation-id') !== null
+    
     // OPTIONSリクエストに対する処理
     if (request.method === 'OPTIONS') {
       return new NextResponse(null, {
         status: 200,
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, openai-conversation-id, openai-ephemeral-user-id, openai-subdivision-1-iso-code',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, HEAD',
+          'Access-Control-Allow-Headers': '*',
           'Access-Control-Max-Age': '86400',
         },
       })
@@ -19,20 +29,27 @@ export function middleware(request: NextRequest) {
     
     const response = NextResponse.next()
     
-    // CORS headers for GPTs
+    // CORS headers - 全て許可
     response.headers.set('Access-Control-Allow-Origin', '*')
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, openai-conversation-id, openai-ephemeral-user-id, openai-subdivision-1-iso-code')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD')
+    response.headers.set('Access-Control-Allow-Headers', '*')
     response.headers.set('Access-Control-Allow-Credentials', 'true')
+    response.headers.set('Access-Control-Expose-Headers', '*')
     
-    // ChatGPT/OpenAI specific headers
+    // ChatGPT/OpenAI specific
     response.headers.set('X-Robots-Tag', 'noindex')
+    response.headers.set('X-Frame-Options', 'ALLOWALL')
+    
+    // セキュリティヘッダーを緩和（GPTs用）
+    response.headers.delete('X-Content-Type-Options')
+    response.headers.delete('X-XSS-Protection')
     
     // ログ出力（デバッグ用）
     console.log('GPTs API Request:', {
       method: request.method,
       path: request.nextUrl.pathname,
-      headers: Object.fromEntries(request.headers.entries()),
+      isFromChatGPT,
+      userAgent: userAgent.substring(0, 100),
     })
     
     return response

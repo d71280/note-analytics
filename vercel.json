@@ -2,6 +2,10 @@
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 30
+    },
+    "app/api/gpts/**/*.ts": {
+      "maxDuration": 30,
+      "runtime": "nodejs20.x"
     }
   },
   "headers": [
@@ -14,11 +18,11 @@
         },
         {
           "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
+          "value": "GET, POST, PUT, DELETE, OPTIONS, HEAD"
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-Requested-With, openai-conversation-id, openai-ephemeral-user-id, openai-subdivision-1-iso-code, chatgpt-conversation-id, chatgpt-ephemeral-user-id"
+          "value": "*"
         },
         {
           "key": "Access-Control-Allow-Credentials",
@@ -29,8 +33,8 @@
           "value": "86400"
         },
         {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
+          "key": "X-Robots-Tag",
+          "value": "noindex"
         }
       ]
     },
