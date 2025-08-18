@@ -69,6 +69,7 @@ export async function GET(request: NextRequest) {
 }
 
 // GPTs認証（オプション - 現在は無効化）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function authenticateGPTs(request: NextRequest): boolean {
   // 一時的に認証を無効化してテスト
   return true
