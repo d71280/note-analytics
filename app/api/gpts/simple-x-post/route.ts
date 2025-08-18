@@ -6,8 +6,28 @@ import axios from 'axios'
 
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets'
 
+// CORSヘッダーを返す
+function getCorsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json',
+  }
+}
+
+// OPTIONS処理
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: getCorsHeaders(),
+  })
+}
+
 // 超シンプルなGETエンドポイント（テスト用）
 export async function GET(request: NextRequest) {
+  console.log('Simple X Post Request received')
+  
   // クエリパラメータから投稿内容を取得
   const searchParams = request.nextUrl.searchParams
   const text = searchParams.get('text')
@@ -19,6 +39,8 @@ export async function GET(request: NextRequest) {
       message: 'X API is ready to post',
       endpoint: '/api/gpts/simple-x-post',
       method: 'GET with ?text=your_message'
+    }, {
+      headers: getCorsHeaders()
     })
   }
   
@@ -29,6 +51,8 @@ export async function GET(request: NextRequest) {
         error: 'Text too long',
         maxLength: 280,
         currentLength: text.length
+      }, {
+        headers: getCorsHeaders()
       })
     }
     
@@ -79,6 +103,8 @@ export async function GET(request: NextRequest) {
       tweetId,
       url: `https://twitter.com/user/status/${tweetId}`,
       message: 'Posted successfully!'
+    }, {
+      headers: getCorsHeaders()
     })
     
   } catch (error) {
@@ -89,6 +115,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         error: 'X API not configured',
         message: 'Please set X API credentials in Vercel environment variables'
+      }, {
+        headers: getCorsHeaders()
       })
     }
     
@@ -98,12 +126,16 @@ export async function GET(request: NextRequest) {
         error: 'X API Error',
         status: error.response?.status,
         message: error.response?.data?.detail || 'Failed to post'
+      }, {
+        headers: getCorsHeaders()
       })
     }
     
     return NextResponse.json({
       error: 'Unknown error',
       message: 'Failed to post to X'
+    }, {
+      headers: getCorsHeaders()
     })
   }
 }

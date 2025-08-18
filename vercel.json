@@ -18,7 +18,11 @@
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-Requested-With, openai-conversation-id, openai-ephemeral-user-id, openai-subdivision-1-iso-code"
+          "value": "Content-Type, Authorization, X-Requested-With, openai-conversation-id, openai-ephemeral-user-id, openai-subdivision-1-iso-code, chatgpt-conversation-id, chatgpt-ephemeral-user-id"
+        },
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
         },
         {
           "key": "Access-Control-Max-Age",
