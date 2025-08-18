@@ -8,11 +8,12 @@ export function middleware(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || ''
     console.log('User-Agent:', userAgent)
     
-    // ChatGPT/OpenAIからのアクセスを明示的に許可
-    const isFromChatGPT = userAgent.toLowerCase().includes('chatgpt') || 
-                          userAgent.toLowerCase().includes('openai') ||
-                          request.headers.get('openai-conversation-id') !== null ||
-                          request.headers.get('chatgpt-conversation-id') !== null
+    // ChatGPT/OpenAIからのアクセスを明示的に許可（改善版）
+    const isFromChatGPT = /chatgpt|openai/i.test(userAgent) ||
+                          request.headers.has('openai-conversation-id') ||
+                          request.headers.has('chatgpt-conversation-id') ||
+                          request.headers.has('openai-ephemeral-user-id') ||
+                          request.headers.has('chatgpt-ephemeral-user-id')
     
     // OPTIONSリクエストに対する処理
     if (request.method === 'OPTIONS') {

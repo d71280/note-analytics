@@ -13,16 +13,28 @@ function getCorsHeaders() {
   }
 }
 
-// ChatGPT/OpenAIからのリクエストを判定
+// ChatGPT/OpenAIからのリクエストを判定（改善版）
 function isFromChatGPT(request: NextRequest): boolean {
-  const userAgent = request.headers.get('user-agent')?.toLowerCase() || ''
-  const hasOpenAIHeader = request.headers.get('openai-conversation-id') !== null
-  const hasChatGPTHeader = request.headers.get('chatgpt-conversation-id') !== null
+  const userAgent = request.headers.get('user-agent') || ''
   
-  return userAgent.includes('chatgpt') || 
-         userAgent.includes('openai') || 
-         hasOpenAIHeader || 
-         hasChatGPTHeader
+  // より広範囲にマッチする判定
+  const isGPT = /chatgpt|openai/i.test(userAgent) ||
+                 request.headers.has('openai-conversation-id') ||
+                 request.headers.has('chatgpt-conversation-id') ||
+                 request.headers.has('openai-ephemeral-user-id') ||
+                 request.headers.has('chatgpt-ephemeral-user-id')
+  
+  // デバッグ用ログ（Vercelログで確認用）
+  console.log('🔍 ChatGPT Detection:', {
+    isGPT,
+    userAgent: userAgent.substring(0, 100),
+    hasOpenAIHeaders: request.headers.has('openai-conversation-id'),
+    hasChatGPTHeaders: request.headers.has('chatgpt-conversation-id'),
+    method: request.method,
+    url: request.url
+  })
+  
+  return isGPT  // 注意：この値はログのみで使用、アクセス制御には使わない
 }
 
 // OPTIONS - プリフライトリクエスト処理（必須）
