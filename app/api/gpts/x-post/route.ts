@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       hasXConfig = true
       configStatus = 'OAuth 1.0a configured'
     }
-  } catch (error) {
+  } catch {
     configStatus = 'Missing X API credentials'
   }
   
