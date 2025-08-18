@@ -1,0 +1,53 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "X Post API",
+    "version": "1.0.0",
+    "description": "Post to X (Twitter)"
+  },
+  "servers": [
+    {
+      "url": "https://note-analytics.vercel.app"
+    }
+  ],
+  "paths": {
+    "/api/gpts/x-post": {
+      "get": {
+        "operationId": "testConnection",
+        "summary": "Test connection",
+        "responses": {
+          "200": {
+            "description": "Connection successful"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postToX",
+        "summary": "Post to X",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "Tweet text (max 280 chars)",
+                    "maxLength": 280
+                  }
+                },
+                "required": ["text"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Posted successfully"
+          }
+        }
+      }
+    }
+  }
+}

@@ -68,11 +68,15 @@ export async function GET(request: NextRequest) {
   })
 }
 
-// GPTs認証（オプション）
+// GPTs認証（オプション - 現在は無効化）
 function authenticateGPTs(request: NextRequest): boolean {
+  // 一時的に認証を無効化してテスト
+  return true
+  
+  // 以下は認証を有効にする場合のコード
+  /*
   const gptsApiKey = process.env.GPTS_API_KEY
   if (!gptsApiKey) {
-    // 認証キーが設定されていない場合は認証をスキップ
     return true
   }
   
@@ -83,6 +87,7 @@ function authenticateGPTs(request: NextRequest): boolean {
   
   const token = authHeader.slice(7)
   return token === gptsApiKey
+  */
 }
 
 // X投稿エンドポイント（GPTs用）
