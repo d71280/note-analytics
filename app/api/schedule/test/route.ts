@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // スケジュール投稿のテスト作成
 export async function POST(request: NextRequest) {
@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { platform, content, title, scheduledMinutesFromNow = 1 } = body
 
-    const supabase = createClient()
+    const supabase = createAdminClient()
 
     // スケジュール時刻を計算（デフォルトは1分後）
     const scheduledFor = new Date()

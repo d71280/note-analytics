@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // GPTsから受信したようなテストコンテンツを作成してスケジュール設定
 export async function POST() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     const now = new Date()
     
     console.log('=== Creating test GPTs content ===')

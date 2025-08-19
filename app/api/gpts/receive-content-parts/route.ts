@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // CORS設定のヘルパー関数
 function getCorsHeaders() {
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Supabaseに保存
-      const supabase = createClient()
+      const supabase = createAdminClient()
       
       const { data: savedContent, error: saveError } = await supabase
         .from('scheduled_posts')

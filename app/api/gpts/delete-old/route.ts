@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // CORS設定
 function getCorsHeaders() {
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { deleteCount = 10 } = body // デフォルトで10件削除
     
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // GPTs由来の最も古いコンテンツを取得
     const { data: oldContents, error: fetchError } = await supabase

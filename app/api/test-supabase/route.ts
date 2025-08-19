@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET() {
   try {
@@ -21,7 +21,7 @@ export async function GET() {
     }
     
     // Supabaseクライアントを作成
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // データベース接続テスト - knowledge_baseテーブルの件数を取得
     const { count, error: countError } = await supabase

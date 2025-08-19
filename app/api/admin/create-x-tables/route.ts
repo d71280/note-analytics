@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // x_api_configsテーブルの作成
     const { error: createError } = await supabase.rpc('exec_sql', {

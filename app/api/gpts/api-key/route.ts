@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import crypto from 'crypto'
 
 // APIキーの取得
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // 設定テーブルからAPIキーを取得
     const { data, error } = await supabase
@@ -31,7 +31,7 @@ export async function GET() {
 // 新しいAPIキーの生成
 export async function POST() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // ランダムなAPIキーを生成
     const apiKey = `gpts_${crypto.randomBytes(32).toString('hex')}`

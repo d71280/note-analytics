@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getXApiConfig } from '@/lib/x-api/config'
 import axios from 'axios'
 
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // X API認証情報を取得
     let config

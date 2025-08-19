@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // テスト用の手動投稿作成エンドポイント
 export async function POST() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     const now = new Date()
     
     // 5分後に投稿予定のテストデータを作成
@@ -68,7 +68,7 @@ export async function POST() {
 // 既存のテスト投稿を確認
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     const { data, error } = await supabase
       .from('scheduled_posts')

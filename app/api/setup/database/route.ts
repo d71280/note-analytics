@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // scheduled_postsテーブルを作成（RPCが存在しない場合はスキップ）
     try {
@@ -80,7 +80,7 @@ export async function GET() {
 // POST: テーブルを手動で作成
 export async function POST() {
   try {
-    // const supabase = createClient() // 未使用
+    // const supabase = createAdminClient() // 未使用
     
     // Supabaseのダッシュボードで実行するSQL
     const createTableSQL = `

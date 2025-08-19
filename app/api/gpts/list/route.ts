@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // 保存されたコンテンツの一覧を取得
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // scheduled_postsテーブルから最新500件を取得
     const { data, error } = await supabase

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getXApiConfig } from '@/lib/x-api/config'
 import OAuth from 'oauth-1.0a'
 import crypto from 'crypto'
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     // 投稿履歴を保存（オプション）
     try {
-      const supabase = createClient()
+      const supabase = createAdminClient()
       await supabase
         .from('x_post_history')
         .insert({
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
     // エラー履歴を保存（オプション）
     if (tweetText) {
       try {
-        const supabase = createClient()
+        const supabase = createAdminClient()
         await supabase
           .from('x_post_history')
           .insert({

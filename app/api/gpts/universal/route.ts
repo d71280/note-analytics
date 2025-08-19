@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // ユニバーサルCORSヘッダー（完全開放）
 function getCorsHeaders() {
@@ -80,19 +80,15 @@ export async function GET(request: NextRequest) {
   // コンテンツ保存
   if (action === 'save' && content) {
     try {
-      const supabase = createClient()
-      
-      // デフォルトで5分後にスケジュール
-      const scheduledFor = new Date()
-      scheduledFor.setMinutes(scheduledFor.getMinutes() + 5)
+      const supabase = createAdminClient()
       
       const { data, error } = await supabase
         .from('scheduled_posts')
         .insert({
           content,
           platform,
-          status: 'pending', // Cronが探すステータス
-          scheduled_for: scheduledFor.toISOString(), // スケジュール時刻を設定
+          status: 'draft', // 下書きとして保存（手動スケジュール待ち）
+          scheduled_for: null, // スケジュール時刻は未設定
           metadata: {
             source: 'gpts-universal',
             method: 'GET',
@@ -155,19 +151,15 @@ export async function POST(request: NextRequest) {
       })
     }
     
-    const supabase = createClient()
-    
-    // デフォルトで5分後にスケジュール
-    const scheduledFor = new Date()
-    scheduledFor.setMinutes(scheduledFor.getMinutes() + 5)
+    const supabase = createAdminClient()
     
     const { data, error } = await supabase
       .from('scheduled_posts')
       .insert({
         content,
         platform,
-        status: 'pending', // Cronが探すステータス
-        scheduled_for: scheduledFor.toISOString(), // スケジュール時刻を設定
+        status: 'draft', // 下書きとして保存（手動スケジュール待ち）
+        scheduled_for: null, // スケジュール時刻は未設定
         metadata: {
           source: 'gpts-universal',
           method: 'POST',

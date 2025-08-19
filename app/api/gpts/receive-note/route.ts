@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { autoCleanupOldContents } from '@/lib/utils/auto-cleanup'
 
 // CORS設定のヘルパー関数
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       qualityNote = 'Note記事として理想的な長さです'
     }
     
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // 保存前に古いコンテンツを自動削除（上限管理: 500件）
     const cleanupResult = await autoCleanupOldContents(supabase)

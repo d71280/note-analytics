@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // CORS設定のヘルパー関数
 function getCorsHeaders() {
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
       console.warn(`Content length ${content.length} exceeds soft limit for ${platform}, but allowing it`)
     }
     
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // デバッグログ
     console.log('Supabase client created, attempting to save:', {

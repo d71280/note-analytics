@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // Note.com 公式API v2を使用した投稿
 export async function POST(request: NextRequest) {
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     // 投稿成功後、ステータスを更新
     if (postId) {
-      const supabase = createClient()
+      const supabase = createAdminClient()
       await supabase
         .from('scheduled_posts')
         .update({ 

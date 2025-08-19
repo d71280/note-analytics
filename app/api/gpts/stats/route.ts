@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { calculateContentStats, isGPTsContent } from '@/lib/utils/gpts-content-manager'
 
 // GPTsコンテンツの統計情報を取得
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // すべてのコンテンツを取得
     const { data: allContents, error } = await supabase

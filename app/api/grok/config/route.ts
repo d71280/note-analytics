@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     const { data, error } = await supabase
       .from('grok_api_configs')
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createClient()
+    const supabase = createAdminClient()
 
     // 既存の設定を削除
     await supabase.from('grok_api_configs').delete().neq('id', '00000000-0000-0000-0000-000000000000')

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(
   request: NextRequest,
@@ -18,7 +18,7 @@ export async function POST(
       )
     }
     
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // \u307e\u305a\u30b3\u30f3\u30c6\u30f3\u30c4\u304c\u5b58\u5728\u3059\u308b\u304b\u78ba\u8a8d
     const { data: existingPost, error: fetchError } = await supabase

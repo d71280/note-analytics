@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // 手動で今すぐ投稿を実行
 export async function POST() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     const now = new Date()
     
     // pendingステータスの投稿を取得

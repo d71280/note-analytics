@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // note.com非公式API実装
 // 警告: これは非公式APIを使用しています。仕様変更により動作しなくなる可能性があります。
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
 
     // 投稿成功後、ステータスを更新
     if (postId) {
-      const supabase = createClient()
+      const supabase = createAdminClient()
       await supabase
         .from('scheduled_posts')
         .update({ 

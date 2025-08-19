@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'edge' // Edge Functionを使用
 
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // 現在時刻より前のスケジュールされた投稿を取得
     const now = new Date().toISOString()

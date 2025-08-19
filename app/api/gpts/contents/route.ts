@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // CORS設定のヘルパー関数
 function getCorsHeaders() {
@@ -22,7 +22,7 @@ export async function OPTIONS() {
 // GPTsから受信したコンテンツ一覧を取得
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // まずscheduled_postsテーブルの存在を確認
     const { error: tableError } = await supabase

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     const now = new Date()
 
     // 実行待ちの予約投稿を取得
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function createNextScheduledPosts() {
-  const supabase = createClient()
+  const supabase = createAdminClient()
   
   // アクティブなスケジュールを取得
   const { data: schedules } = await supabase

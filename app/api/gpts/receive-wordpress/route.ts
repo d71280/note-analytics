@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // CORS設定のヘルパー関数
 function getCorsHeaders() {
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
       qualityNote = '非常に詳細な記事です。見出しで構造化することを推奨します'
     }
     
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // マークダウン形式の場合はHTMLに変換して保存
     const processedContent = format === 'markdown' ? convertMarkdownToHtml(content) : content

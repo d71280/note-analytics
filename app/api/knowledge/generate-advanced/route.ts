@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 type Platform = 'x' | 'note' | 'wordpress' | 'article'
 
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function fetchRelevantKnowledge(prompt: string): Promise<KnowledgeItem[]> {
-  const supabase = createClient()
+  const supabase = createAdminClient()
   try {
     const keywords = extractKeywords(prompt)
     if (keywords.length === 0) return []

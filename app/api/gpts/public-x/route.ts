@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { autoCleanupOldContents } from '@/lib/utils/auto-cleanup'
 
 // CORS設定
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // 自動削除
     const cleanupResult = await autoCleanupOldContents(supabase)

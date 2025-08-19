@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getXApiConfig } from '@/lib/x-api/config'
 
 export async function POST(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // 現在時刻より前のスケジュールされたツイートを取得
     const now = new Date().toISOString()
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 // キューの状態を取得
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     const { data: stats, error } = await supabase
       .from('tweet_queue')

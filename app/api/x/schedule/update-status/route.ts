@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function PUT(request: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function PUT(request: NextRequest) {
       )
     }
     
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     const updateData: Record<string, string> = {
       status,

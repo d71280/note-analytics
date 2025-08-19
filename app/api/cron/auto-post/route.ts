@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { logger } from '@/lib/logger'
 import { postToXDirect, postToNoteDirect, postToWordPressDirect } from '@/lib/post-to-platforms'
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     logger.info('Auto-post cron job started', { action: 'cron_start' })
     
-    const supabase = createClient()
+    const supabase = createAdminClient()
     const now = new Date()
     const results = {
       processed: 0,
@@ -341,7 +341,7 @@ async function postToWordPress(content: string, metadata?: Record<string, unknow
 // 分析データの記録
 async function recordAnalytics(postId: string, platform: string) {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     await supabase
       .from('analytics')
       .insert({

@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST() {
   try {
     console.log('Auto-setup API called')
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // 環境変数から値を取得（X_API_KEY_SECRETもサポート）
     const xApiKey = process.env.X_API_KEY

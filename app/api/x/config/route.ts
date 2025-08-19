@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // 一時的に認証チェックを無効化（認証システムが実装されるまで）
     // TODO: 認証システム実装後に有効化
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     // 一時的に認証チェックを無効化し、デフォルトユーザーIDを使用
     // TODO: 認証システム実装後に有効化
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE() {
   try {
-    const supabase = createClient()
+    const supabase = createAdminClient()
     
     const { error } = await supabase
       .from('x_api_configs')
