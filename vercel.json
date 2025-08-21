@@ -1,4 +1,8 @@
 {
+  "buildCommand": "npm run build",
+  "env": {
+    "FORCE_REBUILD": "2025-08-21-23:48"
+  },
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 30
