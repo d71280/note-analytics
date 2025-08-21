@@ -21,14 +21,14 @@ export async function OPTIONS() {
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: { id: string } }
 ) {
   try {
-    const resolvedParams = await params
+    const { id } = context.params
     const body = await request.json()
     const { scheduled_for } = body
     
-    console.log('Schedule API called:', { id: resolvedParams.id, scheduled_for, body })
+    console.log('Schedule API called:', { id, scheduled_for, body })
     
     if (!scheduled_for) {
       return NextResponse.json(
@@ -39,15 +39,15 @@ export async function PUT(
     
     const supabase = createAdminClient()
     
-    // \u307e\u305a\u30b3\u30f3\u30c6\u30f3\u30c4\u304c\u5b58\u5728\u3059\u308b\u304b\u78ba\u8a8d
+    // まずコンテンツが存在するか確認
     const { data: existingPost, error: fetchError } = await supabase
       .from('scheduled_posts')
       .select('*')
-      .eq('id', resolvedParams.id)
+      .eq('id', id)
       .single()
     
     if (fetchError || !existingPost) {
-      console.error('Post not found:', { id: resolvedParams.id, error: fetchError })
+      console.error('Post not found:', { id, error: fetchError })
       return NextResponse.json(
         { error: 'Post not found', details: fetchError?.message },
         { status: 404, headers: getCorsHeaders() }
@@ -62,12 +62,12 @@ export async function PUT(
         scheduled_for,
         status: 'pending' // cronジョブが検索するステータス
       })
-      .eq('id', resolvedParams.id)
+      .eq('id', id)
       .select()
       .single()
     
     if (error) {
-      console.error('Failed to schedule content:', { id: resolvedParams.id, error, details: error.message })
+      console.error('Failed to schedule content:', { id, error, details: error.message })
       return NextResponse.json(
         { error: 'Failed to schedule content', details: error.message },
         { status: 500, headers: getCorsHeaders() }
@@ -89,4 +89,19 @@ export async function PUT(
       { status: 500, headers: getCorsHeaders() }
     )
   }
+}
+
+// GETメソッドも追加（デバッグ用）
+export async function GET(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
+  const { id } = context.params
+  return NextResponse.json({ 
+    message: 'Schedule endpoint is working', 
+    id,
+    methods: ['GET', 'PUT', 'OPTIONS']
+  }, {
+    headers: getCorsHeaders()
+  })
 }

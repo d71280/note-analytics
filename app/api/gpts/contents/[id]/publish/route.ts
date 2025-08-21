@@ -21,21 +21,21 @@ export async function OPTIONS() {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: { id: string } }
 ) {
   try {
-    const resolvedParams = await params
+    const { id } = context.params
     const supabase = createAdminClient()
     
     // まずコンテンツが存在するか確認
     const { data: existingPost, error: fetchError } = await supabase
       .from('scheduled_posts')
       .select('*')
-      .eq('id', resolvedParams.id)
+      .eq('id', id)
       .single()
     
     if (fetchError || !existingPost) {
-      console.error('Post not found:', { id: resolvedParams.id, error: fetchError })
+      console.error('Post not found:', { id, error: fetchError })
       return NextResponse.json(
         { error: 'Post not found', details: fetchError?.message },
         { status: 404, headers: getCorsHeaders() }
@@ -51,12 +51,12 @@ export async function POST(
         status: 'published',
         published_at: new Date().toISOString()
       })
-      .eq('id', resolvedParams.id)
+      .eq('id', id)
       .select()
       .single()
     
     if (error) {
-      console.error('Failed to publish content:', { id: resolvedParams.id, error, details: error.message })
+      console.error('Failed to publish content:', { id, error, details: error.message })
       return NextResponse.json(
         { error: 'Failed to publish content', details: error.message },
         { status: 500, headers: getCorsHeaders() }
@@ -81,4 +81,19 @@ export async function POST(
       { status: 500, headers: getCorsHeaders() }
     )
   }
+}
+
+// GETメソッドも追加（デバッグ用）
+export async function GET(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
+  const { id } = context.params
+  return NextResponse.json({ 
+    message: 'Publish endpoint is working', 
+    id,
+    methods: ['GET', 'POST', 'OPTIONS']
+  }, {
+    headers: getCorsHeaders()
+  })
 }
