@@ -14,16 +14,17 @@ function getCorsHeaders() {
 // コンテンツ詳細を取得
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
+    const { id } = context.params
     const supabase = createAdminClient()
     
     // scheduled_postsテーブルから取得
     const { data, error } = await supabase
       .from('scheduled_posts')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
     
     if (error || !data) {
@@ -48,15 +49,18 @@ export async function GET(
 // コンテンツを削除
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
+    const { id } = context.params
+    console.log('Deleting GPTs content:', id)
+    
     const supabase = createAdminClient()
     
     const { error } = await supabase
       .from('scheduled_posts')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
     
     if (error) {
       return NextResponse.json(
@@ -81,9 +85,10 @@ export async function DELETE(
 // コンテンツを更新
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
+    const { id } = context.params
     const body = await request.json()
     const supabase = createAdminClient()
     
@@ -94,7 +99,7 @@ export async function PATCH(
         platform: body.platform,
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
     

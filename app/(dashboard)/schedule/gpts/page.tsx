@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, Clock, Send, Globe, FileText, Twitter, Bot, CheckCircle, AlertCircle } from 'lucide-react'
+import { Calendar, Clock, Send, Globe, FileText, Twitter, Bot, CheckCircle, AlertCircle, Trash2 } from 'lucide-react'
 // import { Tabs } from '@/components/ui/tabs' // 将来の実装用
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -136,22 +136,27 @@ export default function GPTsSchedulePage() {
     }
   }
 
-  // 削除機能（将来の実装用）
-  // const deletePost = async (postId: string) => {
-  //   if (!confirm('この投稿を削除しますか？')) return
-  //
-  //   try {
-  //     const response = await fetch(`/api/gpts/posts/${postId}`, {
-  //       method: 'DELETE'
-  //     })
-  //
-  //     if (response.ok) {
-  //       fetchPosts()
-  //     }
-  //   } catch (error) {
-  //     console.error('Failed to delete post:', error)
-  //   }
-  // }
+  const deletePost = async (postId: string) => {
+    if (!confirm('この投稿を削除しますか？')) return
+
+    try {
+      const response = await fetch(`/api/gpts/contents/${postId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        console.log('Successfully deleted post:', postId)
+        fetchPosts()
+      } else {
+        const error = await response.text()
+        console.error('Failed to delete post:', error)
+        alert('削除に失敗しました')
+      }
+    } catch (error) {
+      console.error('Failed to delete post:', error)
+      alert('削除中にエラーが発生しました')
+    }
+  }
 
   // タイムスロット（将来の実装用）
   // const timeSlots = [
@@ -277,9 +282,19 @@ export default function GPTsSchedulePage() {
                     {post.content}
                   </p>
 
-                  <div className="text-xs text-gray-500 mb-4">
-                    <p>文字数: {post.content.length}/{config.maxLength}</p>
-                    <p>生成: {post.metadata.model}</p>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="text-xs text-gray-500">
+                      <p>文字数: {post.content.length}/{config.maxLength}</p>
+                      <p>生成: {post.metadata.model}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => deletePost(post.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
 
                   {post.status === 'draft' && (
