@@ -83,16 +83,22 @@ export default function GPTsSchedulePage() {
     }
   }
 
-  const schedulePost = async (postId: string, scheduledFor: string) => {
+  const schedulePost = async (postId: string, scheduledFor: string | null) => {
     try {
       const response = await fetch(`/api/gpts/contents/${postId}/schedule`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scheduled_for: scheduledFor })
+        body: JSON.stringify({ 
+          scheduled_for: scheduledFor,
+          status: scheduledFor ? 'pending' : 'draft'  // スケジュール解除時はdraftに戻す
+        })
       })
 
       if (response.ok) {
         fetchPosts()
+      } else {
+        const error = await response.text()
+        console.error('Failed to schedule post:', postId, error)
       }
     } catch (error) {
       console.error('Failed to schedule post:', error)
@@ -330,7 +336,7 @@ export default function GPTsSchedulePage() {
                         size="sm"
                         variant="outline"
                         className="w-full"
-                        onClick={() => schedulePost(post.id, '')}
+                        onClick={() => schedulePost(post.id, null)}
                       >
                         スケジュールを解除
                       </Button>

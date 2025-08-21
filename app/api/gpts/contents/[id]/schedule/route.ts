@@ -26,10 +26,42 @@ export async function PUT(
   try {
     const { id } = context.params
     const body = await request.json()
-    const { scheduled_for } = body
+    const { scheduled_for, status } = body
     
-    console.log('Schedule API called:', { id, scheduled_for, body })
+    console.log('Schedule API called:', { id, scheduled_for, status, body })
     
+    // スケジュール解除の場合
+    if (scheduled_for === null || scheduled_for === '') {
+      const supabase = createAdminClient()
+      
+      const { data, error } = await supabase
+        .from('scheduled_posts')
+        .update({
+          scheduled_for: null,
+          status: 'draft'
+        })
+        .eq('id', id)
+        .select()
+        .single()
+      
+      if (error) {
+        console.error('Failed to unschedule content:', { id, error })
+        return NextResponse.json(
+          { error: 'Failed to unschedule content', details: error.message },
+          { status: 500, headers: getCorsHeaders() }
+        )
+      }
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Schedule removed',
+        data
+      }, {
+        headers: getCorsHeaders()
+      })
+    }
+    
+    // スケジュール設定の場合
     if (!scheduled_for) {
       return NextResponse.json(
         { error: 'scheduled_for is required' },
@@ -60,7 +92,7 @@ export async function PUT(
       .from('scheduled_posts')
       .update({
         scheduled_for,
-        status: 'pending' // cronジョブが検索するステータス
+        status: status || 'pending' // statusが指定されていればそれを使用
       })
       .eq('id', id)
       .select()
