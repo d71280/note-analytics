@@ -49,7 +49,11 @@ export async function GET(request: NextRequest) {
         switch (post.platform) {
           case 'x':
             apiEndpoint = '/api/x/post'
-            requestBody = { text: post.content }
+            // 手動投稿と同じ形式で送信
+            requestBody = { 
+              text: post.content,
+              content: post.content 
+            }
             break
           case 'note':
             apiEndpoint = '/api/note/post'

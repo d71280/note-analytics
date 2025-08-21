@@ -59,18 +59,22 @@ export default function GPTsSchedulePage() {
 
   const fetchPosts = async () => {
     try {
-      let url = '/api/gpts/posts?source=gpts'
+      let url = '/api/gpts/contents'
+      const params = []
       if (selectedPlatform !== 'all') {
-        url += `&platform=${selectedPlatform}`
+        params.push(`platform=${selectedPlatform}`)
       }
       if (selectedStatus !== 'all') {
-        url += `&status=${selectedStatus}`
+        params.push(`status=${selectedStatus}`)
+      }
+      if (params.length > 0) {
+        url += '?' + params.join('&')
       }
 
       const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
-        setPosts(data.posts || [])
+        setPosts(data.contents || [])
       }
     } catch (error) {
       console.error('Failed to fetch posts:', error)
@@ -81,7 +85,7 @@ export default function GPTsSchedulePage() {
 
   const schedulePost = async (postId: string, scheduledFor: string) => {
     try {
-      const response = await fetch(`/api/gpts/posts/${postId}/schedule`, {
+      const response = await fetch(`/api/gpts/contents/${postId}/schedule`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scheduled_for: scheduledFor })
@@ -99,7 +103,7 @@ export default function GPTsSchedulePage() {
     if (!confirm('今すぐ投稿しますか？')) return
 
     try {
-      const response = await fetch(`/api/gpts/posts/${postId}/publish`, {
+      const response = await fetch(`/api/gpts/contents/${postId}/publish`, {
         method: 'POST'
       })
 

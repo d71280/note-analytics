@@ -62,10 +62,17 @@ export async function GET() {
       )
     }
     
-    // GPTs由来のコンテンツのみフィルタリング
-    const gptsContents = contents?.filter(content => 
-      content.metadata?.source === 'gpts'
-    ) || []
+    // GPTs由来のコンテンツのみフィルタリング（universalも含む）
+    const gptsContents = contents?.filter(content => {
+      const source = content.metadata?.source
+      return source === 'gpts' || 
+             source === 'gpts-universal' ||
+             source === 'gpts-note' ||
+             source === 'gpts-x' ||
+             source === 'gpts-wordpress' ||
+             source === 'gpts-multipart' ||
+             (typeof source === 'string' && source.includes('gpts'))
+    }) || []
     
     // データを整形
     const formattedContents = gptsContents.map(content => ({
