@@ -21,14 +21,37 @@ export async function GET() {
     // GPTs由来の投稿を除外（手動でスケジュールした投稿のみ表示）
     const filteredData = (data || []).filter(post => {
       const source = post.metadata?.source
+      
+      // デバッグログ
+      console.log('Post metadata:', {
+        id: post.id,
+        source: source,
+        metadata: post.metadata,
+        platform: post.platform
+      })
+      
       // GPTs関連のソースを除外
       if (source && (
         source.includes('gpts') ||
         source === 'chatgpt' ||
         source === 'openai'
       )) {
+        console.log(`Filtering out GPTs post: ${post.id} (source: ${source})`)
         return false
       }
+      
+      // metadataがない、またはsourceがない場合もGPTs由来の可能性があるのでチェック
+      // contentにGPTs特有のパターンがあるかチェック
+      if (!source && post.content) {
+        // GPTsからの投稿に特有のパターンをチェック
+        if (post.content.includes('GPTs') || 
+            post.content.includes('ChatGPT') ||
+            post.content.includes('AI生成')) {
+          console.log(`Filtering out possible GPTs post by content: ${post.id}`)
+          return false
+        }
+      }
+      
       return true
     })
     
@@ -63,7 +86,10 @@ export async function POST(request: NextRequest) {
         platform,
         scheduled_for: scheduled_for || null,
         status: scheduled_for ? 'pending' : 'draft',
-        metadata: metadata || {}
+        metadata: {
+          ...metadata,
+          source: 'manual' // 手動作成の投稿であることを明示
+        }
       })
       .select()
       .single()
