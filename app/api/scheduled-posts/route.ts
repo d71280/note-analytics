@@ -18,7 +18,21 @@ export async function GET() {
       )
     }
     
-    return NextResponse.json(data || [])
+    // GPTs由来の投稿を除外（手動でスケジュールした投稿のみ表示）
+    const filteredData = (data || []).filter(post => {
+      const source = post.metadata?.source
+      // GPTs関連のソースを除外
+      if (source && (
+        source.includes('gpts') ||
+        source === 'chatgpt' ||
+        source === 'openai'
+      )) {
+        return false
+      }
+      return true
+    })
+    
+    return NextResponse.json(filteredData)
   } catch (error) {
     console.error('Error fetching scheduled posts:', error)
     return NextResponse.json(
