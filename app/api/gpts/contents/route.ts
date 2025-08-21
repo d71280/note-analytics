@@ -62,16 +62,29 @@ export async function GET() {
       )
     }
     
+    // デバッグ: 全コンテンツのソースを確認
+    console.log('All contents sources:', contents?.map(c => ({
+      id: c.id,
+      source: c.metadata?.source,
+      platform: c.platform,
+      hasMetadata: !!c.metadata
+    })))
+    
     // GPTs由来のコンテンツのみフィルタリング（universalも含む）
     const gptsContents = contents?.filter(content => {
       const source = content.metadata?.source
-      return source === 'gpts' || 
+      const isGpts = source === 'gpts' || 
              source === 'gpts-universal' ||
              source === 'gpts-note' ||
              source === 'gpts-x' ||
              source === 'gpts-wordpress' ||
              source === 'gpts-multipart' ||
              (typeof source === 'string' && source.includes('gpts'))
+      
+      if (isGpts) {
+        console.log(`Including GPTs content: ${content.id} (source: ${source})`)
+      }
+      return isGpts
     }) || []
     
     // データを整形
@@ -83,12 +96,15 @@ export async function GET() {
       scheduled_for: content.scheduled_for,
       created_at: content.created_at,
       metadata: {
+        source: content.metadata?.source, // sourceを保持
         title: content.metadata?.title,
         tags: content.metadata?.tags,
         category: content.metadata?.category,
         generatedBy: content.metadata?.generatedBy,
         model: content.metadata?.model,
         prompt: content.metadata?.prompt,
+        receivedAt: content.metadata?.receivedAt,
+        needsScheduling: content.metadata?.needsScheduling
       },
       received_at: content.metadata?.receivedAt || content.created_at
     })) || []
