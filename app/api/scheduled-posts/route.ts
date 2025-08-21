@@ -22,13 +22,6 @@ export async function GET() {
     const filteredData = (data || []).filter(post => {
       const source = post.metadata?.source
       
-      // デバッグログ
-      console.log('Post metadata:', {
-        id: post.id,
-        source: source,
-        metadata: post.metadata,
-        platform: post.platform
-      })
       
       // GPTs関連のソースを除外
       if (source && (
@@ -36,7 +29,6 @@ export async function GET() {
         source === 'chatgpt' ||
         source === 'openai'
       )) {
-        console.log(`Filtering out GPTs post: ${post.id} (source: ${source})`)
         return false
       }
       
@@ -47,7 +39,6 @@ export async function GET() {
         if (post.content.includes('GPTs') || 
             post.content.includes('ChatGPT') ||
             post.content.includes('AI生成')) {
-          console.log(`Filtering out possible GPTs post by content: ${post.id}`)
           return false
         }
       }

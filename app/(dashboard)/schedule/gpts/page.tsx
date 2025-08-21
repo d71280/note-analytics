@@ -50,7 +50,7 @@ export default function GPTsSchedulePage() {
   const [posts, setPosts] = useState<GPTsPost[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'x' | 'note' | 'wordpress'>('all')
-  const [selectedStatus, setSelectedStatus] = useState<'all' | 'draft' | 'pending'>('draft')
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'draft' | 'pending'>('all')
 
   useEffect(() => {
     fetchPosts()

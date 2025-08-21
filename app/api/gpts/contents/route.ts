@@ -20,8 +20,12 @@ export async function OPTIONS() {
 }
 
 // GPTsから受信したコンテンツ一覧を取得
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url)
+    const platform = searchParams.get('platform')
+    const status = searchParams.get('status')
+    
     const supabase = createAdminClient()
     
     // まずscheduled_postsテーブルの存在を確認
@@ -62,16 +66,9 @@ export async function GET() {
       )
     }
     
-    // デバッグ: 全コンテンツのソースを確認
-    console.log('All contents sources:', contents?.map(c => ({
-      id: c.id,
-      source: c.metadata?.source,
-      platform: c.platform,
-      hasMetadata: !!c.metadata
-    })))
     
     // GPTs由来のコンテンツのみフィルタリング（universalも含む）
-    const gptsContents = contents?.filter(content => {
+    let gptsContents = contents?.filter(content => {
       const source = content.metadata?.source
       const isGpts = source === 'gpts' || 
              source === 'gpts-universal' ||
@@ -81,11 +78,18 @@ export async function GET() {
              source === 'gpts-multipart' ||
              (typeof source === 'string' && source.includes('gpts'))
       
-      if (isGpts) {
-        console.log(`Including GPTs content: ${content.id} (source: ${source})`)
-      }
       return isGpts
     }) || []
+    
+    // platformフィルター
+    if (platform && platform !== 'all') {
+      gptsContents = gptsContents.filter(content => content.platform === platform)
+    }
+    
+    // statusフィルター
+    if (status && status !== 'all') {
+      gptsContents = gptsContents.filter(content => content.status === status)
+    }
     
     // データを整形
     const formattedContents = gptsContents.map(content => ({
