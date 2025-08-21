@@ -87,12 +87,16 @@ export default function GPTsSchedulePage() {
     try {
       console.log('Scheduling content:', { postId, scheduledFor })
       
-      const response = await fetch(`/api/gpts/contents/${postId}/schedule`, {
-        method: 'PUT',
+      const response = await fetch('/api/gpts-actions', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          scheduled_for: scheduledFor,
-          status: scheduledFor ? 'pending' : 'draft'  // スケジュール解除時はdraftに戻す
+          action: 'schedule',
+          id: postId,
+          data: {
+            scheduled_for: scheduledFor,
+            status: scheduledFor ? 'pending' : 'draft'  // スケジュール解除時はdraftに戻す
+          }
         })
       })
 
@@ -122,8 +126,13 @@ export default function GPTsSchedulePage() {
     if (!confirm('今すぐ投稿しますか？')) return
 
     try {
-      const response = await fetch(`/api/gpts/contents/${postId}/publish`, {
-        method: 'POST'
+      const response = await fetch('/api/gpts-actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'publish',
+          id: postId
+        })
       })
 
       if (response.ok) {
@@ -140,8 +149,13 @@ export default function GPTsSchedulePage() {
     if (!confirm('この投稿を削除しますか？')) return
 
     try {
-      const response = await fetch(`/api/gpts/contents/${postId}`, {
-        method: 'DELETE'
+      const response = await fetch('/api/gpts-actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'delete',
+          id: postId
+        })
       })
 
       if (response.ok) {
