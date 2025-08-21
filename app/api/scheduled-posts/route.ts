@@ -18,32 +18,13 @@ export async function GET() {
       )
     }
     
-    // GPTs由来の投稿を除外（手動でスケジュールした投稿のみ表示）
+    // 手動で作成された投稿のみ表示（GPTs由来を除外）
     const filteredData = (data || []).filter(post => {
       const source = post.metadata?.source
       
-      
-      // GPTs関連のソースを除外
-      if (source && (
-        source.includes('gpts') ||
-        source === 'chatgpt' ||
-        source === 'openai'
-      )) {
-        return false
-      }
-      
-      // metadataがない、またはsourceがない場合もGPTs由来の可能性があるのでチェック
-      // contentにGPTs特有のパターンがあるかチェック
-      if (!source && post.content) {
-        // GPTsからの投稿に特有のパターンをチェック
-        if (post.content.includes('GPTs') || 
-            post.content.includes('ChatGPT') ||
-            post.content.includes('AI生成')) {
-          return false
-        }
-      }
-      
-      return true
+      // sourceが'manual'の場合のみ含める
+      // sourceが未設定の場合はGPTs由来として除外
+      return source === 'manual'
     })
     
     return NextResponse.json(filteredData)

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API動作確認 - GPTs連携</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #0070f3;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            border-left: 4px solid #0070f3;
+        }
+        button {
+            background: #0070f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0051cc;
+        }
+        .success {
+            color: #10b981;
+            font-weight: bold;
+        }
+        .error {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        .warning {
+            color: #f59e0b;
+            font-weight: bold;
+        }
+        .log {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+        .json-view {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .status-success {
+            background: #10b981;
+        }
+        .status-error {
+            background: #ef4444;
+        }
+        .status-pending {
+            background: #f59e0b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 API動作確認 - GPTs連携</h1>
+        
+        <div class="test-section">
+            <h2>1️⃣ APIエンドポイント確認</h2>
+            <p>各エンドポイントの応答を確認します。</p>
+            <button onclick="checkAllAPIs()">すべてのAPIをチェック</button>
+            <button onclick="checkContentsAPI()">コンテンツ一覧API</button>
+            <button onclick="checkWithFilters()">フィルター付きで確認</button>
+            <div id="apiStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2️⃣ データ詳細</h2>
+            <div id="dataDetails"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3️⃣ デバッグログ</h2>
+            <div id="debugLog" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4️⃣ 問題診断</h2>
+            <div id="diagnosis"></div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'https://note-analytics.vercel.app';
+        
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            let className = '';
+            let prefix = '📝';
+            
+            if (type === 'success') {
+                className = 'success';
+                prefix = '✅';
+            } else if (type === 'error') {
+                className = 'error';
+                prefix = '❌';
+            } else if (type === 'warning') {
+                className = 'warning';
+                prefix = '⚠️';
+            }
+            
+            logElement.innerHTML += `<div class="${className}">[${timestamp}] ${prefix} ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        async function checkContentsAPI() {
+            log('コンテンツ一覧APIを確認中...');
+            const statusDiv = document.getElementById('apiStatus');
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/gpts/contents`, {
+                    mode: 'cors'
+                });
+                
+                log(`Response Status: ${response.status} ${response.statusText}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`取得成功: ${data.total || 0}件のコンテンツ`, 'success');
+                    
+                    // データ詳細を表示
+                    displayDataDetails(data);
+                    
+                    // 診断結果
+                    diagnoseIssues(data);
+                    
+                    statusDiv.innerHTML = `
+                        <p><span class="status-indicator status-success"></span>
+                        <span class="success">APIは正常に動作しています</span></p>
+                        <p>総コンテンツ数: ${data.total || 0}</p>
+                    `;
+                } else {
+                    log(`APIエラー: ${response.status}`, 'error');
+                    statusDiv.innerHTML = `
+                        <p><span class="status-indicator status-error"></span>
+                        <span class="error">APIエラー: ${response.status}</span></p>
+                    `;
+                }
+            } catch (error) {
+                log(`ネットワークエラー: ${error.message}`, 'error');
+                statusDiv.innerHTML = `
+                    <p><span class="status-indicator status-error"></span>
+                    <span class="error">接続エラー: ${error.message}</span></p>
+                `;
+            }
+        }
+
+        async function checkWithFilters() {
+            log('フィルター付きでAPIを確認中...');
+            
+            const filters = [
+                { platform: 'all', status: 'all' },
+                { platform: 'x', status: 'all' },
+                { platform: 'all', status: 'draft' },
+                { platform: 'all', status: 'pending' }
+            ];
+            
+            for (const filter of filters) {
+                const url = `${BASE_URL}/api/gpts/contents?platform=${filter.platform}&status=${filter.status}`;
+                log(`Testing: platform=${filter.platform}, status=${filter.status}`);
+                
+                try {
+                    const response = await fetch(url, { mode: 'cors' });
+                    if (response.ok) {
+                        const data = await response.json();
+                        log(`  → ${data.total || 0}件取得`, 'success');
+                    } else {
+                        log(`  → エラー: ${response.status}`, 'error');
+                    }
+                } catch (error) {
+                    log(`  → 接続エラー: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function checkAllAPIs() {
+            log('すべてのAPIエンドポイントを確認中...');
+            
+            const endpoints = [
+                { name: 'コンテンツ一覧', url: '/api/gpts/contents', method: 'GET' },
+                { name: 'Universal受信', url: '/api/gpts/universal?action=test', method: 'GET' },
+                { name: 'スケジュール投稿一覧', url: '/api/scheduled-posts', method: 'GET' }
+            ];
+            
+            for (const endpoint of endpoints) {
+                log(`Checking: ${endpoint.name} (${endpoint.method} ${endpoint.url})`);
+                
+                try {
+                    const response = await fetch(`${BASE_URL}${endpoint.url}`, {
+                        method: endpoint.method,
+                        mode: 'cors'
+                    });
+                    
+                    if (response.ok) {
+                        log(`  → ${endpoint.name}: OK (${response.status})`, 'success');
+                    } else {
+                        log(`  → ${endpoint.name}: エラー (${response.status})`, 'error');
+                    }
+                } catch (error) {
+                    log(`  → ${endpoint.name}: 接続失敗`, 'error');
+                }
+            }
+        }
+
+        function displayDataDetails(data) {
+            const detailsDiv = document.getElementById('dataDetails');
+            
+            if (!data.contents || data.contents.length === 0) {
+                detailsDiv.innerHTML = '<p class="warning">⚠️ コンテンツが0件です</p>';
+                return;
+            }
+            
+            let html = '<h3>取得したコンテンツ:</h3>';
+            html += '<div class="json-view">';
+            
+            data.contents.forEach((content, index) => {
+                html += `
+<strong>コンテンツ ${index + 1}:</strong>
+- ID: ${content.id}
+- Status: ${content.status}
+- Platform: ${content.platform}
+- Source: ${content.metadata?.source || 'なし'}
+- Created: ${content.created_at}
+- Content: ${content.content?.substring(0, 50)}...
+
+`;
+            });
+            
+            html += '</div>';
+            detailsDiv.innerHTML = html;
+        }
+
+        function diagnoseIssues(data) {
+            const diagnosisDiv = document.getElementById('diagnosis');
+            let issues = [];
+            let suggestions = [];
+            
+            // 問題の診断
+            if (!data.contents || data.contents.length === 0) {
+                issues.push('コンテンツが表示されていません');
+                
+                if (data.total === 0) {
+                    suggestions.push('データベースにGPTsコンテンツが存在しません');
+                    suggestions.push('テストデータを作成してください');
+                } else {
+                    suggestions.push('フィルタリングロジックに問題がある可能性があります');
+                }
+            } else {
+                // コンテンツのソースを確認
+                const sources = data.contents.map(c => c.metadata?.source);
+                const uniqueSources = [...new Set(sources)];
+                
+                if (uniqueSources.length > 0) {
+                    log(`検出されたソース: ${uniqueSources.join(', ')}`, 'info');
+                }
+                
+                // GPTsコンテンツの確認
+                const gptsContents = data.contents.filter(c => {
+                    const source = c.metadata?.source;
+                    return source && source.includes('gpts');
+                });
+                
+                if (gptsContents.length === 0) {
+                    issues.push('GPTs由来のコンテンツが検出されません');
+                    suggestions.push('metadata.sourceが正しく設定されているか確認');
+                }
+            }
+            
+            // 診断結果の表示
+            let html = '<h3>診断結果:</h3>';
+            
+            if (issues.length > 0) {
+                html += '<div class="error">問題点:</div><ul>';
+                issues.forEach(issue => {
+                    html += `<li>${issue}</li>`;
+                });
+                html += '</ul>';
+            } else {
+                html += '<div class="success">✅ 問題は検出されませんでした</div>';
+            }
+            
+            if (suggestions.length > 0) {
+                html += '<div class="warning">推奨アクション:</div><ul>';
+                suggestions.forEach(suggestion => {
+                    html += `<li>${suggestion}</li>`;
+                });
+                html += '</ul>';
+            }
+            
+            diagnosisDiv.innerHTML = html;
+        }
+
+        // ページ読み込み時に自動実行
+        window.onload = function() {
+            log('診断を開始します...', 'info');
+            checkContentsAPI();
+        };
+    </script>
+</body>
+</html>

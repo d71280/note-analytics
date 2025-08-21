@@ -67,18 +67,35 @@ export async function GET(request: Request) {
     }
     
     
-    // GPTs由来のコンテンツのみフィルタリング（universalも含む）
+    // GPTs由来のコンテンツのみフィルタリング
+    // metadata.sourceがない場合もGPTsコンテンツとして扱う（後方互換性）
     let gptsContents = contents?.filter(content => {
       const source = content.metadata?.source
-      const isGpts = source === 'gpts' || 
-             source === 'gpts-universal' ||
-             source === 'gpts-note' ||
-             source === 'gpts-x' ||
-             source === 'gpts-wordpress' ||
-             source === 'gpts-multipart' ||
-             (typeof source === 'string' && source.includes('gpts'))
       
-      return isGpts
+      // sourceが明示的に'manual'の場合は除外
+      if (source === 'manual') {
+        return false
+      }
+      
+      // GPTs関連のソースは含める
+      if (source && (
+        source === 'gpts' || 
+        source === 'gpts-universal' ||
+        source === 'gpts-note' ||
+        source === 'gpts-x' ||
+        source === 'gpts-wordpress' ||
+        source === 'gpts-multipart' ||
+        source.includes('gpts')
+      )) {
+        return true
+      }
+      
+      // sourceが未設定の場合もGPTsコンテンツとして扱う
+      if (!source) {
+        return true
+      }
+      
+      return false
     }) || []
     
     // platformフィルター
