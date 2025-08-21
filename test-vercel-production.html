@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vercel本番環境テスト - GPTs連携</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #0070f3;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            border-left: 4px solid #0070f3;
+        }
+        button {
+            background: #0070f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0051cc;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .success {
+            color: #10b981;
+            font-weight: bold;
+        }
+        .error {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        .log {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .content-list {
+            list-style: none;
+            padding: 0;
+        }
+        .content-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #e5e7eb;
+        }
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-draft {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-published {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        input[type="datetime-local"] {
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Vercel本番環境テスト - GPTs連携</h1>
+        
+        <div class="test-section">
+            <h2>1️⃣ テストデータ作成</h2>
+            <p>GPTs連携用のテストコンテンツを作成します。</p>
+            <button onclick="createTestData()">テストデータ作成</button>
+            <button onclick="fetchContents()">コンテンツ一覧を取得</button>
+            <div id="createLog" class="log" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2️⃣ コンテンツ一覧</h2>
+            <div id="contentsList"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3️⃣ 動作テスト結果</h2>
+            <div id="testResults"></div>
+        </div>
+    </div>
+
+    <script>
+        // 本番環境のURLを設定
+        const BASE_URL = 'https://note-analytics.vercel.app';
+        let currentContents = [];
+
+        function log(message, elementId = 'createLog', isError = false) {
+            const logElement = document.getElementById(elementId);
+            logElement.style.display = 'block';
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            const className = isError ? 'error' : '';
+            logElement.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        async function createTestData() {
+            log('テストデータ作成開始...');
+            
+            const testContents = [
+                '【Vercelテスト1】本番環境での動作確認。スケジュール機能が正常に動作するか検証中。#VercelTest',
+                '【Vercelテスト2】GPTs連携からのコンテンツ受信テスト。削除機能も含めて確認します。',
+                '【Vercelテスト3】すべての機能が本番環境で正常動作することを確認。'
+            ];
+
+            for (const content of testContents) {
+                try {
+                    const url = `${BASE_URL}/api/gpts/universal?action=save&content=${encodeURIComponent(content)}&platform=x`;
+                    log(`送信中: ${content.substring(0, 30)}...`);
+                    
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        mode: 'cors'
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        log(`✅ 作成成功: ID=${data.contentId}`, 'createLog', false);
+                    } else {
+                        log(`❌ 作成失敗: ${response.status} ${response.statusText}`, 'createLog', true);
+                    }
+                } catch (error) {
+                    log(`❌ エラー: ${error.message}`, 'createLog', true);
+                }
+            }
+            
+            log('テストデータ作成完了！');
+            setTimeout(fetchContents, 1000);
+        }
+
+        async function fetchContents() {
+            try {
+                const response = await fetch(`${BASE_URL}/api/gpts/contents`, {
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentContents = data.contents || [];
+                    displayContents(currentContents);
+                    
+                    const results = document.getElementById('testResults');
+                    results.innerHTML = `
+                        <p class="success">✅ GPTsコンテンツ取得成功: ${currentContents.length}件</p>
+                    `;
+                } else {
+                    throw new Error(`Failed to fetch: ${response.status}`);
+                }
+            } catch (error) {
+                const results = document.getElementById('testResults');
+                results.innerHTML = `<p class="error">❌ 取得失敗: ${error.message}</p>`;
+            }
+        }
+
+        function displayContents(contents) {
+            const listElement = document.getElementById('contentsList');
+            
+            if (contents.length === 0) {
+                listElement.innerHTML = '<p>コンテンツがありません</p>';
+                return;
+            }
+
+            let html = '<ul class="content-list">';
+            contents.forEach((content, index) => {
+                const statusClass = `status-${content.status}`;
+                const scheduledDate = content.scheduled_for ? 
+                    new Date(content.scheduled_for).toLocaleString('ja-JP') : '未設定';
+                
+                html += `
+                    <li class="content-item">
+                        <div class="content-header">
+                            <strong>投稿 ${index + 1}</strong>
+                            <span class="status-badge ${statusClass}">${content.status}</span>
+                        </div>
+                        <p>${content.content.substring(0, 100)}...</p>
+                        <div style="margin-top: 10px;">
+                            <small>スケジュール: ${scheduledDate}</small>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <input type="datetime-local" id="schedule-${content.id}" />
+                            <button onclick="scheduleContent('${content.id}')">スケジュール設定</button>
+                            <button onclick="unscheduleContent('${content.id}')">スケジュール解除</button>
+                            <button onclick="deleteContent('${content.id}')" style="background: #ef4444;">削除</button>
+                        </div>
+                        <div id="result-${content.id}" style="margin-top: 10px;"></div>
+                    </li>
+                `;
+            });
+            html += '</ul>';
+            listElement.innerHTML = html;
+        }
+
+        async function scheduleContent(contentId) {
+            const inputElement = document.getElementById(`schedule-${contentId}`);
+            const scheduledFor = inputElement.value;
+            
+            if (!scheduledFor) {
+                alert('日時を選択してください');
+                return;
+            }
+
+            const resultElement = document.getElementById(`result-${contentId}`);
+            resultElement.innerHTML = '<p>処理中...</p>';
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/gpts/contents/${contentId}/schedule`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    mode: 'cors',
+                    body: JSON.stringify({
+                        scheduled_for: new Date(scheduledFor).toISOString(),
+                        status: 'pending'
+                    })
+                });
+
+                if (response.ok) {
+                    resultElement.innerHTML = '<p class="success">✅ スケジュール設定成功</p>';
+                    setTimeout(fetchContents, 1000);
+                } else {
+                    const error = await response.text();
+                    resultElement.innerHTML = `<p class="error">❌ 設定失敗: ${error}</p>`;
+                }
+            } catch (error) {
+                resultElement.innerHTML = `<p class="error">❌ エラー: ${error.message}</p>`;
+            }
+        }
+
+        async function unscheduleContent(contentId) {
+            const resultElement = document.getElementById(`result-${contentId}`);
+            resultElement.innerHTML = '<p>処理中...</p>';
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/gpts/contents/${contentId}/schedule`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    mode: 'cors',
+                    body: JSON.stringify({
+                        scheduled_for: null,
+                        status: 'draft'
+                    })
+                });
+
+                if (response.ok) {
+                    resultElement.innerHTML = '<p class="success">✅ スケジュール解除成功</p>';
+                    setTimeout(fetchContents, 1000);
+                } else {
+                    const error = await response.text();
+                    resultElement.innerHTML = `<p class="error">❌ 解除失敗: ${error}</p>`;
+                }
+            } catch (error) {
+                resultElement.innerHTML = `<p class="error">❌ エラー: ${error.message}</p>`;
+            }
+        }
+
+        async function deleteContent(contentId) {
+            if (!confirm('このコンテンツを削除しますか？')) return;
+
+            const resultElement = document.getElementById(`result-${contentId}`);
+            resultElement.innerHTML = '<p>削除中...</p>';
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/gpts/contents/${contentId}`, {
+                    method: 'DELETE',
+                    mode: 'cors'
+                });
+
+                if (response.ok) {
+                    resultElement.innerHTML = '<p class="success">✅ 削除成功</p>';
+                    setTimeout(fetchContents, 1000);
+                } else {
+                    const error = await response.text();
+                    resultElement.innerHTML = `<p class="error">❌ 削除失敗: ${error}</p>`;
+                }
+            } catch (error) {
+                resultElement.innerHTML = `<p class="error">❌ エラー: ${error.message}</p>`;
+            }
+        }
+
+        // ページ読み込み時に一覧を取得
+        window.onload = function() {
+            fetchContents();
+        };
+    </script>
+</body>
+</html>
