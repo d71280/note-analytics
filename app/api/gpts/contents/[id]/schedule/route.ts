@@ -21,13 +21,14 @@ export async function OPTIONS() {
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params
     const body = await request.json()
     const { scheduled_for } = body
     
-    console.log('Schedule API called:', { id: params.id, scheduled_for, body })
+    console.log('Schedule API called:', { id: resolvedParams.id, scheduled_for, body })
     
     if (!scheduled_for) {
       return NextResponse.json(
@@ -42,11 +43,11 @@ export async function PUT(
     const { data: existingPost, error: fetchError } = await supabase
       .from('scheduled_posts')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single()
     
     if (fetchError || !existingPost) {
-      console.error('Post not found:', { id: params.id, error: fetchError })
+      console.error('Post not found:', { id: resolvedParams.id, error: fetchError })
       return NextResponse.json(
         { error: 'Post not found', details: fetchError?.message },
         { status: 404, headers: getCorsHeaders() }
@@ -61,12 +62,12 @@ export async function PUT(
         scheduled_for,
         status: 'pending' // cronジョブが検索するステータス
       })
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .select()
       .single()
     
     if (error) {
-      console.error('Failed to schedule content:', { id: params.id, error, details: error.message })
+      console.error('Failed to schedule content:', { id: resolvedParams.id, error, details: error.message })
       return NextResponse.json(
         { error: 'Failed to schedule content', details: error.message },
         { status: 500, headers: getCorsHeaders() }

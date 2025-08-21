@@ -1,25 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+// CORS設定
+function getCorsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+  }
+}
+
+// OPTIONS メソッド - プリフライトリクエストに対応
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: getCorsHeaders(),
+  })
+}
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params
     const supabase = createAdminClient()
     
     // まずコンテンツが存在するか確認
     const { data: existingPost, error: fetchError } = await supabase
       .from('scheduled_posts')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single()
     
     if (fetchError || !existingPost) {
-      console.error('Post not found:', { id: params.id, error: fetchError })
+      console.error('Post not found:', { id: resolvedParams.id, error: fetchError })
       return NextResponse.json(
         { error: 'Post not found', details: fetchError?.message },
-        { status: 404 }
+        { status: 404, headers: getCorsHeaders() }
       )
     }
     
@@ -32,15 +51,15 @@ export async function POST(
         status: 'published',
         published_at: new Date().toISOString()
       })
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .select()
       .single()
     
     if (error) {
-      console.error('Failed to publish content:', { id: params.id, error, details: error.message })
+      console.error('Failed to publish content:', { id: resolvedParams.id, error, details: error.message })
       return NextResponse.json(
         { error: 'Failed to publish content', details: error.message },
-        { status: 500 }
+        { status: 500, headers: getCorsHeaders() }
       )
     }
     
@@ -52,12 +71,14 @@ export async function POST(
     return NextResponse.json({
       success: true,
       data
+    }, {
+      headers: getCorsHeaders()
     })
   } catch (error) {
     console.error('Publish error:', error)
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { status: 500, headers: getCorsHeaders() }
     )
   }
 }
