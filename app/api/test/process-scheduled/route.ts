@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // テスト用：認証なしでスケジュール投稿を処理
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('🔄 スケジュール投稿の処理を開始...')
     
