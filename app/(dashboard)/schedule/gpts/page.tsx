@@ -85,6 +85,8 @@ export default function GPTsSchedulePage() {
 
   const schedulePost = async (postId: string, scheduledFor: string | null) => {
     try {
+      console.log('Scheduling content:', { postId, scheduledFor })
+      
       const response = await fetch(`/api/gpts/contents/${postId}/schedule`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -95,13 +97,24 @@ export default function GPTsSchedulePage() {
       })
 
       if (response.ok) {
+        const result = await response.json()
+        console.log('Schedule success:', result)
         fetchPosts()
       } else {
-        const error = await response.text()
-        console.error('Failed to schedule post:', postId, error)
+        let errorMessage = `Status: ${response.status}`
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+          console.error('Failed to parse error response:', errorData)
+        } catch (e) {
+          console.error('Failed to parse error response:', e)
+        }
+        console.error('Failed to schedule content:', postId, errorMessage)
+        alert(`スケジュール設定に失敗しました: ${errorMessage}`)
       }
     } catch (error) {
       console.error('Failed to schedule post:', error)
+      alert('エラーが発生しました。もう一度お試しください。')
     }
   }
 
