@@ -62,6 +62,7 @@ export default function ScheduledPostsPage() {
   const [editContent, setEditContent] = useState('')
   const [editScheduledTime, setEditScheduledTime] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isContentOnlyEdit, setIsContentOnlyEdit] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isPosting, setIsPosting] = useState<string | null>(null)
   const [isDeletingFailed, setIsDeletingFailed] = useState(false)
@@ -104,6 +105,16 @@ export default function ScheduledPostsPage() {
     // 日時をローカルフォーマットに変換
     const localDateTime = new Date(scheduledTime).toISOString().slice(0, 16)
     setEditScheduledTime(localDateTime)
+    setIsContentOnlyEdit(false)
+    setIsDialogOpen(true)
+  }
+
+  const handleEditContent = (post: ScheduledPost) => {
+    setEditingPost(post)
+    setEditContent(post.content)
+    // 下書きの編集では時刻設定は不要
+    setEditScheduledTime('')
+    setIsContentOnlyEdit(true)
     setIsDialogOpen(true)
   }
 
@@ -113,12 +124,19 @@ export default function ScheduledPostsPage() {
     setIsSaving(true)
     try {
       // 更新用のデータを準備
-      const updateData = {
+      const updateData: any = {
         id: editingPost.id,
         content: editContent,
-        scheduled_for: new Date(editScheduledTime).toISOString(),
+        status: editingPost.status
+      }
+      
+      // スケジュール登録モードの場合のみ時刻を設定
+      if (!isContentOnlyEdit && editScheduledTime) {
+        updateData.scheduled_for = new Date(editScheduledTime).toISOString()
         // 下書きからスケジュール登録する場合は、statusをpendingに変更
-        status: editingPost.status === 'draft' ? 'pending' : editingPost.status
+        if (editingPost.status === 'draft') {
+          updateData.status = 'pending'
+        }
       }
 
       const response = await fetch('/api/scheduled-posts/update', {
@@ -791,16 +809,27 @@ export default function ScheduledPostsPage() {
                             {(post.status === 'pending' || post.status === 'draft' || post.status === 'scheduled') ? (
                               <div className="flex gap-1 ml-2 flex-shrink-0">
                                 {post.status === 'draft' && (
-                                  <Button
-                                    size="sm"
-                                    variant="default"
-                                    onClick={() => handleEdit(post)}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                                    title="スケジュール登録"
-                                  >
-                                    <CalendarPlus className="h-4 w-4 mr-1" />
-                                    スケジュール登録
-                                  </Button>
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleEditContent(post)}
+                                      title="文章を編集"
+                                    >
+                                      <Edit className="h-4 w-4 mr-1" />
+                                      編集
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      onClick={() => handleEdit(post)}
+                                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                                      title="スケジュール登録"
+                                    >
+                                      <CalendarPlus className="h-4 w-4 mr-1" />
+                                      スケジュール登録
+                                    </Button>
+                                  </>
                                 )}
                                 <Button
                                   size="sm"
@@ -864,12 +893,18 @@ export default function ScheduledPostsPage() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">
-              {editingPost?.status === 'draft' ? 'スケジュール登録' : '投稿を編集'}
+              {isContentOnlyEdit 
+                ? '下書きを編集' 
+                : editingPost?.status === 'draft' 
+                  ? 'スケジュール登録' 
+                  : '投稿を編集'}
             </DialogTitle>
             <DialogDescription>
-              {editingPost?.status === 'draft' 
-                ? '投稿時刻を設定してスケジュール登録します'
-                : '内容を編集して保存してください'}
+              {isContentOnlyEdit
+                ? '投稿内容を編集して保存してください'
+                : editingPost?.status === 'draft' 
+                  ? '投稿時刻を設定してスケジュール登録します'
+                  : '内容を編集して保存してください'}
             </DialogDescription>
           </DialogHeader>
           {editingPost && (
@@ -893,20 +928,22 @@ export default function ScheduledPostsPage() {
               </div>
               
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="scheduled-time">投稿予定時刻</Label>
-                  <Input
-                    id="scheduled-time"
-                    type="datetime-local"
-                    value={editScheduledTime}
-                    onChange={(e) => setEditScheduledTime(e.target.value)}
-                    min={new Date().toISOString().slice(0, 16)}
-                    className="mt-1"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    現在より後の時刻を選択してください
-                  </p>
-                </div>
+                {!isContentOnlyEdit && (
+                  <div>
+                    <Label htmlFor="scheduled-time">投稿予定時刻</Label>
+                    <Input
+                      id="scheduled-time"
+                      type="datetime-local"
+                      value={editScheduledTime}
+                      onChange={(e) => setEditScheduledTime(e.target.value)}
+                      min={new Date().toISOString().slice(0, 16)}
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      現在より後の時刻を選択してください
+                    </p>
+                  </div>
+                )}
                 
                 <div>
                   <Label htmlFor="content">投稿内容</Label>
