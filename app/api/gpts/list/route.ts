@@ -6,12 +6,19 @@ export async function GET() {
   try {
     const supabase = createAdminClient()
     
-    // scheduled_postsテーブルから最新500件を取得
-    const { data, error } = await supabase
+    // scheduled_postsテーブルから全てのコンテンツを取得し、後でフィルタリング
+    const { data: allData, error } = await supabase
       .from('scheduled_posts')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(500)
+    
+    // GPTs由来のコンテンツのみフィルタリング
+    const data = allData?.filter(post => {
+      const source = post.metadata?.source
+      // manualソース以外、またはsourceが未定義のものを含める
+      return source !== 'manual'
+    }) || []
     
     if (error) {
       console.error('Failed to fetch posts:', error)
