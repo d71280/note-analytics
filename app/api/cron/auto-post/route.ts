@@ -231,9 +231,28 @@ export async function GET(request: NextRequest) {
 // X（Twitter）への投稿
 async function postToX(content: string, metadata?: Record<string, unknown>) {
   try {
-    // 直接postToXDirect関数を使う
-    const result = await postToXDirect(content, metadata)
-    return result
+    // 内部APIエンドポイントを使用（本番環境で実績あり）
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3005'
+    
+    const response = await fetch(`${baseUrl}/api/x/post`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: content,
+        postType: 'scheduled',
+        metadata
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      return { success: true, postId: data.tweetId }
+    } else {
+      const error = await response.json()
+      return { success: false, error: error.error || 'Failed to post to X' }
+    }
   } catch (error) {
     logger.error('Failed to post to X', error)
     return { success: false, error: error instanceof Error ? error.message : 'Network error' }

@@ -51,7 +51,28 @@ async function processScheduledPosts() {
         
         switch (post.platform) {
           case 'x':
-            result = await postToXDirect(post.content, post.metadata)
+            // 内部APIエンドポイントを使用（本番環境で実績あり）
+            const baseUrl = process.env.VERCEL_URL 
+              ? `https://${process.env.VERCEL_URL}`
+              : 'http://localhost:3005'
+            
+            const response = await fetch(`${baseUrl}/api/x/post`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                text: post.content,
+                postType: 'scheduled',
+                metadata: post.metadata
+              })
+            })
+
+            if (response.ok) {
+              const data = await response.json()
+              result = { success: true, postId: data.tweetId }
+            } else {
+              const error = await response.json()
+              result = { success: false, error: error.error || 'Failed to post' }
+            }
             break
           case 'note':
             result = await postToNoteDirect(post.content, post.metadata)
