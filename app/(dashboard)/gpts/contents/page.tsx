@@ -288,13 +288,9 @@ export default function GPTsContentsPage() {
     if (!confirm('このコンテンツを削除しますか？')) return
 
     try {
-      const response = await fetch('/api/gpts-actions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'delete',
-          id: contentId
-        })
+      const response = await fetch(`/api/scheduled-posts/delete?id=${contentId}`, {
+        method: 'DELETE',
+        credentials: 'include'
       })
 
       if (response.ok) {
