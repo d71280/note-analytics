@@ -1,5 +1,6 @@
 import { Header } from '@/components/layout/header'
 import { Sidebar } from '@/components/layout/sidebar'
+import { AutoScheduler } from '@/components/auto-scheduler'
 
 export default function DashboardLayout({
   children,
@@ -8,6 +9,7 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="flex h-screen">
+      <AutoScheduler />
       <Sidebar />
       <div className="flex flex-1 flex-col">
         <Header />
