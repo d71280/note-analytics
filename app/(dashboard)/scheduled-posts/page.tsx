@@ -66,7 +66,7 @@ export default function ScheduledPostsPage() {
   const [isDeletingFailed, setIsDeletingFailed] = useState(false)
   const [selectedPosts, setSelectedPosts] = useState<Set<string>>(new Set())
   const [isDeletingSelected, setIsDeletingSelected] = useState(false)
-  const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending')
+  const [activeTab, setActiveTab] = useState<'draft' | 'pending' | 'completed'>('draft')
 
   useEffect(() => {
     fetchScheduledPosts()
@@ -319,8 +319,10 @@ export default function ScheduledPostsPage() {
     
     // タブに応じてフィルタリング
     const filteredPosts = posts.filter(post => {
-      if (activeTab === 'pending') {
-        return post.status === 'pending' || post.status === 'draft' || post.status === 'scheduled'
+      if (activeTab === 'draft') {
+        return post.status === 'draft'
+      } else if (activeTab === 'pending') {
+        return post.status === 'pending' || post.status === 'scheduled'
       } else {
         return post.status === 'posted' || post.status === 'failed'
       }
@@ -346,8 +348,9 @@ export default function ScheduledPostsPage() {
   const groupedPosts = groupPostsByPlatform()
   
   // 各タブの投稿数を計算
+  const draftCount = posts.filter(post => post.status === 'draft').length
   const pendingCount = posts.filter(post => 
-    post.status === 'pending' || post.status === 'draft' || post.status === 'scheduled'
+    post.status === 'pending' || post.status === 'scheduled'
   ).length
   const completedCount = posts.filter(post => 
     post.status === 'posted' || post.status === 'failed'
@@ -423,6 +426,22 @@ export default function ScheduledPostsPage() {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             <button
+              onClick={() => setActiveTab('draft')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                activeTab === 'draft'
+                  ? 'border-gray-500 text-gray-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Edit className="h-4 w-4" />
+              下書き
+              {draftCount > 0 && (
+                <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                  {draftCount}
+                </span>
+              )}
+            </button>
+            <button
               onClick={() => setActiveTab('pending')}
               className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                 activeTab === 'pending'
@@ -464,19 +483,27 @@ export default function ScheduledPostsPage() {
             <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-lg text-gray-600">スケジュールされた投稿はありません</p>
             <p className="text-sm text-gray-500 mt-2">
-              GPTs連携ページから投稿をスケジュールしてください
+              GPTsから投稿を送信してください
             </p>
           </CardContent>
         </Card>
       ) : Object.values(groupedPosts).every(posts => posts.length === 0) ? (
         <Card className="text-center py-12">
           <CardContent>
-            {activeTab === 'pending' ? (
+            {activeTab === 'draft' ? (
+              <>
+                <Edit className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-lg text-gray-600">下書きはありません</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  GPTsから受信したコンテンツがここに表示されます
+                </p>
+              </>
+            ) : activeTab === 'pending' ? (
               <>
                 <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-lg text-gray-600">投稿待ちの投稿はありません</p>
                 <p className="text-sm text-gray-500 mt-2">
-                  スケジュールされた投稿がここに表示されます
+                  スケジュール設定済みの投稿がここに表示されます
                 </p>
               </>
             ) : (
