@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getXApiConfig } from '@/lib/x-api/config'
 import OAuth from 'oauth-1.0a'
 import crypto from 'crypto'
@@ -72,7 +72,7 @@ export async function postToXDirect(content: string, metadata?: Record<string, u
         : 'https://twitter.com'
 
       // 成功を記録
-      const supabase = createClient()
+      const supabase = createAdminClient()
       await supabase
         .from('analytics')
         .insert({
