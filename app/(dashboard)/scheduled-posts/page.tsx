@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Calendar, Clock, Edit, Trash2, Save, X as XIcon, Twitter, FileText, Globe, Loader2, Send, CheckSquare, Square, CalendarPlus } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
@@ -67,6 +67,9 @@ export default function ScheduledPostsPage() {
   const [selectedPosts, setSelectedPosts] = useState<Set<string>>(new Set())
   const [isDeletingSelected, setIsDeletingSelected] = useState(false)
   const [activeTab, setActiveTab] = useState<'draft' | 'pending' | 'completed'>('draft')
+  const [isBulkScheduling, setIsBulkScheduling] = useState(false)
+  const [bulkScheduleTime, setBulkScheduleTime] = useState('')
+  const [bulkInterval, setBulkInterval] = useState(60) // 分単位
 
   useEffect(() => {
     fetchScheduledPosts()
@@ -110,7 +113,9 @@ export default function ScheduledPostsPage() {
       const updateData = {
         id: editingPost.id,
         content: editContent,
-        scheduled_for: new Date(editScheduledTime).toISOString()
+        scheduled_for: new Date(editScheduledTime).toISOString(),
+        // 下書きからスケジュール登録する場合は、statusをpendingに変更
+        status: editingPost.status === 'draft' ? 'pending' : editingPost.status
       }
 
       const response = await fetch('/api/scheduled-posts/update', {
@@ -222,6 +227,51 @@ export default function ScheduledPostsPage() {
     setSelectedPosts(newSelected)
   }
 
+
+  const handleBulkSchedule = async () => {
+    const draftPosts = posts.filter(p => p.status === 'draft' && selectedPosts.has(p.id))
+    
+    if (draftPosts.length === 0) {
+      alert('スケジュール登録する下書きを選択してください')
+      return
+    }
+
+    if (!bulkScheduleTime) {
+      alert('開始時刻を設定してください')
+      return
+    }
+
+    setIsBulkScheduling(true)
+    try {
+      const startTime = new Date(bulkScheduleTime)
+      
+      for (let i = 0; i < draftPosts.length; i++) {
+        const post = draftPosts[i]
+        const scheduledTime = new Date(startTime.getTime() + i * bulkInterval * 60000)
+        
+        const updateData = {
+          id: post.id,
+          scheduled_for: scheduledTime.toISOString(),
+          status: 'pending'
+        }
+
+        await fetch('/api/scheduled-posts/update', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData)
+        })
+      }
+
+      await fetchScheduledPosts()
+      setSelectedPosts(new Set())
+      alert(`${draftPosts.length}件の投稿をスケジュール登録しました`)
+    } catch (error) {
+      console.error('Failed to bulk schedule:', error)
+      alert('一括スケジュール登録に失敗しました')
+    } finally {
+      setIsBulkScheduling(false)
+    }
+  }
 
   const handleDeleteSelected = async () => {
     if (selectedPosts.size === 0) {
@@ -370,6 +420,72 @@ export default function ScheduledPostsPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            {activeTab === 'draft' && selectedPosts.size > 0 && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="default"
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <CalendarPlus className="mr-2 h-4 w-4" />
+                    選択した{selectedPosts.size}件を一括スケジュール
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>一括スケジュール登録</DialogTitle>
+                    <DialogDescription>
+                      選択した投稿を指定間隔でスケジュール登録します
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-4">
+                    <div>
+                      <Label htmlFor="bulk-start-time">開始時刻</Label>
+                      <Input
+                        id="bulk-start-time"
+                        type="datetime-local"
+                        value={bulkScheduleTime}
+                        onChange={(e) => setBulkScheduleTime(e.target.value)}
+                        min={new Date().toISOString().slice(0, 16)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="bulk-interval">投稿間隔（分）</Label>
+                      <Input
+                        id="bulk-interval"
+                        type="number"
+                        value={bulkInterval}
+                        onChange={(e) => setBulkInterval(parseInt(e.target.value) || 60)}
+                        min={1}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        例: 60 = 1時間間隔、30 = 30分間隔
+                      </p>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        onClick={handleBulkSchedule}
+                        disabled={isBulkScheduling || !bulkScheduleTime}
+                      >
+                        {isBulkScheduling ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            登録中...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            スケジュール登録
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
             {selectedPosts.size > 0 && (
               <Button
                 onClick={handleDeleteSelected}
