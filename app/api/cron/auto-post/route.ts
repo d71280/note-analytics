@@ -96,8 +96,8 @@ export async function GET(request: NextRequest) {
           
           switch (post.platform) {
             case 'x':
-              // 直接関数を呼び出す（内部API経由ではなく）
-              postResult = await postToXDirect(post.content, post.metadata)
+              // 内部API経由で投稿（環境変数の問題を回避）
+              postResult = await postToX(post.content, post.metadata)
               break
             case 'note':
               postResult = await postToNoteDirect(post.content, post.metadata)
@@ -228,41 +228,15 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// X（Twitter）への投稿（現在は未使用、直接関数を使用）
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// X（Twitter）への投稿
 async function postToX(content: string, metadata?: Record<string, unknown>) {
   try {
-    // Vercel環境での内部API呼び出しは、同じプロセス内で実行
-    // 本番環境では絶対URLを使用
-    const isProduction = process.env.NODE_ENV === 'production'
-    const baseUrl = isProduction 
-      ? 'https://note-analytics.vercel.app'
-      : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000')
-    
-    logger.debug('postToX: Using base URL', { 
-      metadata: { baseUrl, NODE_ENV: process.env.NODE_ENV }
-    })
-    
-    const response = await fetch(`${baseUrl}/api/x/post`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: content,
-        postType: 'scheduled',
-        metadata
-      })
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      return { success: true, postId: data.tweetId }
-    } else {
-      const error = await response.json()
-      return { success: false, error: error.error || 'Failed to post to X' }
-    }
+    // 直接postToXDirect関数を使う
+    const result = await postToXDirect(content, metadata)
+    return result
   } catch (error) {
     logger.error('Failed to post to X', error)
-    return { success: false, error: 'Network error' }
+    return { success: false, error: error instanceof Error ? error.message : 'Network error' }
   }
 }
 

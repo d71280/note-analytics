@@ -34,10 +34,17 @@ export function getXApiConfig() {
   // どちらの認証情報もない場合
   const missing = []
   if (!apiKey) missing.push('X_API_KEY')
-  if (!apiSecret) missing.push('X_API_SECRET')
+  if (!apiSecret) missing.push('X_API_SECRET or X_API_KEY_SECRET')
   if (!accessToken) missing.push('X_ACCESS_TOKEN')
   if (!accessTokenSecret) missing.push('X_ACCESS_TOKEN_SECRET')
   
+  console.error('Missing X API credentials:', {
+    apiKey: !!apiKey,
+    apiSecret: !!apiSecret,
+    accessToken: !!accessToken,
+    accessTokenSecret: !!accessTokenSecret,
+    env: process.env.NODE_ENV
+  })
   
   throw new Error(`X API認証情報が設定されていません。ツイート投稿には以下が必要です: ${missing.join(', ')}`)
 }
