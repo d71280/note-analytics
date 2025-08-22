@@ -231,28 +231,64 @@ export async function GET(request: NextRequest) {
 // X（Twitter）への投稿
 async function postToX(content: string, metadata?: Record<string, unknown>) {
   try {
-    // 内部APIエンドポイントを使用（本番環境で実績あり）
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3005'
+    // 方法1: 直接TwitterApiクライアントを使用
+    const { TwitterApi } = require('twitter-api-v2')
     
-    const response = await fetch(`${baseUrl}/api/x/post`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: content,
-        postType: 'scheduled',
-        metadata
-      })
+    // 環境変数を明示的に読み込み
+    const apiKey = process.env.X_API_KEY
+    const apiKeySecret = process.env.X_API_SECRET
+    const accessToken = process.env.X_ACCESS_TOKEN
+    const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET
+    
+    logger.info('X API credentials check', {
+      hasApiKey: !!apiKey,
+      hasApiKeySecret: !!apiKeySecret,
+      hasAccessToken: !!accessToken,
+      hasAccessTokenSecret: !!accessTokenSecret
     })
+    
+    if (!apiKey || !apiKeySecret || !accessToken || !accessTokenSecret) {
+      // 認証情報が不足している場合は、内部APIエンドポイントを使用
+      logger.warning('Missing X API credentials, falling back to internal API')
+      
+      const baseUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}`
+        : 'http://localhost:3005'
+      
+      const response = await fetch(`${baseUrl}/api/x/post`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: content,
+          postType: 'scheduled',
+          metadata
+        })
+      })
 
-    if (response.ok) {
-      const data = await response.json()
-      return { success: true, postId: data.tweetId }
-    } else {
-      const error = await response.json()
-      return { success: false, error: error.error || 'Failed to post to X' }
+      if (response.ok) {
+        const data = await response.json()
+        return { success: true, postId: data.tweetId }
+      } else {
+        const error = await response.json()
+        return { success: false, error: error.error || 'Failed to post to X' }
+      }
     }
+    
+    // 直接クライアントを作成して投稿
+    const client = new TwitterApi({
+      appKey: apiKey,
+      appSecret: apiKeySecret,
+      accessToken: accessToken,
+      accessSecret: accessTokenSecret,
+    })
+    
+    const tweet = await client.v2.tweet(content)
+    
+    logger.info('Successfully posted to X directly', {
+      tweetId: tweet.data.id
+    })
+    
+    return { success: true, postId: tweet.data.id }
   } catch (error) {
     logger.error('Failed to post to X', error)
     return { success: false, error: error instanceof Error ? error.message : 'Network error' }
