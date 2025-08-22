@@ -218,12 +218,16 @@ export default function GPTsContentsPage() {
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), 10000) // 10秒タイムアウト
             
-            const response = await fetch(`/api/gpts/contents/${contentId}/schedule`, {
+            const response = await fetch('/api/gpts-actions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
-                scheduledFor,
-                intervalMinutes: contentIds.indexOf(contentId) * intervalMinutes 
+                action: 'schedule',
+                id: contentId,
+                data: {
+                  scheduled_for: scheduledFor,
+                  status: 'pending'
+                }
               }),
               signal: controller.signal
             })
@@ -284,15 +288,26 @@ export default function GPTsContentsPage() {
     if (!confirm('このコンテンツを削除しますか？')) return
 
     try {
-      const response = await fetch(`/api/gpts/contents/${contentId}`, {
-        method: 'DELETE'
+      const response = await fetch('/api/gpts-actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'delete',
+          id: contentId
+        })
       })
 
       if (response.ok) {
         fetchContents()
+        fetchStats()
+      } else {
+        const error = await response.text()
+        console.error('Failed to delete content:', error)
+        alert('削除に失敗しました')
       }
     } catch (error) {
       console.error('Failed to delete content:', error)
+      alert('削除中にエラーが発生しました')
     }
   }
 

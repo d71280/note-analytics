@@ -147,6 +147,8 @@ export default function GPTsSchedulePage() {
 
   const deletePost = async (postId: string) => {
     if (!confirm('この投稿を削除しますか？')) return
+    
+    console.log('Deleting with new endpoint:', postId) // デバッグ用
 
     try {
       const response = await fetch('/api/gpts-actions', {
