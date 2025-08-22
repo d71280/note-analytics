@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>削除ボタンテスト</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        .delete-btn { background: #ef4444; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .delete-btn:hover { background: #dc2626; }
+        #log { background: #f3f4f6; padding: 15px; margin-top: 20px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>GPTs削除ボタン動作テスト</h1>
+    <p>これは実際のVercel環境での削除テストです。</p>
+    
+    <div id="contents"></div>
+    <div id="log"></div>
+
+    <script>
+    const log = (msg) => {
+        document.getElementById('log').textContent += msg + '\n';
+    };
+
+    async function loadContents() {
+        log('📋 コンテンツを取得中...');
+        const res = await fetch('/api/gpts/contents');
+        const data = await res.json();
+        log(`✅ ${data.total}件のコンテンツを取得`);
+        
+        const div = document.getElementById('contents');
+        div.innerHTML = '<h2>GPTsコンテンツ</h2>';
+        
+        data.contents.forEach(item => {
+            const card = document.createElement('div');
+            card.style.border = '1px solid #ccc';
+            card.style.padding = '10px';
+            card.style.margin = '10px 0';
+            card.innerHTML = `
+                <p>${item.content.substring(0, 50)}...</p>
+                <p>ID: ${item.id}</p>
+                <button class="delete-btn" onclick="deleteContent('${item.id}')">削除</button>
+            `;
+            div.appendChild(card);
+        });
+    }
+
+    async function deleteContent(id) {
+        if (!confirm('削除しますか？')) return;
+        
+        log(`🗑️ 削除中: ${id}`);
+        
+        try {
+            const res = await fetch('/api/gpts-actions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', id })
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                log(`✅ 削除成功: ${JSON.stringify(data)}`);
+                setTimeout(loadContents, 1000);
+            } else {
+                log(`❌ 削除失敗: ${res.status}`);
+                const text = await res.text();
+                log(text);
+            }
+        } catch (err) {
+            log(`❌ エラー: ${err.message}`);
+        }
+    }
+
+    // ページ読み込み時に実行
+    loadContents();
+    </script>
+</body>
+</html>
