@@ -289,7 +289,8 @@ async function postToX(content: string, metadata?: Record<string, unknown>) {
     const tweet = await client.v2.tweet(content)
     
     logger.info('Successfully posted to X directly', {
-      tweetId: tweet.data.id
+      action: 'x_post_success',
+      metadata: { tweetId: tweet.data.id }
     })
     
     return { success: true, postId: tweet.data.id }
