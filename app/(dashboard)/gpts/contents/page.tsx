@@ -118,10 +118,10 @@ export default function GPTsContentsPage() {
 
   const fetchContents = async () => {
     try {
-      const response = await fetch('/api/gpts/list')
+      const response = await fetch('/api/gpts/contents')
       if (response.ok) {
         const data = await response.json()
-        setContents(data.posts || [])
+        setContents(data.contents || [])
       }
     } catch (error) {
       console.error('Failed to fetch contents:', error)
@@ -218,16 +218,13 @@ export default function GPTsContentsPage() {
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), 10000) // 10秒タイムアウト
             
-            const response = await fetch('/api/gpts-actions', {
-              method: 'POST',
+            const response = await fetch('/api/scheduled-posts/update', {
+              method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
-                action: 'schedule',
                 id: contentId,
-                data: {
-                  scheduled_for: scheduledFor,
-                  status: 'pending'
-                }
+                scheduled_for: scheduledFor,
+                status: 'pending'
               }),
               signal: controller.signal
             })
