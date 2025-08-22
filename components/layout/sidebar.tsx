@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { TrendingUp, Bot, ListOrdered, Settings } from 'lucide-react'
+import { TrendingUp, ListOrdered, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
