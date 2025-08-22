@@ -606,11 +606,14 @@ export default function GPTsContentsPage() {
                               </div>
                               
                               {/* アクションボタン */}
-                              <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex gap-1">
                                 <Button 
                                   size="sm" 
                                   variant="ghost"
-                                  onClick={() => copyToClipboard(content.content, content.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    copyToClipboard(content.content, content.id)
+                                  }}
                                 >
                                   {copySuccess === content.id ? (
                                     <CheckCircle className="h-3 w-3 text-green-600" />
@@ -622,7 +625,10 @@ export default function GPTsContentsPage() {
                                 <Button 
                                   size="sm" 
                                   variant="ghost"
-                                  onClick={() => deleteContent(content.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    deleteContent(content.id)
+                                  }}
                                   className="text-red-600 hover:text-red-700"
                                 >
                                   <Trash2 className="h-3 w-3" />
