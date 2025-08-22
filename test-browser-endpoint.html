@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>GPTs連携テスト</title>
+</head>
+<body>
+    <h1>GPTs連携エンドポイントテスト</h1>
+    <button onclick="testSchedule()">スケジュール設定テスト</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testSchedule() {
+            const result = document.getElementById('result');
+            result.textContent = 'テスト中...\n';
+            
+            try {
+                // まずコンテンツ一覧を取得
+                const listResponse = await fetch('https://note-analytics.vercel.app/api/gpts/contents');
+                const listData = await listResponse.json();
+                result.textContent += '✅ コンテンツ取得成功\n';
+                result.textContent += `総数: ${listData.total}\n\n`;
+                
+                if (listData.contents && listData.contents.length > 0) {
+                    const testId = listData.contents[0].id;
+                    result.textContent += `テストID: ${testId}\n\n`;
+                    
+                    // 統合エンドポイントでスケジュール設定
+                    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                    const scheduleResponse = await fetch('https://note-analytics.vercel.app/api/gpts-actions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'schedule',
+                            id: testId,
+                            data: {
+                                scheduled_for: tomorrow.toISOString(),
+                                status: 'pending'
+                            }
+                        })
+                    });
+                    
+                    if (scheduleResponse.ok) {
+                        const scheduleData = await scheduleResponse.json();
+                        result.textContent += '✅ スケジュール設定成功!\n';
+                        result.textContent += JSON.stringify(scheduleData, null, 2);
+                    } else {
+                        result.textContent += `❌ スケジュール設定失敗: ${scheduleResponse.status}\n`;
+                        const errorText = await scheduleResponse.text();
+                        result.textContent += errorText;
+                    }
+                }
+            } catch (error) {
+                result.textContent += `❌ エラー: ${error.message}\n`;
+            }
+        }
+    </script>
+</body>
+</html>
