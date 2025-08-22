@@ -285,9 +285,18 @@ export default function GPTsContentsPage() {
   }
 
   const deleteContent = async (contentId: string) => {
-    if (!confirm('このコンテンツを削除しますか？')) return
+    console.log('deleteContent called with ID:', contentId) // デバッグ用
+    
+    if (!confirm('このコンテンツを削除しますか？')) {
+      console.log('User cancelled deletion')
+      return
+    }
+    
+    console.log('User confirmed deletion, proceeding...')
 
     try {
+      console.log('Sending DELETE request for ID:', contentId)
+      
       const response = await fetch('/api/gpts-actions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -297,17 +306,22 @@ export default function GPTsContentsPage() {
         })
       })
 
+      console.log('Response status:', response.status)
+
       if (response.ok) {
+        const result = await response.json()
+        console.log('Delete successful:', result)
+        alert('削除しました')
         fetchContents()
         fetchStats()
       } else {
         const error = await response.text()
         console.error('Failed to delete content:', error)
-        alert('削除に失敗しました')
+        alert(`削除に失敗しました: ${error}`)
       }
     } catch (error) {
-      console.error('Failed to delete content:', error)
-      alert('削除中にエラーが発生しました')
+      console.error('Error in deleteContent:', error)
+      alert(`削除中にエラーが発生しました: ${error}`)
     }
   }
 
