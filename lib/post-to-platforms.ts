@@ -52,6 +52,15 @@ export async function postToXDirect(content: string, metadata?: Record<string, u
 
     const authHeader = oauth.toHeader(oauth.authorize(requestData, token))
 
+    // デバッグ：認証ヘッダーの確認
+    console.log('[postToXDirect] Posting to X with OAuth', {
+      hasApiKey: !!config.api_key,
+      hasApiSecret: !!config.api_key_secret,
+      hasAccessToken: !!config.access_token,
+      hasAccessTokenSecret: !!config.access_token_secret,
+      contentLength: content.length
+    })
+
     // X APIに投稿
     const response = await axios.post(
       TWITTER_API_URL,

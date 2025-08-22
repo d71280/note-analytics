@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Calendar, Clock, Edit, Trash2, Save, X as XIcon, Twitter, FileText, Globe, Loader2, Send, CheckSquare, Square, CalendarPlus } from 'lucide-react'
+import { Calendar, Clock, Edit, Trash2, Save, X as XIcon, Twitter, FileText, Globe, Loader2, Send, CheckSquare, Square, CalendarPlus, Play, Pause, RotateCw } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -70,6 +70,7 @@ export default function ScheduledPostsPage() {
   const [isBulkScheduling, setIsBulkScheduling] = useState(false)
   const [bulkScheduleTime, setBulkScheduleTime] = useState('')
   const [bulkInterval, setBulkInterval] = useState(60) // 分単位
+  const [schedulerStatus, setSchedulerStatus] = useState<'stopped' | 'running'>('stopped')
 
   useEffect(() => {
     fetchScheduledPosts()
@@ -214,6 +215,29 @@ export default function ScheduledPostsPage() {
     } catch (error) {
       console.error('Failed to delete all posts:', error)
       alert('一括削除に失敗しました')
+    }
+  }
+
+  const handleSchedulerControl = async (action: 'start' | 'stop' | 'run') => {
+    try {
+      const response = await fetch(`/api/scheduler/start?action=${action}&interval=1`)
+      const data = await response.json()
+      
+      if (data.success) {
+        if (action === 'start') {
+          setSchedulerStatus('running')
+          alert('自動投稿スケジューラーを開始しました（1分間隔）')
+        } else if (action === 'stop') {
+          setSchedulerStatus('stopped')
+          alert('自動投稿スケジューラーを停止しました')
+        } else if (action === 'run') {
+          alert('スケジューラーを手動実行しました')
+          await fetchScheduledPosts()
+        }
+      }
+    } catch (error) {
+      console.error('Scheduler control error:', error)
+      alert('スケジューラーの操作に失敗しました')
     }
   }
 
@@ -418,6 +442,33 @@ export default function ScheduledPostsPage() {
             <p className="text-gray-600 mt-2">
               予約されている投稿の編集・削除ができます
             </p>
+            <div className="flex gap-2 mt-3">
+              <Button
+                onClick={() => handleSchedulerControl(schedulerStatus === 'stopped' ? 'start' : 'stop')}
+                variant={schedulerStatus === 'running' ? 'destructive' : 'default'}
+                size="sm"
+              >
+                {schedulerStatus === 'running' ? (
+                  <>
+                    <Pause className="mr-2 h-4 w-4" />
+                    停止
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-4 w-4" />
+                    自動投稿開始
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => handleSchedulerControl('run')}
+                variant="outline"
+                size="sm"
+              >
+                <RotateCw className="mr-2 h-4 w-4" />
+                今すぐチェック
+              </Button>
+            </div>
           </div>
           <div className="flex gap-2">
             {activeTab === 'draft' && selectedPosts.size > 0 && (
