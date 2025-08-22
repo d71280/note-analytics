@@ -18,14 +18,8 @@ export async function GET() {
       )
     }
     
-    // 手動で作成された投稿のみ表示（GPTs由来を除外）
-    const filteredData = (data || []).filter(post => {
-      const source = post.metadata?.source
-      
-      // sourceが'manual'の場合のみ含める
-      // sourceが未設定の場合はGPTs由来として除外
-      return source === 'manual'
-    })
+    // すべての投稿を表示（手動作成もGPTs由来も含む）
+    const filteredData = data || []
     
     return NextResponse.json(filteredData)
   } catch (error) {
