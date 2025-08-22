@@ -593,6 +593,7 @@ export default function ScheduledPostsPage() {
                                   onClick={() => handlePostNow(post)}
                                   disabled={isPosting === post.id}
                                   className="text-blue-600 hover:text-blue-700"
+                                  title="今すぐ投稿"
                                 >
                                   {isPosting === post.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -604,6 +605,7 @@ export default function ScheduledPostsPage() {
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleEdit(post)}
+                                  title="編集・スケジュール設定"
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
@@ -612,6 +614,7 @@ export default function ScheduledPostsPage() {
                                   variant="ghost"
                                   onClick={() => handleDelete(post.id)}
                                   className="text-red-600 hover:text-red-700"
+                                  title="削除"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
