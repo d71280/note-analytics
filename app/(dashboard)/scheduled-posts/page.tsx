@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Calendar, Clock, Edit, Trash2, Save, X as XIcon, Twitter, FileText, Globe, Loader2, Send, CheckSquare, Square } from 'lucide-react'
+import { Calendar, Clock, Edit, Trash2, Save, X as XIcon, Twitter, FileText, Globe, Loader2, Send, CheckSquare, Square, CalendarPlus } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -587,6 +587,18 @@ export default function ScheduledPostsPage() {
                             </div>
                             {(post.status === 'pending' || post.status === 'draft' || post.status === 'scheduled') ? (
                               <div className="flex gap-1 ml-2 flex-shrink-0">
+                                {post.status === 'draft' && (
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => handleEdit(post)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                    title="スケジュール登録"
+                                  >
+                                    <CalendarPlus className="h-4 w-4 mr-1" />
+                                    スケジュール登録
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -601,14 +613,16 @@ export default function ScheduledPostsPage() {
                                     <Send className="h-4 w-4" />
                                   )}
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleEdit(post)}
-                                  title="編集・スケジュール設定"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
+                                {(post.status === 'pending' || post.status === 'scheduled') && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleEdit(post)}
+                                    title="編集"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -646,9 +660,13 @@ export default function ScheduledPostsPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl">投稿を編集</DialogTitle>
+            <DialogTitle className="text-xl">
+              {editingPost?.status === 'draft' ? 'スケジュール登録' : '投稿を編集'}
+            </DialogTitle>
             <DialogDescription>
-              内容を編集して保存してください
+              {editingPost?.status === 'draft' 
+                ? '投稿時刻を設定してスケジュール登録します'
+                : '内容を編集して保存してください'}
             </DialogDescription>
           </DialogHeader>
           {editingPost && (
