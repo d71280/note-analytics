@@ -2,7 +2,7 @@
 // アプリケーション起動時に自動的に開始され、定期的にスケジュール投稿をチェックして実行します
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { postToXDirect, postToNoteDirect, postToWordPressDirect } from '@/lib/post-to-platforms'
+import { postToNoteDirect, postToWordPressDirect } from '@/lib/post-to-platforms'
 
 let intervalId: NodeJS.Timeout | null = null
 let isRunning = false

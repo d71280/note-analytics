@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logger } from '@/lib/logger'
-import { postToXDirect, postToNoteDirect, postToWordPressDirect } from '@/lib/post-to-platforms'
+import { postToNoteDirect, postToWordPressDirect } from '@/lib/post-to-platforms'
 
 // Vercel Cronジョブから定期的に呼び出される自動投稿処理
 export async function GET(request: NextRequest) {
@@ -232,6 +232,7 @@ export async function GET(request: NextRequest) {
 async function postToX(content: string, metadata?: Record<string, unknown>) {
   try {
     // 方法1: 直接TwitterApiクライアントを使用
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { TwitterApi } = require('twitter-api-v2')
     
     // 環境変数を明示的に読み込み

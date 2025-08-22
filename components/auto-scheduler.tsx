@@ -1,13 +1,12 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 export function AutoScheduler() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   
   useEffect(() => {
-    const supabase = createClient()
     
     // 1分ごとにチェック
     const checkAndPost = async () => {
