@@ -124,7 +124,13 @@ export default function ScheduledPostsPage() {
     setIsSaving(true)
     try {
       // 更新用のデータを準備
-      const updateData: any = {
+      const updateData: {
+        id: string
+        content: string
+        status: string
+        scheduled_for?: string
+        display_order?: number
+      } = {
         id: editingPost.id,
         content: editContent,
         status: editingPost.status
