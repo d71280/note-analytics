@@ -3,7 +3,12 @@
 import { useState, useEffect } from 'react'
 
 export default function TestPage() {
-  const [contents, setContents] = useState<any[]>([])
+  const [contents, setContents] = useState<Array<{
+    id: string
+    content: string
+    platform: string
+    status: string
+  }>>([])
 
   useEffect(() => {
     fetch('/api/gpts/contents')
