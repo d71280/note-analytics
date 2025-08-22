@@ -620,17 +620,17 @@ export default function GPTsContentsPage() {
                                   )}
                                 </Button>
                                 
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost"
+                                <button
                                   onClick={(e) => {
                                     e.stopPropagation()
+                                    e.preventDefault()
                                     deleteContent(content.id)
                                   }}
-                                  className="text-red-600 hover:text-red-700"
+                                  className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
+                                  type="button"
                                 >
                                   <Trash2 className="h-3 w-3" />
-                                </Button>
+                                </button>
                               </div>
                             </div>
                           </div>
