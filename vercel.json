@@ -1,7 +1,7 @@
 {
   "buildCommand": "npm run build",
   "env": {
-    "FORCE_REBUILD": "2025-08-21-23:48"
+    "FORCE_REBUILD": "2025-08-22-09:43"
   },
   "functions": {
     "app/api/**/*.ts": {
