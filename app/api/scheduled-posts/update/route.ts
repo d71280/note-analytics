@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, scheduled_for, content, metadata, status } = body
+    const { id, scheduled_for, content, metadata, status, display_order } = body
 
     if (!id) {
       return NextResponse.json(
@@ -21,6 +21,7 @@ export async function PUT(request: NextRequest) {
     if (content !== undefined) updateData.content = content
     if (metadata !== undefined) updateData.metadata = metadata
     if (status !== undefined) updateData.status = status
+    if (display_order !== undefined) updateData.display_order = display_order
 
     // スケジュール投稿を更新
     const { data, error } = await supabase

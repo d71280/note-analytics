@@ -20,6 +20,7 @@ interface ScheduledPost {
   status: 'pending' | 'posted' | 'failed' | 'draft' | 'scheduled'
   order_index?: number
   interval_minutes?: number
+  display_order?: number
   error_message?: string
   posted_at?: string
   created_at: string
@@ -65,6 +66,7 @@ export default function ScheduledPostsPage() {
   const [isPosting, setIsPosting] = useState<string | null>(null)
   const [isDeletingFailed, setIsDeletingFailed] = useState(false)
   const [selectedPosts, setSelectedPosts] = useState<Set<string>>(new Set())
+  const [selectionOrder, setSelectionOrder] = useState<Map<string, number>>(new Map())
   const [isDeletingSelected, setIsDeletingSelected] = useState(false)
   const [activeTab, setActiveTab] = useState<'draft' | 'pending' | 'completed'>('draft')
   const [isBulkScheduling, setIsBulkScheduling] = useState(false)
@@ -243,17 +245,41 @@ export default function ScheduledPostsPage() {
 
   const toggleSelectPost = (postId: string) => {
     const newSelected = new Set(selectedPosts)
+    const newOrder = new Map(selectionOrder)
+    
     if (newSelected.has(postId)) {
       newSelected.delete(postId)
+      newOrder.delete(postId)
+      // 削除後、残りの番号を詰める
+      const deletedOrder = selectionOrder.get(postId) || 0
+      newOrder.forEach((order, id) => {
+        if (order > deletedOrder) {
+          newOrder.set(id, order - 1)
+        }
+      })
     } else {
       newSelected.add(postId)
+      // 新しい選択には次の番号を割り当て
+      const maxOrder = Math.max(0, ...Array.from(newOrder.values()))
+      newOrder.set(postId, maxOrder + 1)
     }
+    
     setSelectedPosts(newSelected)
+    setSelectionOrder(newOrder)
   }
 
 
   const handleBulkSchedule = async () => {
-    const draftPosts = posts.filter(p => p.status === 'draft' && selectedPosts.has(p.id))
+    // 選択された順番を保持するため、選択順でソート
+    const selectedPostIds = Array.from(selectedPosts).sort((a, b) => {
+      const orderA = selectionOrder.get(a) || 0
+      const orderB = selectionOrder.get(b) || 0
+      return orderA - orderB
+    })
+    
+    const draftPosts = selectedPostIds
+      .map(id => posts.find(p => p.id === id && p.status === 'draft'))
+      .filter(Boolean) as ScheduledPost[]
     
     if (draftPosts.length === 0) {
       alert('スケジュール登録する下書きを選択してください')
@@ -269,6 +295,7 @@ export default function ScheduledPostsPage() {
     try {
       const startTime = new Date(bulkScheduleTime)
       
+      // 選択した順番（display_order）を保持して更新
       for (let i = 0; i < draftPosts.length; i++) {
         const post = draftPosts[i]
         const scheduledTime = new Date(startTime.getTime() + i * bulkInterval * 60000)
@@ -276,7 +303,8 @@ export default function ScheduledPostsPage() {
         const updateData = {
           id: post.id,
           scheduled_for: scheduledTime.toISOString(),
-          status: 'pending'
+          status: 'pending',
+          display_order: i + 1  // 選択順を1から割り当て
         }
 
         await fetch('/api/scheduled-posts/update', {
@@ -288,7 +316,8 @@ export default function ScheduledPostsPage() {
 
       await fetchScheduledPosts()
       setSelectedPosts(new Set())
-      alert(`${draftPosts.length}件の投稿をスケジュール登録しました`)
+      setSelectionOrder(new Map())
+      alert(`${draftPosts.length}件の投稿をスケジュール登録しました（選択順: 1〜${draftPosts.length}）`)
     } catch (error) {
       console.error('Failed to bulk schedule:', error)
       alert('一括スケジュール登録に失敗しました')
@@ -723,10 +752,17 @@ export default function ScheduledPostsPage() {
                             <div className="flex items-start gap-3 flex-1">
                               <button
                                 onClick={() => toggleSelectPost(post.id)}
-                                className="mt-1 flex-shrink-0"
+                                className="mt-1 flex-shrink-0 relative"
                               >
                                 {selectedPosts.has(post.id) ? (
-                                  <CheckSquare className="h-5 w-5 text-blue-600" />
+                                  <>
+                                    <CheckSquare className="h-5 w-5 text-blue-600" />
+                                    {activeTab === 'draft' && selectionOrder.get(post.id) && (
+                                      <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                                        {selectionOrder.get(post.id)}
+                                      </span>
+                                    )}
+                                  </>
                                 ) : (
                                   <Square className="h-5 w-5 text-gray-400" />
                                 )}

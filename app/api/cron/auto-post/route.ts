@@ -51,11 +51,13 @@ export async function GET(request: NextRequest) {
     }
 
     // 1. スケジュール済みの投稿を取得（投稿時刻が過ぎているもの）
+    // display_orderが設定されている場合はその順番で、なければscheduled_for順
     const { data: scheduledPosts, error: fetchError } = await supabase
       .from('scheduled_posts')
       .select('*')
       .eq('status', 'pending')
       .lte('scheduled_for', now.toISOString())
+      .order('display_order', { ascending: true, nullsFirst: false })
       .order('scheduled_for', { ascending: true })
       .limit(10) // 一度に処理する最大数
 
