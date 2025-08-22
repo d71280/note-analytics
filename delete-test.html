@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>削除ボタンテスト</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
+        #result { background: #f0f0f0; padding: 20px; margin-top: 20px; white-space: pre-wrap; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>GPTs連携 削除ボタンテスト</h1>
+    
+    <button onclick="loadContents()">1. コンテンツ一覧を取得</button>
+    <button onclick="deleteFirst()">2. 最初の投稿を削除</button>
+    
+    <div id="result"></div>
+
+    <script>
+        let currentId = null;
+        const result = document.getElementById('result');
+        
+        async function loadContents() {
+            result.textContent = '読み込み中...\n';
+            try {
+                const response = await fetch('https://note-analytics.vercel.app/api/gpts/contents');
+                const data = await response.json();
+                
+                result.innerHTML = `<span class="success">✅ 取得成功</span>\n`;
+                result.innerHTML += `総数: ${data.total}件\n\n`;
+                
+                if (data.contents && data.contents.length > 0) {
+                    currentId = data.contents[0].id;
+                    result.innerHTML += `最初の投稿:\n`;
+                    result.innerHTML += `ID: ${currentId}\n`;
+                    result.innerHTML += `内容: ${data.contents[0].content.substring(0, 50)}...\n`;
+                    result.innerHTML += `\n削除ボタンをクリックしてください`;
+                } else {
+                    result.innerHTML += '投稿がありません';
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ エラー: ${error.message}</span>`;
+            }
+        }
+        
+        async function deleteFirst() {
+            if (!currentId) {
+                result.innerHTML = '<span class="error">先にコンテンツ一覧を取得してください</span>';
+                return;
+            }
+            
+            if (!confirm(`ID: ${currentId} を削除しますか？`)) return;
+            
+            result.textContent += '\n\n削除中...\n';
+            
+            try {
+                // まさにGPTs連携ページと同じコード
+                const response = await fetch('/api/gpts-actions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'delete',
+                        id: currentId
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML += `<span class="success">✅ 削除成功!</span>\n`;
+                    result.innerHTML += JSON.stringify(data, null, 2);
+                    currentId = null;
+                    
+                    // 再読み込み
+                    setTimeout(loadContents, 1000);
+                } else {
+                    const error = await response.text();
+                    result.innerHTML += `<span class="error">❌ 削除失敗: ${response.status}</span>\n`;
+                    result.innerHTML += error;
+                }
+            } catch (error) {
+                result.innerHTML += `<span class="error">❌ エラー: ${error.message}</span>`;
+            }
+        }
+        
+        // ページ読み込み時に自動実行
+        loadContents();
+    </script>
+</body>
+</html>
