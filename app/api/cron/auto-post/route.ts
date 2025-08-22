@@ -242,10 +242,13 @@ async function postToX(content: string, metadata?: Record<string, unknown>) {
     const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET
     
     logger.info('X API credentials check', {
-      hasApiKey: !!apiKey,
-      hasApiKeySecret: !!apiKeySecret,
-      hasAccessToken: !!accessToken,
-      hasAccessTokenSecret: !!accessTokenSecret
+      action: 'credentials_check',
+      metadata: {
+        hasApiKey: !!apiKey,
+        hasApiKeySecret: !!apiKeySecret,
+        hasAccessToken: !!accessToken,
+        hasAccessTokenSecret: !!accessTokenSecret
+      }
     })
     
     if (!apiKey || !apiKeySecret || !accessToken || !accessTokenSecret) {
