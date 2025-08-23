@@ -110,12 +110,19 @@ export default function ScheduledPostsPage() {
   }
 
   const handleEditContent = (post: ScheduledPost) => {
-    setEditingPost(post)
-    setEditContent(post.content)
-    // 下書きの編集では時刻設定は不要
-    setEditScheduledTime('')
-    setIsContentOnlyEdit(true)
-    setIsDialogOpen(true)
+    // 状態をリセットしてから新しい値を設定
+    setEditContent('')
+    setEditingPost(null)
+    
+    // 次のレンダリングサイクルで値を設定
+    setTimeout(() => {
+      setEditingPost(post)
+      setEditContent(post.content)
+      // 下書きの編集では時刻設定は不要
+      setEditScheduledTime('')
+      setIsContentOnlyEdit(true)
+      setIsDialogOpen(true)
+    }, 0)
   }
 
   const handleSave = async () => {
@@ -956,7 +963,14 @@ export default function ScheduledPostsPage() {
                   <Textarea
                     id="content"
                     value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
+                    onChange={(e) => {
+                      e.preventDefault();
+                      setEditContent(e.target.value);
+                    }}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      setEditContent(target.value);
+                    }}
                     rows={15}
                     maxLength={
                       editingPost.platform === 'x' ? 280 :
