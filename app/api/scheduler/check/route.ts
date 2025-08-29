@@ -10,16 +10,14 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient()
     const now = new Date()
     
-    // 現在時刻から5分以内にスケジュールされている投稿を取得
-    const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000)
-    
+    // 現在時刻を過ぎている投稿を即座に処理（setTimeoutは使わない）
     const { data: scheduledPosts, error } = await supabase
       .from('scheduled_posts')
       .select('*')
       .eq('status', 'pending')
-      .gte('scheduled_for', now.toISOString())
-      .lte('scheduled_for', fiveMinutesFromNow.toISOString())
+      .lte('scheduled_for', now.toISOString())
       .order('scheduled_for', { ascending: true })
+      .limit(10) // 一度に処理する最大数
     
     if (error) {
       console.error('[Scheduler Check] エラー:', error)
@@ -27,93 +25,141 @@ export async function GET(request: NextRequest) {
     }
     
     if (!scheduledPosts || scheduledPosts.length === 0) {
-      console.log('[Scheduler Check] 対象なし')
+      console.log('[Scheduler Check] 投稿対象なし')
       return NextResponse.json({ 
-        message: 'No posts scheduled in next 5 minutes',
+        message: 'No posts to process',
         checked_at: now.toISOString()
       })
     }
     
-    console.log(`[Scheduler Check] ${scheduledPosts.length}件の投稿をスケジュール`)
+    console.log(`[Scheduler Check] ${scheduledPosts.length}件の投稿を処理`)
     
-    // 各投稿に対してタイマーを設定
+    const results = {
+      processed: 0,
+      posted: 0,
+      failed: 0
+    }
+    
+    // 各投稿を即座に処理（setTimeoutは使わない）
     for (const post of scheduledPosts) {
-      const scheduledTime = new Date(post.scheduled_for)
-      const delay = scheduledTime.getTime() - now.getTime()
+      results.processed++
       
-      if (delay > 0) {
-        console.log(`[Scheduler Check] ${post.id} を ${Math.round(delay/1000)}秒後に投稿予約`)
+      try {
+        console.log(`[Scheduler Check] ${post.id} の投稿を実行`)
         
-        // 指定時刻に直接投稿APIを呼び出す
-        setTimeout(async () => {
-          try {
-            console.log(`[Scheduler Check] ${post.id} の投稿を実行`)
-            
-            // 本番環境のURLを構築
-            const baseUrl = process.env.VERCEL_URL 
-              ? `https://${process.env.VERCEL_URL}`
-              : 'https://note-analytics.vercel.app'
-            
-            // 直接投稿APIを呼び出し（これは成功実績あり）
-            const response = await fetch(`${baseUrl}/api/x/post`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                text: post.content,
-                postType: 'scheduled',
-                metadata: post.metadata
-              })
-            })
-            
-            if (response.ok) {
-              const data = await response.json()
-              
-              // 成功したらステータス更新
-              await supabase
-                .from('scheduled_posts')
-                .update({
-                  status: 'posted',
-                  metadata: {
-                    ...post.metadata,
-                    posted_at: new Date().toISOString(),
-                    tweet_id: data.tweetId
-                  }
-                })
-                .eq('id', post.id)
-              
-              console.log(`✅ [Scheduler Check] ${post.id} 投稿成功`)
-            } else {
-              const error = await response.json()
-              
-              // 失敗したらステータス更新
-              await supabase
-                .from('scheduled_posts')
-                .update({
-                  status: 'failed',
-                  metadata: {
-                    ...post.metadata,
-                    failed_at: new Date().toISOString(),
-                    error: error.error
-                  }
-                })
-                .eq('id', post.id)
-              
-              console.error(`❌ [Scheduler Check] ${post.id} 投稿失敗:`, error)
+        // 本番環境のURLを構築
+        const baseUrl = process.env.VERCEL_URL 
+          ? `https://${process.env.VERCEL_URL}`
+          : 'https://note-analytics.vercel.app'
+        
+        // プラットフォームに応じたAPIエンドポイントを選択
+        let apiEndpoint = ''
+        let requestBody = {}
+        
+        switch (post.platform) {
+          case 'x':
+            apiEndpoint = `${baseUrl}/api/x/post`
+            requestBody = {
+              text: post.content,
+              postType: 'scheduled',
+              metadata: post.metadata
             }
-          } catch (error) {
-            console.error(`[Scheduler Check] ${post.id} エラー:`, error)
-          }
-        }, delay)
+            break
+          case 'note':
+            apiEndpoint = `${baseUrl}/api/note/post`
+            requestBody = {
+              content: post.content,
+              title: post.metadata?.title || 'スケジュール投稿',
+              metadata: post.metadata
+            }
+            break
+          case 'wordpress':
+            apiEndpoint = `${baseUrl}/api/wordpress/post`
+            requestBody = {
+              content: post.content,
+              title: post.metadata?.title || 'スケジュール投稿',
+              metadata: post.metadata
+            }
+            break
+          default:
+            console.error(`[Scheduler Check] 不明なプラットフォーム: ${post.platform}`)
+            continue
+        }
+        
+        // 投稿APIを呼び出し
+        const response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          
+          // 成功したらステータス更新
+          await supabase
+            .from('scheduled_posts')
+            .update({
+              status: 'posted',
+              metadata: {
+                ...post.metadata,
+                posted_at: new Date().toISOString(),
+                post_id: data.tweetId || data.id || data.postId
+              }
+            })
+            .eq('id', post.id)
+          
+          results.posted++
+          console.log(`✅ [Scheduler Check] ${post.id} 投稿成功`)
+        } else {
+          const error = await response.json()
+          
+          // 失敗したらステータス更新
+          await supabase
+            .from('scheduled_posts')
+            .update({
+              status: 'failed',
+              metadata: {
+                ...post.metadata,
+                failed_at: new Date().toISOString(),
+                error: error.error || 'Unknown error'
+              }
+            })
+            .eq('id', post.id)
+          
+          results.failed++
+          console.error(`❌ [Scheduler Check] ${post.id} 投稿失敗:`, error)
+        }
+        
+        // レート制限対策のため少し待機
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+      } catch (error) {
+        console.error(`[Scheduler Check] ${post.id} エラー:`, error)
+        results.failed++
+        
+        // エラー時もステータス更新
+        await supabase
+          .from('scheduled_posts')
+          .update({
+            status: 'failed',
+            metadata: {
+              ...post.metadata,
+              failed_at: new Date().toISOString(),
+              error: error instanceof Error ? error.message : 'Unknown error'
+            }
+          })
+          .eq('id', post.id)
       }
     }
     
     return NextResponse.json({
-      message: `Scheduled ${scheduledPosts.length} posts`,
-      posts: scheduledPosts.map(p => ({
-        id: p.id,
-        scheduled_for: p.scheduled_for,
-        delay_seconds: Math.round((new Date(p.scheduled_for).getTime() - now.getTime()) / 1000)
-      })),
+      message: `Processed ${results.processed} posts`,
+      results: {
+        processed: results.processed,
+        posted: results.posted,
+        failed: results.failed
+      },
       checked_at: now.toISOString()
     })
     
