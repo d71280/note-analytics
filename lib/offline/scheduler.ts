@@ -8,15 +8,19 @@ export function useOfflineScheduler() {
     if (typeof window === 'undefined') return
     
     // Service Workerの登録
-    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
         .then(async (registration) => {
           console.log('Service Worker registered:', registration)
           
-          // Background Syncの登録
+          // Background Syncの登録（型定義の問題を回避）
           try {
-            await registration.sync.register('scheduled-posts-sync')
-            console.log('Background sync registered')
+            if ('sync' in registration) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const reg = registration as any
+              await reg.sync.register('scheduled-posts-sync')
+              console.log('Background sync registered')
+            }
           } catch (error) {
             console.error('Background sync registration failed:', error)
           }
