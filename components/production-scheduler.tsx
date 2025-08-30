@@ -29,7 +29,8 @@ export function ProductionScheduler() {
       return () => clearInterval(interval)
     } else {
       // 開発環境では簡易的なクライアントサイドスケジューラー
-      runLocalScheduler()
+      const cleanup = runLocalScheduler()
+      return cleanup
     }
   }, [])
   
@@ -63,25 +64,35 @@ export function ProductionScheduler() {
   
   // 開発環境用のローカルスケジューラー
   const runLocalScheduler = () => {
+    console.log('[LocalScheduler] 開発環境スケジューラーを開始')
+    
     const checkAndPost = async () => {
       try {
         const now = new Date()
+        console.log(`[LocalScheduler] チェック開始: ${now.toLocaleTimeString('ja-JP')}`)
         
         // 投稿時刻が過ぎているものを取得
-        const { data: posts } = await supabase
+        const { data: posts, error } = await supabase
           .from('scheduled_posts')
           .select('*')
           .eq('status', 'pending')
           .lte('scheduled_for', now.toISOString())
           .limit(5)
         
+        if (error) {
+          console.error('[LocalScheduler] クエリエラー:', error)
+          return
+        }
+        
+        console.log(`[LocalScheduler] 取得結果: ${posts?.length || 0}件`)
+        
         if (posts && posts.length > 0) {
           console.log(`[LocalScheduler] ${posts.length}件の投稿を処理`)
           
           for (const post of posts) {
             try {
-              // 開発環境でのテスト投稿
-              const response = await fetch(`/api/${post.platform}/post`, {
+              // 直接投稿APIを呼び出し（元のコードと同じ）
+              const response = await fetch('/api/x/post', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -92,24 +103,58 @@ export function ProductionScheduler() {
               })
               
               if (response.ok) {
+                const data = await response.json()
+                
+                // 成功したらステータス更新
                 await supabase
                   .from('scheduled_posts')
                   .update({
                     status: 'posted',
                     metadata: {
                       ...post.metadata,
-                      posted_at: now.toISOString()
+                      posted_at: now.toISOString(),
+                      tweet_id: data.tweetId
                     }
                   })
                   .eq('id', post.id)
                 
                 console.log(`✅ 投稿成功: ${post.id}`)
+              } else {
+                const error = await response.json()
+                
+                // 失敗したらステータス更新
+                await supabase
+                  .from('scheduled_posts')
+                  .update({
+                    status: 'failed',
+                    metadata: {
+                      ...post.metadata,
+                      failed_at: now.toISOString(),
+                      error: error.error
+                    }
+                  })
+                  .eq('id', post.id)
+                
+                console.error(`❌ 投稿失敗: ${post.id}`, error)
               }
               
               // レート制限対策
               await new Promise(resolve => setTimeout(resolve, 2000))
             } catch (error) {
               console.error(`エラー: ${post.id}`, error)
+              
+              // 例外時もステータス更新
+              await supabase
+                .from('scheduled_posts')
+                .update({
+                  status: 'failed',
+                  metadata: {
+                    ...post.metadata,
+                    failed_at: now.toISOString(),
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                  }
+                })
+                .eq('id', post.id)
             }
           }
         }
