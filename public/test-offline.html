@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オフライン機能テスト</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .status-box {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .online {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .offline {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-left: 4px solid #007bff;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .log {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f1f1f1;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            background: white;
+            border-radius: 2px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 オフライン機能テスト</h1>
+        
+        <div id="networkStatus" class="status-box online">
+            ネットワーク状態: オンライン
+        </div>
+        
+        <div class="test-section">
+            <h2>1. Service Worker 状態</h2>
+            <div id="swStatus" class="test-result">チェック中...</div>
+            <button onclick="checkServiceWorker()">Service Worker確認</button>
+            <button onclick="registerServiceWorker()">Service Worker登録</button>
+            <button onclick="unregisterServiceWorker()">Service Worker削除</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>2. IndexedDB 状態</h2>
+            <div id="dbStatus" class="test-result">チェック中...</div>
+            <button onclick="checkIndexedDB()">IndexedDB確認</button>
+            <button onclick="addTestData()">テストデータ追加</button>
+            <button onclick="clearIndexedDB()">データクリア</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>3. オフラインテスト</h2>
+            <button onclick="simulateOffline()">オフラインをシミュレート</button>
+            <button onclick="simulateOnline()">オンラインに戻す</button>
+            <button onclick="testOfflinePost()">オフライン投稿テスト</button>
+            <button onclick="checkOfflineQueue()">オフラインキュー確認</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>4. アプリケーション統合テスト</h2>
+            <button onclick="openApp()">アプリを開く</button>
+            <button onclick="checkAppIntegration()">統合状態を確認</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>ログ</h2>
+            <div id="log" class="log"></div>
+            <button onclick="clearLog()">ログクリア</button>
+        </div>
+    </div>
+
+    <script>
+        // ログ記録
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+        }
+
+        // ネットワーク状態の監視
+        function updateNetworkStatus() {
+            const statusDiv = document.getElementById('networkStatus');
+            if (navigator.onLine) {
+                statusDiv.className = 'status-box online';
+                statusDiv.textContent = '🟢 ネットワーク状態: オンライン';
+                log('ネットワーク: オンライン', 'success');
+            } else {
+                statusDiv.className = 'status-box offline';
+                statusDiv.textContent = '🟡 ネットワーク状態: オフライン';
+                log('ネットワーク: オフライン', 'warning');
+            }
+        }
+
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+
+        // Service Worker チェック
+        async function checkServiceWorker() {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    const swDiv = document.getElementById('swStatus');
+                    
+                    if (registrations.length > 0) {
+                        swDiv.innerHTML = '✅ Service Worker登録済み<br>';
+                        registrations.forEach((reg, index) => {
+                            swDiv.innerHTML += `SW ${index + 1}: ${reg.scope}<br>`;
+                            swDiv.innerHTML += `状態: ${reg.active ? 'アクティブ' : 'インアクティブ'}<br>`;
+                        });
+                        log('Service Worker確認完了', 'success');
+                    } else {
+                        swDiv.textContent = '❌ Service Worker未登録';
+                        log('Service Worker未登録', 'warning');
+                    }
+                } else {
+                    document.getElementById('swStatus').textContent = '❌ Service Worker非対応';
+                    log('Service Worker非対応', 'error');
+                }
+            } catch (error) {
+                log(`Service Workerエラー: ${error.message}`, 'error');
+            }
+        }
+
+        // Service Worker登録
+        async function registerServiceWorker() {
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                log('Service Worker登録成功', 'success');
+                
+                // Background Sync登録
+                if ('sync' in registration) {
+                    await registration.sync.register('scheduled-posts-sync');
+                    log('Background Sync登録成功', 'success');
+                }
+                
+                checkServiceWorker();
+            } catch (error) {
+                log(`Service Worker登録失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // Service Worker削除
+        async function unregisterServiceWorker() {
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                }
+                log('Service Worker削除成功', 'success');
+                checkServiceWorker();
+            } catch (error) {
+                log(`Service Worker削除失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // IndexedDB確認
+        async function checkIndexedDB() {
+            try {
+                const db = await openDB();
+                const tx = db.transaction(['scheduled_posts', 'offline_queue'], 'readonly');
+                
+                const postsStore = tx.objectStore('scheduled_posts');
+                const queueStore = tx.objectStore('offline_queue');
+                
+                const postsCount = await countData(postsStore);
+                const queueCount = await countData(queueStore);
+                
+                const dbDiv = document.getElementById('dbStatus');
+                dbDiv.innerHTML = `
+                    ✅ IndexedDB接続成功<br>
+                    スケジュール投稿: ${postsCount}件<br>
+                    オフラインキュー: ${queueCount}件
+                `;
+                
+                log(`IndexedDB確認: 投稿${postsCount}件, キュー${queueCount}件`, 'success');
+                db.close();
+            } catch (error) {
+                document.getElementById('dbStatus').textContent = '❌ IndexedDB接続失敗';
+                log(`IndexedDBエラー: ${error.message}`, 'error');
+            }
+        }
+
+        // テストデータ追加
+        async function addTestData() {
+            try {
+                const db = await openDB();
+                const tx = db.transaction(['scheduled_posts'], 'readwrite');
+                const store = tx.objectStore('scheduled_posts');
+                
+                const testPost = {
+                    id: `test-${Date.now()}`,
+                    platform: 'x',
+                    content: `テスト投稿 ${new Date().toLocaleString()}`,
+                    status: 'pending',
+                    scheduled_for: new Date(Date.now() + 60000).toISOString(), // 1分後
+                    metadata: { source: 'test' }
+                };
+                
+                await store.add(testPost);
+                log('テストデータ追加成功', 'success');
+                checkIndexedDB();
+                db.close();
+            } catch (error) {
+                log(`テストデータ追加失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // IndexedDBクリア
+        async function clearIndexedDB() {
+            try {
+                const db = await openDB();
+                const tx = db.transaction(['scheduled_posts', 'offline_queue'], 'readwrite');
+                
+                await tx.objectStore('scheduled_posts').clear();
+                await tx.objectStore('offline_queue').clear();
+                
+                log('IndexedDBクリア成功', 'success');
+                checkIndexedDB();
+                db.close();
+            } catch (error) {
+                log(`IndexedDBクリア失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // オフラインシミュレート
+        function simulateOffline() {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                // Service Workerにオフラインメッセージを送信
+                navigator.serviceWorker.controller.postMessage({ type: 'SIMULATE_OFFLINE' });
+                log('オフラインモードをシミュレート', 'warning');
+                
+                // UIを更新
+                const statusDiv = document.getElementById('networkStatus');
+                statusDiv.className = 'status-box offline';
+                statusDiv.textContent = '🟡 ネットワーク状態: オフライン（シミュレート）';
+            } else {
+                log('Service Workerが利用できません', 'error');
+            }
+        }
+
+        // オンラインに戻す
+        function simulateOnline() {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'SIMULATE_ONLINE' });
+                log('オンラインモードに復帰', 'success');
+                updateNetworkStatus();
+            }
+        }
+
+        // オフライン投稿テスト
+        async function testOfflinePost() {
+            try {
+                simulateOffline();
+                
+                const db = await openDB();
+                const tx = db.transaction(['offline_queue'], 'readwrite');
+                const store = tx.objectStore('offline_queue');
+                
+                const testPost = {
+                    id: `offline-${Date.now()}`,
+                    platform: 'x',
+                    content: `オフライン投稿テスト ${new Date().toLocaleString()}`,
+                    status: 'pending',
+                    queued_at: new Date().toISOString(),
+                    metadata: { source: 'offline-test' }
+                };
+                
+                await store.add(testPost);
+                log('オフライン投稿をキューに追加', 'success');
+                checkOfflineQueue();
+                db.close();
+            } catch (error) {
+                log(`オフライン投稿失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // オフラインキュー確認
+        async function checkOfflineQueue() {
+            try {
+                const db = await openDB();
+                const tx = db.transaction(['offline_queue'], 'readonly');
+                const store = tx.objectStore('offline_queue');
+                const items = await store.getAll();
+                
+                if (items.length > 0) {
+                    log(`オフラインキュー: ${items.length}件`, 'info');
+                    items.forEach(item => {
+                        log(`  - ${item.id}: ${item.content.substring(0, 30)}...`, 'info');
+                    });
+                } else {
+                    log('オフラインキューは空です', 'info');
+                }
+                
+                db.close();
+            } catch (error) {
+                log(`キュー確認失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // アプリを開く
+        function openApp() {
+            window.open('http://localhost:3000/scheduled-posts', '_blank');
+            log('アプリケーションを開きました', 'info');
+        }
+
+        // アプリ統合確認
+        async function checkAppIntegration() {
+            try {
+                // APIエンドポイントの確認
+                const response = await fetch('http://localhost:3000/api/scheduled-posts');
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`API接続成功: ${data.posts?.length || 0}件の投稿`, 'success');
+                } else {
+                    log('API接続失敗', 'error');
+                }
+                
+                // Service Worker状態
+                await checkServiceWorker();
+                
+                // IndexedDB状態
+                await checkIndexedDB();
+                
+            } catch (error) {
+                log(`統合確認失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // IndexedDB Helper
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('NoteSchedulerDB', 1);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    
+                    if (!db.objectStoreNames.contains('scheduled_posts')) {
+                        db.createObjectStore('scheduled_posts', { keyPath: 'id' });
+                    }
+                    
+                    if (!db.objectStoreNames.contains('offline_queue')) {
+                        db.createObjectStore('offline_queue', { keyPath: 'id' });
+                    }
+                };
+            });
+        }
+
+        function countData(store) {
+            return new Promise((resolve, reject) => {
+                const request = store.count();
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            log('ログをクリアしました', 'info');
+        }
+
+        // 初期化
+        updateNetworkStatus();
+        checkServiceWorker();
+        checkIndexedDB();
+    </script>
+</body>
+</html>
