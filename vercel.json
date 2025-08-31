@@ -50,12 +50,8 @@
   ],
   "crons": [
     {
-      "path": "/api/scheduler/check",
-      "schedule": "*/5 * * * *"
-    },
-    {
       "path": "/api/cron/process-posts",
-      "schedule": "*/10 * * * *"
+      "schedule": "*/5 * * * *"
     }
   ]
 }
