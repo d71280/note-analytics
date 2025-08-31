@@ -1,161 +1,201 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export const runtime = 'edge' // Edge Functionを使用
-
+// 手動テスト用のCRONエンドポイント
 export async function GET(request: NextRequest) {
   try {
-    console.log('Manual cron test started')
+    console.log('[Test Process] 開始')
     
     const supabase = createAdminClient()
+    const now = new Date()
     
-    // 現在時刻より前のスケジュールされた投稿を取得
-    const now = new Date().toISOString()
-    console.log('Current time:', now)
-    
-    const { data: pendingPosts, error: fetchError } = await supabase
+    // 現在時刻を過ぎている投稿を取得
+    const { data: scheduledPosts, error } = await supabase
       .from('scheduled_posts')
       .select('*')
       .eq('status', 'pending')
-      .lte('scheduled_for', now)
+      .lte('scheduled_for', now.toISOString())
+      .order('display_order', { ascending: true, nullsFirst: false })
       .order('scheduled_for', { ascending: true })
-      .limit(10)
+      .limit(5)
     
-    if (fetchError) {
-      console.error('Failed to fetch pending posts:', fetchError)
-      return NextResponse.json(
-        { error: 'Failed to fetch pending posts', details: fetchError },
-        { status: 500 }
-      )
+    if (error) {
+      console.error('[Test Process] エラー:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
     
-    console.log(`Found ${pendingPosts?.length || 0} pending posts`)
-    
-    if (!pendingPosts || pendingPosts.length === 0) {
+    if (!scheduledPosts || scheduledPosts.length === 0) {
+      console.log('[Test Process] 投稿対象なし')
       return NextResponse.json({ 
-        message: 'No pending posts',
-        currentTime: now,
-        checked: true
+        message: 'No posts to process',
+        checked_at: now.toISOString()
       })
     }
     
-    const results = []
+    console.log(`[Test Process] ${scheduledPosts.length}件の投稿を処理`)
+    
+    const results = {
+      processed: 0,
+      posted: 0,
+      failed: 0,
+      posts: [] as any[]
+    }
     
     // 各投稿を処理
-    for (const post of pendingPosts) {
+    for (const post of scheduledPosts) {
+      results.processed++
+      
       try {
-        console.log(`Processing ${post.platform} post: ${post.id}`)
-        console.log(`Scheduled for: ${post.scheduled_for}`)
+        console.log(`[Test Process] ${post.id} の投稿を実行 (${post.platform})`)
         
-        // プラットフォームに応じたAPIエンドポイントを呼び出す
+        // 本番環境のURLを構築
+        const baseUrl = process.env.VERCEL_URL 
+          ? `https://${process.env.VERCEL_URL}`
+          : 'https://note-analytics.vercel.app'
+        
+        // プラットフォームに応じたAPIエンドポイントを選択
         let apiEndpoint = ''
         let requestBody = {}
         
         switch (post.platform) {
           case 'x':
-            apiEndpoint = '/api/x/post'
-            requestBody = { text: post.content }
+            apiEndpoint = `${baseUrl}/api/x/post`
+            requestBody = {
+              text: post.content,
+              postType: 'scheduled',
+              metadata: post.metadata
+            }
             break
           case 'note':
-            apiEndpoint = '/api/note/post'
+            apiEndpoint = `${baseUrl}/api/note/post`
             requestBody = {
               content: post.content,
-              title: post.metadata?.title || 'Note投稿',
-              platform: 'note'
+              title: post.metadata?.title || 'スケジュール投稿',
+              metadata: post.metadata
             }
             break
           case 'wordpress':
-            apiEndpoint = '/api/wordpress/post'
+            apiEndpoint = `${baseUrl}/api/wordpress/post`
             requestBody = {
               content: post.content,
-              title: post.metadata?.title || 'WordPress投稿',
-              platform: 'wordpress',
-              status: 'draft'
+              title: post.metadata?.title || 'スケジュール投稿',
+              metadata: post.metadata
             }
             break
           default:
-            console.error(`Unknown platform: ${post.platform}`)
+            console.error(`[Test Process] 不明なプラットフォーム: ${post.platform}`)
             continue
         }
         
-        console.log(`Calling API: ${apiEndpoint}`)
+        console.log(`[Test Process] API呼び出し: ${apiEndpoint}`)
         
-        // APIを呼び出し
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${request.headers.get('host')}`
-        const response = await fetch(`${baseUrl}${apiEndpoint}`, {
+        // 投稿APIを呼び出し
+        const response = await fetch(apiEndpoint, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
         })
         
-        console.log(`Response status: ${response.status}`)
+        console.log(`[Test Process] レスポンス: ${response.status}`)
         
         if (response.ok) {
           const data = await response.json()
-          console.log('Post successful:', data)
           
-          // ステータスを更新
+          // 成功したらステータス更新
           await supabase
             .from('scheduled_posts')
-            .update({ 
+            .update({
               status: 'posted',
-              posted_at: new Date().toISOString(),
               metadata: {
                 ...post.metadata,
-                response: data
+                posted_at: new Date().toISOString(),
+                post_id: data.tweetId || data.id || data.postId,
+                test_run: true
               }
             })
             .eq('id', post.id)
           
-          results.push({
+          results.posted++
+          results.posts.push({
             id: post.id,
-            status: 'posted',
             platform: post.platform,
+            status: 'posted',
             response: data
           })
+          console.log(`✅ [Test Process] ${post.id} 投稿成功`)
         } else {
-          const errorData = await response.text()
-          console.error('API error:', errorData)
-          throw new Error(`API error: ${errorData}`)
+          const error = await response.json()
+          
+          // 失敗したらステータス更新
+          await supabase
+            .from('scheduled_posts')
+            .update({
+              status: 'failed',
+              metadata: {
+                ...post.metadata,
+                failed_at: new Date().toISOString(),
+                error: error.error || 'Unknown error',
+                test_run: true
+              }
+            })
+            .eq('id', post.id)
+          
+          results.failed++
+          results.posts.push({
+            id: post.id,
+            platform: post.platform,
+            status: 'failed',
+            error: error
+          })
+          console.error(`❌ [Test Process] ${post.id} 投稿失敗:`, error)
         }
         
-      } catch (postError) {
-        console.error(`Failed to post ${post.id}:`, postError)
+        // レート制限対策のため少し待機
+        await new Promise(resolve => setTimeout(resolve, 1000))
         
-        // エラーステータスに更新
+      } catch (error) {
+        console.error(`[Test Process] ${post.id} エラー:`, error)
+        results.failed++
+        
+        // エラー時もステータス更新
         await supabase
           .from('scheduled_posts')
-          .update({ 
+          .update({
             status: 'failed',
-            error_message: postError instanceof Error ? postError.message : 'Unknown error'
+            metadata: {
+              ...post.metadata,
+              failed_at: new Date().toISOString(),
+              error: error instanceof Error ? error.message : 'Unknown error',
+              test_run: true
+            }
           })
           .eq('id', post.id)
         
-        results.push({
+        results.posts.push({
           id: post.id,
+          platform: post.platform,
           status: 'failed',
-          error: postError instanceof Error ? postError.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error'
         })
       }
     }
     
     return NextResponse.json({
-      success: true,
-      currentTime: now,
-      processed: results.length,
-      results
+      message: `Processed ${results.processed} posts`,
+      results: {
+        processed: results.processed,
+        posted: results.posted,
+        failed: results.failed,
+        posts: results.posts
+      },
+      checked_at: now.toISOString()
     })
     
   } catch (error) {
-    console.error('Cron test error:', error)
-    return NextResponse.json(
-      { 
-        error: 'Failed to process posts',
-        details: error instanceof Error ? error.message : String(error)
-      },
-      { status: 500 }
-    )
+    console.error('[Test Process] クリティカルエラー:', error)
+    return NextResponse.json({
+      error: 'Test process failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
