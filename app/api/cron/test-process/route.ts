@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // 手動テスト用のCRONエンドポイント
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('[Test Process] 開始')
     
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       processed: 0,
       posted: 0,
       failed: 0,
-      posts: [] as any[]
+      posts: [] as Record<string, unknown>[]
     }
     
     // 各投稿を処理

@@ -109,8 +109,8 @@ export async function GET(request: NextRequest) {
           
           switch (post.platform) {
             case 'x':
-              // 内部API経由で投稿（環境変数の問題を回避）
-              postResult = await postToX(post.content, post.metadata)
+              // 内部API経由で投稿（認証バイパス付き）
+              postResult = await postToXWithBypass(post.content, post.metadata)
               break
             case 'note':
               postResult = await postToNoteDirect(post.content, post.metadata)
@@ -241,7 +241,50 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// X（Twitter）への投稿
+// X（Twitter）への投稿（認証バイパス付き）
+async function postToXWithBypass(content: string, metadata?: Record<string, unknown>) {
+  try {
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000'
+    
+    // 認証バイパス用のヘッダーを設定
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    }
+    
+    // Vercel Deployment Protection バイパストークンがある場合は設定
+    const bypassToken = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+    if (bypassToken) {
+      headers['x-vercel-protection-bypass'] = bypassToken
+    }
+    
+    const response = await fetch(`${baseUrl}/api/x/post`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        text: content,
+        postType: 'scheduled',
+        metadata
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      return { success: true, postId: data.tweetId }
+    } else {
+      const errorText = await response.text()
+      logger.error(`X API internal call failed: ${response.status} - ${errorText}`)
+      return { success: false, error: `HTTP ${response.status}: ${errorText}` }
+    }
+  } catch (error) {
+    logger.error('Failed to post to X via internal API', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Network error' }
+  }
+}
+
+// X（Twitter）への投稿（直接API使用）- 予備用
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function postToX(content: string, metadata?: Record<string, unknown>) {
   try {
     // 方法1: 直接TwitterApiクライアントを使用
