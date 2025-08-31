@@ -152,8 +152,8 @@ export default function ScheduledPostsPage() {
         }
       }
 
-      const response = await fetch('/api/scheduled-posts/update', {
-        method: 'PUT',
+      const response = await fetch('/api/scheduled-posts', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData)
       })
@@ -338,8 +338,8 @@ export default function ScheduledPostsPage() {
           display_order: i + 1  // 選択順を1から割り当て
         }
 
-        await fetch('/api/scheduled-posts/update', {
-          method: 'PUT',
+        await fetch('/api/scheduled-posts', {
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updateData)
         })
@@ -409,8 +409,8 @@ export default function ScheduledPostsPage() {
 
       if (response.ok) {
         // 投稿成功したらステータスを更新
-        const updateResponse = await fetch('/api/scheduled-posts/update', {
-          method: 'PUT',
+        const updateResponse = await fetch('/api/scheduled-posts', {
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: post.id,
