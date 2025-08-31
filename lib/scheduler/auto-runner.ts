@@ -6,9 +6,30 @@ import { postToNoteDirect, postToWordPressDirect } from '@/lib/post-to-platforms
 
 let intervalId: NodeJS.Timeout | null = null
 let isRunning = false
+let isEnabled = true // スケジューラーの有効/無効状態
+
+// スケジューラーの状態を永続化
+function saveSchedulerState(enabled: boolean) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('scheduler_enabled', enabled.toString())
+  }
+}
+
+function loadSchedulerState(): boolean {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('scheduler_enabled')
+    return saved !== 'false' // デフォルトは有効
+  }
+  return true
+}
 
 // スケジュール投稿を処理する関数
 async function processScheduledPosts() {
+  if (!isEnabled) {
+    console.log('[AutoRunner] Scheduler is disabled')
+    return
+  }
+
   if (isRunning) {
     console.log('[AutoRunner] Already running, skipping...')
     return
@@ -137,6 +158,9 @@ export function startScheduler(intervalMinutes: number = 1) {
     return
   }
 
+  isEnabled = true
+  saveSchedulerState(true)
+
   // 初回実行
   processScheduledPosts()
 
@@ -153,7 +177,18 @@ export function stopScheduler() {
   if (intervalId) {
     clearInterval(intervalId)
     intervalId = null
-    console.log('[AutoRunner] Scheduler stopped')
+  }
+  
+  isEnabled = false
+  saveSchedulerState(false)
+  console.log('[AutoRunner] Scheduler stopped')
+}
+
+// スケジューラーの状態を取得
+export function getSchedulerStatus(): { isRunning: boolean; isEnabled: boolean } {
+  return {
+    isRunning: intervalId !== null,
+    isEnabled
   }
 }
 
@@ -161,6 +196,18 @@ export function stopScheduler() {
 export async function runSchedulerOnce() {
   console.log('[AutoRunner] Manual run triggered')
   await processScheduledPosts()
+}
+
+// アプリケーション起動時に自動開始
+if (typeof window !== 'undefined') {
+  // ブラウザ環境での自動開始
+  const shouldAutoStart = loadSchedulerState()
+  if (shouldAutoStart) {
+    // ページロード時に自動開始
+    setTimeout(() => {
+      startScheduler(1) // 1分間隔で開始
+    }, 5000) // 5秒後に開始
+  }
 }
 
 // プロセス終了時にクリーンアップ

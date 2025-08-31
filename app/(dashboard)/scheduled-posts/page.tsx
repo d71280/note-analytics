@@ -73,10 +73,26 @@ export default function ScheduledPostsPage() {
   const [isBulkScheduling, setIsBulkScheduling] = useState(false)
   const [bulkScheduleTime, setBulkScheduleTime] = useState('')
   const [bulkInterval, setBulkInterval] = useState(60) // 分単位
-  const [schedulerStatus, setSchedulerStatus] = useState<'stopped' | 'running'>('stopped')
+  const [schedulerStatus, setSchedulerStatus] = useState<'stopped' | 'running'>('running')
 
   useEffect(() => {
     fetchScheduledPosts()
+    
+    // スケジューラーの状態を確認
+    const checkSchedulerStatus = async () => {
+      try {
+        const response = await fetch('/api/scheduler/start?action=status')
+        if (response.ok) {
+          const data = await response.json()
+          setSchedulerStatus(data.isRunning ? 'running' : 'stopped')
+        }
+      } catch (error) {
+        console.error('Failed to check scheduler status:', error)
+      }
+    }
+    
+    checkSchedulerStatus()
+    
     // 30秒ごとに自動更新
     const interval = setInterval(fetchScheduledPosts, 30000)
     return () => clearInterval(interval)

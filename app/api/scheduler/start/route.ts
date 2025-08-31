@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { startScheduler, stopScheduler, runSchedulerOnce } from '@/lib/scheduler/auto-runner'
+import { startScheduler, stopScheduler, runSchedulerOnce, getSchedulerStatus } from '@/lib/scheduler/auto-runner'
 
 // スケジューラーを開始
 export async function GET(request: Request) {
@@ -9,6 +9,14 @@ export async function GET(request: Request) {
 
   try {
     switch (action) {
+      case 'status':
+        const status = getSchedulerStatus()
+        return NextResponse.json({ 
+          success: true, 
+          isRunning: status.isRunning,
+          isEnabled: status.isEnabled
+        })
+      
       case 'stop':
         stopScheduler()
         return NextResponse.json({ 
